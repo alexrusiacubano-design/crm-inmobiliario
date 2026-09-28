@@ -5,3 +5,4 @@ export * from "./crm";
 export * from "./property";
 export { newId } from "./_helpers";
 export * from "./agenda";
+export * from "./deals";

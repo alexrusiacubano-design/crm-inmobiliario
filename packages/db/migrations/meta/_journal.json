@@ -57,6 +57,13 @@
       "when": 1790626722229,
       "tag": "0007_contact_extras",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790627385943,
+      "tag": "0008_deals",
+      "breakpoints": true
     }
   ]
 }

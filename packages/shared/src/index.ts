@@ -8,3 +8,5 @@ export * from "./property";
 export * from "./validation/property";
 export * from "./agenda";
 export * from "./validation/agenda";
+export * from "./deals";
+export * from "./validation/deals";

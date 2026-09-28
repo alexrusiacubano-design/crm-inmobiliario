@@ -15,7 +15,9 @@
     "./property": "./src/property.ts",
     "./validation/property": "./src/validation/property.ts",
     "./agenda": "./src/agenda.ts",
-    "./validation/agenda": "./src/validation/agenda.ts"
+    "./validation/agenda": "./src/validation/agenda.ts",
+    "./deals": "./src/deals.ts",
+    "./validation/deals": "./src/validation/deals.ts"
   },
   "scripts": {
     "lint": "eslint .",

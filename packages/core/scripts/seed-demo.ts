@@ -2,6 +2,7 @@ import { createDb } from "@crm/db";
 import { seedDemoAgenda } from "../src/agenda/demo-seed";
 import { seedDemoCrm } from "../src/crm/demo-seed";
 import { seedDemoContactExtras } from "../src/crm/extras-demo";
+import { seedDemoDeals } from "../src/deals/demo-seed";
 import { seedDemoProperties } from "../src/properties/demo-seed";
 import { getStorage } from "../src/storage/provider";
 
@@ -36,6 +37,8 @@ async function main() {
     );
     const x = await seedDemoContactExtras(db);
     console.info(x.skipped ? "Fechas y vínculos DEMO ya cargados." : `Fechas y vínculos DEMO: ${x.items}.`);
+    const d = await seedDemoDeals(db);
+    console.info(d.skipped ? "Operaciones DEMO ya cargadas." : `Operaciones DEMO: ${d.deals}.`);
   } finally {
     await pool.end();
   }

@@ -154,7 +154,7 @@ export const NAVIGATION: NavSection[] = [
         href: "/commercial/deals",
         label: "nav.commercial.deals",
         permission: "deal.read",
-        plannedPhase: 7,
+        plannedPhase: null,
         description: "Pipeline de operaciones de venta y alquiler.",
       },
     ],
@@ -268,7 +268,7 @@ export const NAVIGATION: NavSection[] = [
         href: "/finance/commissions",
         label: "nav.finance.commissions",
         permission: "commission.read",
-        plannedPhase: 9,
+        plannedPhase: null,
         description: "Comisiones y reparto entre participantes.",
       },
       {
@@ -304,7 +304,7 @@ export const NAVIGATION: NavSection[] = [
         href: "/performance/career",
         label: "nav.performance.career",
         permission: "commission.read",
-        plannedPhase: 9,
+        plannedPhase: null,
         description: "Escalones de comisión según facturación acumulada.",
       },
       {

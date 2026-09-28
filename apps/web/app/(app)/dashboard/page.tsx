@@ -4,6 +4,7 @@ import {
   hasPermission,
   leadStats,
   listAcquisitions,
+  listDeals,
   listProperties,
   propertyStats,
   upcomingContactDates,
@@ -22,6 +23,7 @@ import {
   Building2,
   CalendarClock,
   CalendarDays,
+  Gavel,
   Calculator,
   ChevronRight,
   Home,
@@ -102,7 +104,7 @@ export default async function DashboardPage() {
   const canAcq = hasPermission(ctx, "acquisition.read");
 
   const tzEarly = ctx.organization.timezone || TZ;
-  const [leads, props, expiring, latest, acq, agenda, dates] = await Promise.all([
+  const [leads, props, expiring, latest, acq, agenda, dates, deals] = await Promise.all([
     leadStats(db, ctx),
     propertyStats(db, ctx),
     expiringExclusivities(db, ctx, 30),
@@ -110,6 +112,7 @@ export default async function DashboardPage() {
     canAcq ? listAcquisitions(db, ctx, { stage: "open", page: 1, pageSize: 5 }) : null,
     agendaOverview(db, ctx),
     upcomingContactDates(db, ctx, ymdInTz(new Date(), tzEarly), 14),
+    hasPermission(ctx, "deal.read") ? listDeals(db, ctx, { status: "open", pageSize: 5 }) : null,
   ]);
   const tz = ctx.organization.timezone || TZ;
 
@@ -165,6 +168,17 @@ export default async function DashboardPage() {
             sub: "en el embudo",
             icon: Target,
             href: "/crm/leads",
+          },
+        ]
+      : []),
+    ...(deals
+      ? [
+          {
+            label: "Operaciones en curso",
+            value: deals.total,
+            sub: deals.total ? "de la negociación a la firma" : "ninguna abierta",
+            icon: Gavel,
+            href: "/commercial/deals",
           },
         ]
       : []),
@@ -305,7 +319,7 @@ export default async function DashboardPage() {
       {kpis.length > 0 && (
         <section>
           <SectionTitle>Resumen</SectionTitle>
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
             {kpis.map(({ label, value, sub, icon: Icon, href, alert }) => (
               <Link key={label} href={href} className="group">
                 <Card

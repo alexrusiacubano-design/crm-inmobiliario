@@ -6,7 +6,9 @@ Se construye por fases. Hecho: **Fase 1 — Fundaciones** (usuarios, roles, sucu
 **Fase 3 — Propiedades** (inventario con código PROP, fotos y planos, precios con historial,
 copropiedad, documentos con control de acceso, captaciones con exclusividad y tasaciones) y
 **Fase 5 — Agenda y visitas** (calendario mes/semana/día/lista, visitas con resultado, agenda de hoy y
-visitas sin cerrar en el dashboard, pestaña de agenda en fichas de contacto y propiedad).
+visitas sin cerrar en el dashboard, pestaña de agenda en fichas de contacto y propiedad), más
+**Operaciones y comisiones** (etapas hasta la firma, honorarios por parte, cobros, reparto entre agentes,
+finanzas del agente y plan de carrera con escalones configurables).
 
 ## Stack
 

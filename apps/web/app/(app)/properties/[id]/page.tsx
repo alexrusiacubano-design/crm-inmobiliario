@@ -1,5 +1,7 @@
 import {
+  dealsForProperty,
   getProperty,
+  hasPermission,
   listEntityDocuments,
   listPriceHistory,
   listPropertyHistory,
@@ -19,6 +21,7 @@ import {
   PROPERTY_OPERATION_LABELS,
   PROPERTY_STATUS_LABELS,
   PROPERTY_TYPE_LABELS,
+  dealStageLabel,
   type Orientation,
   type PriceField,
   type PropertyCondition,
@@ -30,6 +33,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { EventsPanel } from "@/components/agenda/events-panel";
+import { NewDealButton } from "@/components/deals/new-deal-dialog";
 import { AcquisitionStageBadge, PropertyStatusBadge } from "@/components/properties/badges";
 import { DocumentsPanel } from "@/components/properties/documents-panel";
 import { formatDay, minorToInput, price } from "@/components/properties/format";
@@ -78,12 +82,14 @@ export default async function PropertyPage({
   });
   const { property: p, permissions: can } = data;
 
-  const [priceHistory, history, documents, valuations] = await Promise.all([
+  const [priceHistory, history, documents, valuations, deals] = await Promise.all([
     tab === "prices" ? listPriceHistory(db, ctx, p.id) : Promise.resolve(null),
     tab === "history" ? listPropertyHistory(db, ctx, p.id) : Promise.resolve(null),
     tab === "documents" ? listEntityDocuments(db, ctx, "property", p.id) : Promise.resolve(null),
     tab === "valuations" ? listValuationsFor(db, ctx, { propertyId: p.id }) : Promise.resolve(null),
+    dealsForProperty(db, ctx, p.id),
   ]);
+  const openDeals = deals.filter((d) => d.stage !== "closed" && d.stage !== "fallen");
 
   const cover = data.media.find((m) => m.isCover);
   // "Pocitos, Montevideo" (sin repetir cuando la localidad se llama igual que el departamento).
@@ -186,6 +192,17 @@ export default async function PropertyPage({
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {hasPermission(ctx, "deal.manage") &&
+            ["available", "published", "negotiating", "reserved"].includes(p.status) && (
+              <NewDealButton
+                variant="secondary"
+                label="Iniciar operación"
+                preset={{
+                  property: { id: p.id, label: `${p.code} · ${data.displayTitle}` },
+                  operation: p.operations[0],
+                }}
+              />
+            )}
           {can.update && (
             <Button asChild variant="secondary" size="sm">
               <Link href={`/properties/${p.id}/edit`}>
@@ -203,6 +220,18 @@ export default async function PropertyPage({
           )}
         </div>
       </div>
+
+      {openDeals.length > 0 && (
+        <div className="mb-4 flex flex-wrap items-center gap-2 rounded-md border border-warning/50 bg-warning-soft/40 px-4 py-2 text-sm">
+          <span className="font-medium">Operaciones:</span>
+          {openDeals.map((d) => (
+            <Link key={d.id} href={`/commercial/deals/${d.id}`} className="hover:underline">
+              <span className="font-mono">{d.code}</span> · {d.clientName} ·{" "}
+              {dealStageLabel(d.stage, d.operation)}
+            </Link>
+          ))}
+        </div>
+      )}
 
       <nav aria-label="Secciones de la propiedad" className="mb-5 flex gap-1 overflow-x-auto border-b">
         {TABS.map((t) =>
