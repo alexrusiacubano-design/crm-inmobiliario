@@ -29,6 +29,25 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   "owner.update": "Edición de propietario",
   "owner.financial_update": "Cambio de datos bancarios",
   "owner.financial_view": "Consulta de cuenta bancaria",
+  "property.create": "Alta de propiedad",
+  "property.update": "Edición de propiedad",
+  "property.status_change": "Cambio de estado de propiedad",
+  "property.assignment_change": "Cambio de responsable de propiedad",
+  "property.price_change": "Cambio de precio",
+  "property.owner_change": "Cambio de propietarios",
+  "property.media_add": "Alta de foto o video",
+  "property.media_update": "Edición de foto",
+  "property.media_reorder": "Reordenamiento de fotos",
+  "property.media_cover": "Cambio de portada",
+  "property.media_delete": "Baja de foto o video",
+  "acquisition.create": "Alta de captación",
+  "acquisition.update": "Edición de captación",
+  "acquisition.stage_change": "Cambio de etapa de captación",
+  "valuation.create": "Alta de tasación",
+  "document.upload": "Carga de documento",
+  "document.update": "Edición de documento",
+  "document.delete": "Baja de documento",
+  "document.download": "Descarga de documento",
 };
 
 export const AUDIT_ENTITY_LABELS: Record<string, string> = {
@@ -39,6 +58,10 @@ export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   organization: "Organización",
   contact: "Contacto",
   lead: "Lead",
+  property: "Propiedad",
+  acquisition: "Captación",
+  valuation: "Tasación",
+  document: "Documento",
 };
 
 export function auditActionLabel(action: string): string {

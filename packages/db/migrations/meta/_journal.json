@@ -29,6 +29,20 @@
       "when": 1790560324711,
       "tag": "0003_crm_guards",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790579023393,
+      "tag": "0004_properties",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790579024526,
+      "tag": "0005_property_guards",
+      "breakpoints": true
     }
   ]
 }

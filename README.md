@@ -1,8 +1,10 @@
 # Inmobiliaria CRM
 
 CRM inmobiliario para Uruguay: ventas, alquileres, administración de alquileres, comisiones y reportes.
-Se construye por fases. Hecho: **Fase 1 — Fundaciones** (usuarios, roles, sucursales, auditoría) y
-**Fase 2 — CRM** (contactos, leads, clientes, propietarios, duplicados, timeline y búsqueda global).
+Se construye por fases. Hecho: **Fase 1 — Fundaciones** (usuarios, roles, sucursales, auditoría),
+**Fase 2 — CRM** (contactos, leads, clientes, propietarios, duplicados, timeline y búsqueda global) y
+**Fase 3 — Propiedades** (inventario con código PROP, fotos y planos, precios con historial,
+copropiedad, documentos con control de acceso, captaciones con exclusividad y tasaciones).
 
 ## Stack
 
@@ -14,6 +16,7 @@ Se construye por fases. Hecho: **Fase 1 — Fundaciones** (usuarios, roles, sucu
 | Base de datos | PostgreSQL 16 + Drizzle ORM (migraciones SQL versionadas)            |
 | Autenticación | Better Auth (sesiones en DB, 2FA TOTP, rate limiting persistente)    |
 | Validación    | Zod 4, esquemas compartidos cliente/servidor                         |
+| Archivos      | Proveedor de almacenamiento: disco local (dev) o S3/R2; sharp        |
 | Tests         | Vitest (unitarios + integración con Postgres real), Playwright (E2E) |
 
 ## Estructura
@@ -58,6 +61,9 @@ Usuarios DEMO (contraseña = `DEMO_PASSWORD`, por defecto `Demo-2026!`):
 
 El CRM DEMO trae 15 leads en todas las etapas del embudo, 4 propietarios (con cuenta bancaria si
 `FIELD_ENCRYPTION_KEY` está configurada) y 2 pares de posibles duplicados para probar la fusión.
+Las propiedades DEMO son 8 (publicadas, en borrador, reservada, con rebajas de precio y copropiedad),
+con 6 captaciones en distintas etapas (una con exclusividad por vencer), tasaciones y documentos. Las
+fotos son ilustraciones generadas con la leyenda "DEMO", no imágenes de inmuebles reales.
 
 Todo lo sembrado está marcado como DEMO (`organization.is_demo`, nombres con "(DEMO)", dominio
 reservado `example.com`). El seed se niega a correr con `NODE_ENV=production`.
@@ -76,3 +82,15 @@ pnpm test:e2e      # requiere la base DEMO sembrada
 Ver `.env.example`. Nunca se exponen secretos al navegador: solo el código de servidor lee
 `DATABASE_URL` y `BETTER_AUTH_SECRET`. `AUTH_SIGNIN_MAX_PER_MINUTE` (por defecto 5) limita los
 intentos de login por IP.
+
+## Archivos
+
+Fotos, planos y documentos nunca tienen URL pública: se sirven por `/api/media/:id` y
+`/api/documents/:id`, que verifican sesión y permisos (y auditan cada descarga de documentos). El
+tipo se valida por el contenido del archivo, no por la extensión; a las fotos se les quitan los
+metadatos EXIF (incluida la ubicación GPS) y se generan miniaturas WebP.
+
+- Desarrollo: `STORAGE_DRIVER=local` guarda en `.storage/` (raíz del repo, ignorada por git).
+- Producción: `STORAGE_DRIVER=s3` con un bucket privado de S3, Cloudflare R2 o Supabase Storage
+  (API S3). El disco local se rechaza en producción salvo `STORAGE_ALLOW_LOCAL=1`, porque en
+  plataformas serverless los archivos se pierden.

@@ -30,7 +30,8 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "pnpm build && AUTH_SIGNIN_MAX_PER_MINUTE=100 pnpm start",
+    // Almacenamiento local habilitado solo para E2E (en producción real se usa S3/R2).
+    command: "pnpm build && AUTH_SIGNIN_MAX_PER_MINUTE=100 STORAGE_ALLOW_LOCAL=1 pnpm start",
     url: `${baseURL}/login`,
     reuseExistingServer: true,
     timeout: 240_000,

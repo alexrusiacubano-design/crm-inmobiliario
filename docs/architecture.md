@@ -50,3 +50,27 @@ con códigos de respaldo, rate limiting persistente (login 5/min por IP, 2FA 5/m
 de rutas en `proxy.ts` + verificación real en cada página y acción, redirección post-login solo
 a rutas internas, cabeceras de seguridad (HSTS, X-Frame-Options, nosniff, Referrer-Policy).
 Suspender o cambiar la contraseña de un usuario cierra sus sesiones.
+
+## Propiedades y archivos (Fase 3)
+
+- **Inventario visible, edición acotada.** Todo agente ve el inventario completo (`property.read`
+  con alcance organización, necesario para ofrecer y hacer matching), pero solo edita las
+  propiedades de las que es responsable. Asignar a otro requiere alcance mayor a "propios".
+- **Precios.** Un precio por operación (venta, alquiler, temporario) en unidad menor `bigint`.
+  Cada cambio de cada campo (publicado, pedido del propietario, mínimo autorizado) queda en
+  `property_price_history`, protegida por un trigger append-only. El mínimo autorizado solo lo
+  ven y cambian quienes tienen `property.price.floor.read`; si otro usuario lo envía, se ignora.
+  Una rebaja del precio publicado emite `property.price_reduced` (lo usará el matching).
+- **Publicación con checklist.** No se publica sin título, descripción, localidad, precio por
+  operación, 3 fotos, portada y propietarios que sumen 100 %. Publicar mueve la captación
+  vinculada a "Publicado".
+- **Copropiedad.** Participaciones en basis points (10000 = 100 %). Quien no puede ver la ficha
+  de un propietario ve "Propietario (restringido)" y no recibe su identidad por ninguna vía.
+- **Captaciones.** "Captado" exige la autorización de publicación firmada y crea, en la misma
+  transacción, la propiedad en borrador con el propietario al 100 %, la comisión y los precios.
+  Las tasaciones son inmutables (trigger append-only): una nueva reemplaza a la anterior.
+- **Archivos.** `StorageProvider` (disco local o S3 compatible) con claves no adivinables por
+  organización. Sin URLs públicas: rutas de la app con sesión y permisos. Tipo verificado por
+  magic bytes; imágenes re-codificadas a WebP sin EXIF; si falla la base, se borran los archivos
+  subidos. Los documentos tienen visibilidad interna, restringida (responsable y supervisores) o
+  confidencial (`document.sensitive.read`); la baja es lógica y cada descarga se audita.

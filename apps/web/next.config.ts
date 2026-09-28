@@ -10,7 +10,7 @@ const securityHeaders = [
 
 const config: NextConfig = {
   transpilePackages: ["@crm/core", "@crm/db", "@crm/shared"],
-  serverExternalPackages: ["pg"],
+  serverExternalPackages: ["pg", "sharp"],
   poweredByHeader: false,
   typedRoutes: false,
   async headers() {

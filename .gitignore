@@ -9,3 +9,7 @@ coverage
 playwright-report
 test-results
 .DS_Store
+
+# Archivos subidos en desarrollo (STORAGE_DRIVER=local)
+.storage/
+*.tsbuildinfo

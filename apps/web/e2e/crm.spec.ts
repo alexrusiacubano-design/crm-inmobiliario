@@ -39,7 +39,7 @@ test("un agente carga un lead con contacto nuevo, registra una llamada y el lead
 
   // La búsqueda global lo encuentra por teléfono.
   await page.keyboard.press("Control+k");
-  await page.getByPlaceholder("Nombre, teléfono, email, cédula o LEAD-…").fill(suffix);
+  await page.getByPlaceholder("Nombre, teléfono, cédula, LEAD-… o PROP-…").fill(suffix);
   await expect(
     page.getByRole("option", { name: new RegExp(`Prueba E2E Lead ${suffix}`) }).first(),
   ).toBeVisible();

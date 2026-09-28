@@ -1,5 +1,7 @@
 import { createDb } from "@crm/db";
 import { seedDemoCrm } from "../src/crm/demo-seed";
+import { seedDemoProperties } from "../src/properties/demo-seed";
+import { getStorage } from "../src/storage/provider";
 
 async function main() {
   const url = process.env.DATABASE_URL;
@@ -20,6 +22,12 @@ async function main() {
         "FIELD_ENCRYPTION_KEY no está configurada: los propietarios DEMO se cargaron sin cuenta bancaria.",
       );
     }
+    const p = await seedDemoProperties(db, getStorage());
+    console.info(
+      p.skipped
+        ? "Propiedades DEMO ya cargadas: no se cargó nada."
+        : `Propiedades DEMO: ${p.properties} propiedades, ${p.acquisitions} captaciones.`,
+    );
   } finally {
     await pool.end();
   }

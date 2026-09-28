@@ -1,7 +1,24 @@
-import { getOrganizationSummary, hasPermission, leadStats, listAuditLogs } from "@crm/core";
+import {
+  expiringExclusivities,
+  getOrganizationSummary,
+  hasPermission,
+  leadStats,
+  listAuditLogs,
+  propertyStats,
+} from "@crm/core";
 import { LEAD_STATUS_LABELS, type LeadStatus } from "@crm/shared/crm";
 import { getDb } from "@crm/db";
-import { Activity, BellRing, CheckCircle2, Circle, Inbox, Target, Users } from "lucide-react";
+import {
+  Activity,
+  BellRing,
+  Building2,
+  CalendarClock,
+  CheckCircle2,
+  Circle,
+  Inbox,
+  Target,
+  Users,
+} from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Badge, Card, EmptyState, PageHeader } from "@/components/ui/misc";
@@ -15,7 +32,7 @@ export const metadata: Metadata = { title: "Dashboard" };
 const ROADMAP = [
   { phase: 1, title: "Fundaciones", detail: "Usuarios, roles, sucursales, equipos, auditoría", done: true },
   { phase: 2, title: "CRM", detail: "Contactos, leads, propietarios, búsqueda global", done: true },
-  { phase: 3, title: "Propiedades", detail: "Inventario, multimedia, captaciones, tasaciones", done: false },
+  { phase: 3, title: "Propiedades", detail: "Inventario, multimedia, captaciones, tasaciones", done: true },
   { phase: 4, title: "Matching", detail: "Compatibilidad cliente ↔ propiedad", done: false },
   { phase: 5, title: "Agenda y visitas", detail: "Calendario, tareas, feedback", done: false },
   { phase: 6, title: "Ofertas y reservas", detail: "Negociación con historial inmutable", done: false },
@@ -28,7 +45,14 @@ export default async function DashboardPage() {
   const canAudit = hasPermission(ctx, "audit.read");
   const recent = canAudit ? await listAuditLogs(db, ctx, { page: 1, pageSize: 6 }) : null;
 
-  const leads = await leadStats(db, ctx);
+  const [leads, props, expiring] = await Promise.all([
+    leadStats(db, ctx),
+    propertyStats(db, ctx),
+    expiringExclusivities(db, ctx, 30),
+  ]);
+  const activeProps = props
+    ? (props.available ?? 0) + (props.published ?? 0) + (props.negotiating ?? 0) + (props.reserved ?? 0)
+    : 0;
   const FUNNEL: LeadStatus[] = ["new", "contacted", "qualified", "visit", "offer", "reservation", "won"];
   const funnel = leads ? FUNNEL.map((st) => ({ status: st, n: leads.byStatus[st] ?? 0 })) : [];
   const openLeads = funnel.filter((f) => f.status !== "won").reduce((a, f) => a + f.n, 0);
@@ -61,6 +85,29 @@ export default async function DashboardPage() {
           },
         ]
       : []),
+    ...(props
+      ? [
+          {
+            label: "Propiedades activas",
+            value: activeProps,
+            sub: `${props.published ?? 0} publicadas · ${props.draft ?? 0} en borrador`,
+            icon: Building2,
+            href: "/properties",
+          },
+        ]
+      : []),
+    ...(hasPermission(ctx, "acquisition.read")
+      ? [
+          {
+            label: "Exclusividades por vencer",
+            value: expiring.length,
+            sub: expiring.length ? "en los próximos 30 días" : "ninguna en 30 días",
+            icon: CalendarClock,
+            href: "/properties/acquisitions",
+            alert: expiring.length > 0,
+          },
+        ]
+      : []),
     ...(hasPermission(ctx, "users.read")
       ? [
           {
@@ -78,10 +125,10 @@ export default async function DashboardPage() {
     <>
       <PageHeader
         title={`Hola, ${user.name.split(" ")[0]}`}
-        description="Leads según tu alcance. Propiedades, visitas, comisiones y morosidad se suman a medida que se habilitan sus módulos."
+        description="Leads y propiedades según tu alcance. Visitas, comisiones y morosidad se suman a medida que se habilitan sus módulos."
       />
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {stats.map(({ label, value, sub, icon: Icon, href, ...rest }) => (
           <Link key={label} href={href} className="group">
             <Card

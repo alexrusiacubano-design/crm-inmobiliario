@@ -182,7 +182,7 @@ export async function logInteraction(db: Db, ctx: RequestContext, rawInput: unkn
 }
 
 export interface SearchHit {
-  entityType: "contact" | "lead";
+  entityType: "contact" | "lead" | "property";
   id: string;
   title: string;
   subtitle: string | null;
@@ -228,6 +228,11 @@ export async function globalSearch(db: DbOrTx, ctx: RequestContext, rawInput: un
       sql`(${searchDocument.entityType} = 'lead' and ${scopeCondition(ctx, "lead.read", cols)})`,
     );
   }
+  if (hasPermission(ctx, "property.read")) {
+    typeScopes.push(
+      sql`(${searchDocument.entityType} = 'property' and ${scopeCondition(ctx, "property.read", cols)})`,
+    );
+  }
   if (typeScopes.length === 0) return [];
 
   const allTokens = and(...terms);
@@ -254,7 +259,12 @@ export async function globalSearch(db: DbOrTx, ctx: RequestContext, rawInput: un
     id: r.id,
     title: r.title,
     subtitle: r.subtitle,
-    href: r.entityType === "lead" ? `/crm/leads/${r.id}` : `/crm/contacts/${r.id}`,
+    href:
+      r.entityType === "lead"
+        ? `/crm/leads/${r.id}`
+        : r.entityType === "property"
+          ? `/properties/${r.id}`
+          : `/crm/contacts/${r.id}`,
   }));
 }
 

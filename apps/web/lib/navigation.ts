@@ -90,21 +90,21 @@ export const NAVIGATION: NavSection[] = [
         href: "/properties",
         label: "nav.properties.list",
         permission: "property.read",
-        plannedPhase: 3,
+        plannedPhase: null,
         description: "Inventario con código PROP, multimedia e historial de precios.",
       },
       {
         href: "/properties/acquisitions",
         label: "nav.properties.acquisitions",
         permission: "acquisition.read",
-        plannedPhase: 3,
+        plannedPhase: null,
         description: "Pipeline de captación y exclusividades.",
       },
       {
         href: "/properties/valuations",
         label: "nav.properties.valuations",
         permission: "valuation.read",
-        plannedPhase: 3,
+        plannedPhase: null,
         description: "Tasaciones con comparables.",
       },
       {
@@ -242,7 +242,7 @@ export const NAVIGATION: NavSection[] = [
     icon: "file",
     href: "/documents",
     permission: "document.read",
-    plannedPhase: 3,
+    plannedPhase: null,
   },
   {
     key: "finance",

@@ -185,3 +185,22 @@ export function fromJSON(value: { amountMinor: string; currency: string }): Mone
   if (!isCurrency(value.currency)) throw new MoneyError("Moneda inválida");
   return money(BigInt(value.amountMinor), value.currency);
 }
+
+/** "3", "3,5", "33.33" → basis points (300, 350, 3333) sin pasar por float. Máximo 2 decimales. */
+export function parsePercentToBasisPoints(input: string): number {
+  const raw = input.replace("%", "").trim().replace(",", ".");
+  if (!/^\d{1,3}(\.\d{1,2})?$/.test(raw)) throw new MoneyError(`Porcentaje inválido: ${input}`);
+  const [int = "0", frac = ""] = raw.split(".");
+  const bp = Number(int) * 100 + Number(frac.padEnd(2, "0"));
+  if (bp > BASIS_POINTS_TOTAL) throw new MoneyError("El porcentaje no puede superar 100 %");
+  return bp;
+}
+
+/** 350 → "3,5 %" */
+export function formatBasisPoints(bp: number): string {
+  const int = Math.trunc(bp / 100);
+  const frac = String(bp % 100)
+    .padStart(2, "0")
+    .replace(/0+$/, "");
+  return `${int}${frac ? `,${frac}` : ""} %`;
+}

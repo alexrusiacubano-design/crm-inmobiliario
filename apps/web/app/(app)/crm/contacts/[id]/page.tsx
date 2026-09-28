@@ -2,6 +2,8 @@ import {
   getContact,
   hasPermission,
   listAssignees,
+  listEntityDocuments,
+  listOwnerProperties,
   listTimeline,
   NotFoundError,
   ValidationError,
@@ -12,6 +14,7 @@ import {
   DOCUMENT_TYPE_LABELS,
   LEAD_OPERATION_LABELS,
   LEAD_SOURCE_LABELS,
+  formatBasisPoints,
   formatCI,
 } from "@crm/shared";
 import { AlertTriangle, FileSearch } from "lucide-react";
@@ -25,6 +28,8 @@ import type { ContactFormValues } from "@/components/crm/contact-fields";
 import { NewLeadButton } from "@/components/crm/lead-dialog";
 import { OwnerPanel } from "@/components/crm/owner-panel";
 import { Timeline } from "@/components/crm/timeline";
+import { PropertyStatusBadge } from "@/components/properties/badges";
+import { DocumentsPanel } from "@/components/properties/documents-panel";
 import { Badge, Card, EmptyState } from "@/components/ui/misc";
 import { requireSession } from "@/lib/session";
 import { cn, formatDateTime } from "@/lib/utils";
@@ -39,7 +44,7 @@ const TABS = [
   { key: "matches", label: "Propiedades compatibles", phase: 4 },
   { key: "visits", label: "Visitas", phase: 5 },
   { key: "offers", label: "Ofertas", phase: 6 },
-  { key: "documents", label: "Documentos", phase: 3 },
+  { key: "documents", label: "Documentos" },
 ] as const;
 
 export default async function ContactPage({
@@ -61,7 +66,11 @@ export default async function ContactPage({
   if ("redirectTo" in data) redirect(`/crm/contacts/${data.redirectTo}`);
   const { contact: c, channels, tags, leads, owner, duplicates, permissions } = data;
   const assignees = permissions.assign ? await listAssignees(db, ctx) : undefined;
-  const timeline = tab === "timeline" ? await listTimeline(db, ctx, { contactId: c.id }) : null;
+  const [timeline, ownedProperties, documents] = await Promise.all([
+    tab === "timeline" ? listTimeline(db, ctx, { contactId: c.id }) : Promise.resolve(null),
+    tab === "owner" ? listOwnerProperties(db, ctx, c.id) : Promise.resolve(null),
+    tab === "documents" ? listEntityDocuments(db, ctx, "contact", c.id) : Promise.resolve(null),
+  ]);
 
   const formValues: ContactFormValues = {
     kind: c.kind,
@@ -186,8 +195,31 @@ export default async function ContactPage({
           canLog={permissions.update || permissions.ownerUpdate}
           showLeadLinks
         />
+      ) : tab === "documents" && documents ? (
+        <DocumentsPanel
+          entityType="contact"
+          entityId={c.id}
+          defaultCategory={owner ? "owner" : "client"}
+          hiddenCount={documents.hiddenCount}
+          canUpload={documents.canUpload}
+          canUploadConfidential={documents.canUploadConfidential}
+          items={documents.items.map((d) => ({
+            id: d.id,
+            category: d.category,
+            type: d.type,
+            name: d.name,
+            mimeType: d.mimeType,
+            sizeBytes: d.sizeBytes,
+            expiresAt: d.expiresAt,
+            visibility: d.visibility,
+            status: d.status,
+            uploadedBy: d.uploadedBy,
+            createdAt: d.createdAt.toISOString(),
+            canManage: d.canManage,
+          }))}
+        />
       ) : tab === "owner" ? (
-        <div className="max-w-2xl">
+        <div className="grid max-w-2xl gap-5">
           <OwnerPanel
             contactId={c.id}
             owner={owner}
@@ -195,6 +227,24 @@ export default async function ContactPage({
             canFinancialRead={permissions.ownerFinancialRead}
             canFinancialUpdate={permissions.ownerFinancialUpdate}
           />
+          {ownedProperties && ownedProperties.length > 0 && (
+            <Card>
+              <h2 className="border-b px-4 py-3 text-sm font-semibold">Propiedades</h2>
+              <ul className="divide-y text-sm">
+                {ownedProperties.map((p) => (
+                  <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-2">
+                    <Link href={`/properties/${p.id}`} className="hover:underline">
+                      <span className="font-mono">{p.code}</span> · {p.displayTitle}
+                    </Link>
+                    <span className="flex items-center gap-2 text-muted-foreground">
+                      {formatBasisPoints(p.shareBasisPoints)}
+                      <PropertyStatusBadge status={p.status} />
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          )}
         </div>
       ) : (
         <div className="grid gap-5 lg:grid-cols-[1fr_1.4fr]">

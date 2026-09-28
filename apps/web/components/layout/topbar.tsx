@@ -4,6 +4,7 @@ import * as DialogPrimitive from "@radix-ui/react-dialog";
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import { Command } from "cmdk";
 import {
+  Building2,
   FileSearch,
   Loader2,
   LogOut,
@@ -35,8 +36,8 @@ interface TopbarProps {
 }
 
 /**
- * Paleta de comandos (Ctrl/⌘ + K): búsqueda global de contactos y leads (filtrada por
- * permisos en el servidor) y navegación rápida entre módulos. Propiedades, contratos y
+ * Paleta de comandos (Ctrl/⌘ + K): búsqueda global de contactos, leads y propiedades
+ * (filtrada por permisos en el servidor) y navegación rápida entre módulos. Contratos y
  * operaciones se suman al índice en sus fases.
  */
 function CommandPalette({ sections }: { sections: VisibleNavSection[] }) {
@@ -109,7 +110,7 @@ function CommandPalette({ sections }: { sections: VisibleNavSection[] }) {
         className="flex h-8 w-full min-w-0 max-w-sm items-center gap-2 rounded-md border bg-surface-muted/60 px-2.5 text-sm text-muted-foreground hover:bg-surface-muted"
       >
         <Search className="size-4" aria-hidden />
-        <span className="truncate">Buscar contactos, leads o módulos…</span>
+        <span className="truncate">Buscar contactos, propiedades o módulos…</span>
         <kbd className="ml-auto hidden rounded border bg-surface px-1.5 font-mono text-[10px] sm:inline">
           Ctrl K
         </kbd>
@@ -128,7 +129,7 @@ function CommandPalette({ sections }: { sections: VisibleNavSection[] }) {
                 <Command.Input
                   value={query}
                   onValueChange={setQuery}
-                  placeholder="Nombre, teléfono, email, cédula o LEAD-…"
+                  placeholder="Nombre, teléfono, cédula, LEAD-… o PROP-…"
                   className="h-11 w-full bg-transparent outline-none placeholder:text-muted-foreground"
                 />
                 {searching && (
@@ -153,6 +154,8 @@ function CommandPalette({ sections }: { sections: VisibleNavSection[] }) {
                         <span className="flex items-center gap-2">
                           {h.entityType === "lead" ? (
                             <FileSearch className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+                          ) : h.entityType === "property" ? (
+                            <Building2 className="size-4 shrink-0 text-muted-foreground" aria-hidden />
                           ) : (
                             <User className="size-4 shrink-0 text-muted-foreground" aria-hidden />
                           )}
@@ -187,7 +190,7 @@ function CommandPalette({ sections }: { sections: VisibleNavSection[] }) {
                 ))}
               </Command.List>
               <p className="border-t px-3 py-2 text-xs text-muted-foreground">
-                Busca contactos y leads que tu rol puede ver. Propiedades, contratos y operaciones se suman en
+                Busca contactos, leads y propiedades que tu rol puede ver. Contratos y operaciones se suman en
                 sus fases.
               </p>
             </Command>

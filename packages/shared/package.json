@@ -11,7 +11,9 @@
     "./validation": "./src/validation/index.ts",
     "./crm": "./src/crm.ts",
     "./normalize": "./src/normalize.ts",
-    "./validation/crm": "./src/validation/crm.ts"
+    "./validation/crm": "./src/validation/crm.ts",
+    "./property": "./src/property.ts",
+    "./validation/property": "./src/validation/property.ts"
   },
   "scripts": {
     "lint": "eslint .",

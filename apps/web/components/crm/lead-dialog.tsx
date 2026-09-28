@@ -19,9 +19,9 @@ import { Field, Input, Select, Textarea } from "@/components/ui/form";
 import { cn } from "@/lib/utils";
 import { ContactFields, emptyContact, toContactPayload } from "./contact-fields";
 
-type Found = { id: string; displayName: string; phone: string | null; email: string | null };
+export type Found = { id: string; displayName: string; phone: string | null; email: string | null };
 
-function ContactPicker({ onPick }: { onPick: (c: Found) => void }) {
+export function ContactPicker({ onPick }: { onPick: (c: Found) => void }) {
   const [q, setQ] = useState("");
   const [results, setResults] = useState<Found[]>([]);
   const [loading, startLoading] = useTransition();
