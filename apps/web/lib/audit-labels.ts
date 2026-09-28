@@ -15,6 +15,20 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   "team.update": "Edición de equipo",
   "team.members_change": "Cambio de miembros de equipo",
   "organization.update": "Cambio de configuración",
+  "contact.create": "Alta de contacto",
+  "contact.update": "Edición de contacto",
+  "contact.delete": "Baja de contacto",
+  "contact.assignment_change": "Cambio de responsable de contacto",
+  "contact.merge": "Fusión de contactos",
+  "contact.duplicate_dismissed": "Duplicado descartado",
+  "lead.create": "Alta de lead",
+  "lead.status_change": "Cambio de etapa de lead",
+  "lead.assignment_change": "Reasignación de lead",
+  "lead.search_update": "Cambio de búsqueda",
+  "owner.create": "Alta de propietario",
+  "owner.update": "Edición de propietario",
+  "owner.financial_update": "Cambio de datos bancarios",
+  "owner.financial_view": "Consulta de cuenta bancaria",
 };
 
 export const AUDIT_ENTITY_LABELS: Record<string, string> = {
@@ -23,6 +37,8 @@ export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   branch: "Sucursal",
   team: "Equipo",
   organization: "Organización",
+  contact: "Contacto",
+  lead: "Lead",
 };
 
 export function auditActionLabel(action: string): string {

@@ -10,7 +10,8 @@
   "scripts": {
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json",
-    "test": "vitest run"
+    "test": "vitest run",
+    "seed:demo": "tsx scripts/seed-demo.ts"
   },
   "dependencies": {
     "@crm/db": "workspace:*",
@@ -21,6 +22,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.18.0",
-    "vitest": "^4.0.0"
+    "vitest": "^4.0.0",
+    "tsx": "^4.20.0"
   }
 }

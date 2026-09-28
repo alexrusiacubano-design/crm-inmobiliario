@@ -22,7 +22,8 @@ describe("navegación", () => {
   });
 
   it("encuentra módulos planificados y su fase", () => {
-    expect(findNavItem("/crm/leads")?.item.plannedPhase).toBe(2);
+    expect(findNavItem("/properties")?.item.plannedPhase).toBe(3);
+    expect(findNavItem("/crm/leads")?.item.plannedPhase).toBeNull();
     expect(findNavItem("/admin/users")?.item.plannedPhase).toBeNull();
     expect(findNavItem("/no-existe")).toBeNull();
   });

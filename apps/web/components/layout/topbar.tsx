@@ -3,10 +3,23 @@
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import { Command } from "cmdk";
-import { LogOut, Menu as MenuIcon, Monitor, Moon, Search, ShieldCheck, Sun } from "lucide-react";
+import {
+  FileSearch,
+  Loader2,
+  LogOut,
+  Menu as MenuIcon,
+  Monitor,
+  Moon,
+  Search,
+  ShieldCheck,
+  Sun,
+  User,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
+import type { SearchHit } from "@crm/core";
+import { globalSearchAction } from "@/app/(app)/crm/actions";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/misc";
 import { authClient } from "@/lib/auth-client";
@@ -22,11 +35,15 @@ interface TopbarProps {
 }
 
 /**
- * Paleta de comandos (Ctrl/⌘ + K). En la Fase 1 navega entre módulos; la búsqueda global
- * de registros (contactos, propiedades, contratos…) se conecta en la Fase 2.
+ * Paleta de comandos (Ctrl/⌘ + K): búsqueda global de contactos y leads (filtrada por
+ * permisos en el servidor) y navegación rápida entre módulos. Propiedades, contratos y
+ * operaciones se suman al índice en sus fases.
  */
 function CommandPalette({ sections }: { sections: VisibleNavSection[] }) {
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [hits, setHits] = useState<SearchHit[]>([]);
+  const [searching, startSearch] = useTransition();
   const router = useRouter();
 
   useEffect(() => {
@@ -40,21 +57,59 @@ function CommandPalette({ sections }: { sections: VisibleNavSection[] }) {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const entries = sections.flatMap((s) =>
-    s.href
-      ? [{ href: s.href, label: s.label, group: "General" }]
-      : s.items.map((i) => ({ href: i.href, label: i.label, group: s.label })),
-  );
+  useEffect(() => {
+    const q = query.trim();
+    if (q.length < 2) return;
+    const handle = setTimeout(() => {
+      startSearch(async () => {
+        const r = await globalSearchAction(q);
+        setHits(r.ok ? r.data : []);
+      });
+    }, 200);
+    return () => clearTimeout(handle);
+  }, [query]);
+
+  const q = query.trim();
+  const needle = q
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+  const entries = sections
+    .flatMap((s) =>
+      s.href
+        ? [{ href: s.href, label: s.label, group: "General" }]
+        : s.items.map((i) => ({ href: i.href, label: i.label, group: s.label })),
+    )
+    .filter(
+      (e) =>
+        !needle ||
+        `${e.group} ${e.label}`
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .toLowerCase()
+          .includes(needle),
+    );
+  const visibleHits = q.length >= 2 ? hits : [];
+
+  const go = (href: string) => {
+    setOpen(false);
+    setQuery("");
+    setHits([]);
+    router.push(href);
+  };
+  const groupClass =
+    "[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:text-muted-foreground";
+  const itemClass = "cursor-pointer rounded-md px-2 py-1.5 data-[selected=true]:bg-sidebar-active";
 
   return (
     <>
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex h-8 w-full max-w-sm items-center gap-2 rounded-md border bg-surface-muted/60 px-2.5 text-sm text-muted-foreground hover:bg-surface-muted"
+        className="flex h-8 w-full min-w-0 max-w-sm items-center gap-2 rounded-md border bg-surface-muted/60 px-2.5 text-sm text-muted-foreground hover:bg-surface-muted"
       >
         <Search className="size-4" aria-hidden />
-        <span className="truncate">Ir a…</span>
+        <span className="truncate">Buscar contactos, leads o módulos…</span>
         <kbd className="ml-auto hidden rounded border bg-surface px-1.5 font-mono text-[10px] sm:inline">
           Ctrl K
         </kbd>
@@ -62,40 +117,68 @@ function CommandPalette({ sections }: { sections: VisibleNavSection[] }) {
       <DialogPrimitive.Root open={open} onOpenChange={setOpen}>
         <DialogPrimitive.Portal>
           <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/40" />
-          <DialogPrimitive.Content className="fixed left-1/2 top-[15vh] z-50 w-[calc(100vw-2rem)] max-w-lg -translate-x-1/2 overflow-hidden rounded-lg border bg-surface shadow-xl">
-            <DialogPrimitive.Title className="sr-only">Navegación rápida</DialogPrimitive.Title>
+          <DialogPrimitive.Content className="fixed left-1/2 top-[12vh] z-50 w-[calc(100vw-2rem)] max-w-xl -translate-x-1/2 overflow-hidden rounded-lg border bg-surface shadow-xl">
+            <DialogPrimitive.Title className="sr-only">Búsqueda global</DialogPrimitive.Title>
             <DialogPrimitive.Description className="sr-only">
-              Escribí el nombre de un módulo
+              Buscá por nombre, teléfono, email, cédula o código
             </DialogPrimitive.Description>
-            <Command label="Navegación rápida" className="text-sm">
+            <Command label="Búsqueda global" className="text-sm" shouldFilter={false}>
               <div className="flex items-center gap-2 border-b px-3">
                 <Search className="size-4 text-muted-foreground" aria-hidden />
                 <Command.Input
-                  placeholder="Buscar módulo…"
+                  value={query}
+                  onValueChange={setQuery}
+                  placeholder="Nombre, teléfono, email, cédula o LEAD-…"
                   className="h-11 w-full bg-transparent outline-none placeholder:text-muted-foreground"
                 />
+                {searching && (
+                  <Loader2 className="size-4 animate-spin text-muted-foreground" aria-label="Buscando" />
+                )}
               </div>
-              <Command.List className="max-h-80 overflow-y-auto p-1.5">
-                <Command.Empty className="px-3 py-6 text-center text-muted-foreground">
-                  Sin resultados
-                </Command.Empty>
+              <Command.List className="max-h-96 overflow-y-auto p-1.5">
+                {visibleHits.length === 0 && entries.length === 0 && (
+                  <Command.Empty className="px-3 py-6 text-center text-muted-foreground">
+                    {searching ? "Buscando…" : "Sin resultados"}
+                  </Command.Empty>
+                )}
+                {visibleHits.length > 0 && (
+                  <Command.Group heading="Resultados" className={groupClass}>
+                    {visibleHits.map((h) => (
+                      <Command.Item
+                        key={`${h.entityType}-${h.id}`}
+                        value={`${h.entityType}-${h.id}`}
+                        onSelect={() => go(h.href)}
+                        className={itemClass}
+                      >
+                        <span className="flex items-center gap-2">
+                          {h.entityType === "lead" ? (
+                            <FileSearch className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+                          ) : (
+                            <User className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+                          )}
+                          <span className="min-w-0">
+                            <span className="block truncate font-medium">{h.title}</span>
+                            {h.subtitle && (
+                              <span className="block truncate text-xs text-muted-foreground">
+                                {h.subtitle}
+                              </span>
+                            )}
+                          </span>
+                        </span>
+                      </Command.Item>
+                    ))}
+                  </Command.Group>
+                )}
                 {[...new Set(entries.map((e) => e.group))].map((group) => (
-                  <Command.Group
-                    key={group}
-                    heading={group}
-                    className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:text-muted-foreground"
-                  >
+                  <Command.Group key={group} heading={group} className={groupClass}>
                     {entries
                       .filter((e) => e.group === group)
                       .map((e) => (
                         <Command.Item
                           key={e.href}
                           value={`${group} ${e.label}`}
-                          onSelect={() => {
-                            setOpen(false);
-                            router.push(e.href);
-                          }}
-                          className="cursor-pointer rounded-md px-2 py-1.5 data-[selected=true]:bg-sidebar-active"
+                          onSelect={() => go(e.href)}
+                          className={itemClass}
                         >
                           {e.label}
                         </Command.Item>
@@ -104,7 +187,8 @@ function CommandPalette({ sections }: { sections: VisibleNavSection[] }) {
                 ))}
               </Command.List>
               <p className="border-t px-3 py-2 text-xs text-muted-foreground">
-                La búsqueda de contactos, propiedades y contratos llega en la Fase 2.
+                Busca contactos y leads que tu rol puede ver. Propiedades, contratos y operaciones se suman en
+                sus fases.
               </p>
             </Command>
           </DialogPrimitive.Content>
@@ -212,7 +296,7 @@ export function Topbar({ orgName, isDemo, user, sections }: TopbarProps) {
       </DialogPrimitive.Root>
 
       <CommandPalette sections={sections} />
-      <div className="ml-auto flex items-center gap-3">
+      <div className="ml-auto flex shrink-0 items-center gap-3">
         {isDemo && (
           <Badge tone="warning" title="Organización con datos de demostración">
             {"DEMO"}

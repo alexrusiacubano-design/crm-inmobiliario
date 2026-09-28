@@ -16,7 +16,7 @@
     "format:check": "prettier --check .",
     "db:generate": "pnpm --filter @crm/db generate",
     "db:migrate": "pnpm --filter @crm/db migrate",
-    "db:seed": "pnpm --filter @crm/db seed"
+    "db:seed": "pnpm --filter @crm/db seed && pnpm --filter @crm/core seed:demo"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.0",

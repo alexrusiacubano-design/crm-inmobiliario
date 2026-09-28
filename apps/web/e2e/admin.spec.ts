@@ -74,6 +74,6 @@ test("un agente no ve administración y recibe acceso denegado si entra por URL"
 
 test("los módulos futuros dicen en qué fase llegan, sin datos falsos", async ({ page }) => {
   await login(page, "director");
-  await page.goto("/crm/leads");
-  await expect(page.getByText("Este módulo se construye en la Fase 2")).toBeVisible();
+  await page.goto("/properties");
+  await expect(page.getByText("Este módulo se construye en la Fase 3")).toBeVisible();
 });

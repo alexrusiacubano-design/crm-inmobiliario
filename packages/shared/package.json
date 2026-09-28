@@ -8,7 +8,10 @@
     ".": "./src/index.ts",
     "./money": "./src/money.ts",
     "./rbac": "./src/rbac/index.ts",
-    "./validation": "./src/validation/index.ts"
+    "./validation": "./src/validation/index.ts",
+    "./crm": "./src/crm.ts",
+    "./normalize": "./src/normalize.ts",
+    "./validation/crm": "./src/validation/crm.ts"
   },
   "scripts": {
     "lint": "eslint .",

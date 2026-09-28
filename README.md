@@ -1,7 +1,8 @@
 # Inmobiliaria CRM
 
 CRM inmobiliario para Uruguay: ventas, alquileres, administración de alquileres, comisiones y reportes.
-Se construye por fases; este repositorio contiene la **Fase 1 — Fundaciones**.
+Se construye por fases. Hecho: **Fase 1 — Fundaciones** (usuarios, roles, sucursales, auditoría) y
+**Fase 2 — CRM** (contactos, leads, clientes, propietarios, duplicados, timeline y búsqueda global).
 
 ## Stack
 
@@ -35,7 +36,7 @@ pnpm install
 cp .env.example .env                       # y también apps/web/.env.local con las mismas variables
 docker compose up -d                       # Postgres con crm_dev y crm_test
 pnpm db:migrate
-pnpm db:seed                               # geografía de Uruguay + organización DEMO
+pnpm db:seed                               # geografía UY + organización DEMO + CRM DEMO
 pnpm dev                                   # web en http://localhost:3000
 pnpm --filter @crm/worker dev              # worker (otra terminal)
 ```
@@ -54,6 +55,9 @@ Usuarios DEMO (contraseña = `DEMO_PASSWORD`, por defecto `Demo-2026!`):
 | administracion@demo.example.com | Administración de alquileres  |
 | contabilidad@demo.example.com   | Contabilidad                  |
 | recepcion@demo.example.com      | Recepción                     |
+
+El CRM DEMO trae 15 leads en todas las etapas del embudo, 4 propietarios (con cuenta bancaria si
+`FIELD_ENCRYPTION_KEY` está configurada) y 2 pares de posibles duplicados para probar la fusión.
 
 Todo lo sembrado está marcado como DEMO (`organization.is_demo`, nombres con "(DEMO)", dominio
 reservado `example.com`). El seed se niega a correr con `NODE_ENV=production`.

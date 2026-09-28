@@ -24,6 +24,8 @@ jobs:
       BETTER_AUTH_SECRET: ci-secret-only-for-tests-0123456789abcdef
       BETTER_AUTH_URL: http://localhost:3000
       DEMO_PASSWORD: Demo-2026!
+      # Clave solo para CI (32 bytes en base64). En producción va en los secretos del entorno.
+      FIELD_ENCRYPTION_KEY: 5Dcsyj+0NOnO4eBmNtnhgZqglVg5agdPjv6zevPWhB8=
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4

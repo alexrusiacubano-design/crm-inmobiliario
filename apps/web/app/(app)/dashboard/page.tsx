@@ -1,6 +1,7 @@
-import { getOrganizationSummary, hasPermission, listAuditLogs } from "@crm/core";
+import { getOrganizationSummary, hasPermission, leadStats, listAuditLogs } from "@crm/core";
+import { LEAD_STATUS_LABELS, type LeadStatus } from "@crm/shared/crm";
 import { getDb } from "@crm/db";
-import { Activity, Building2, CheckCircle2, Circle, ShieldCheck, Users, UsersRound } from "lucide-react";
+import { Activity, BellRing, CheckCircle2, Circle, Inbox, Target, Users } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Badge, Card, EmptyState, PageHeader } from "@/components/ui/misc";
@@ -13,7 +14,7 @@ export const metadata: Metadata = { title: "Dashboard" };
 /** Hitos del roadmap que alimentan los KPIs del dashboard ejecutivo (Fase 13). */
 const ROADMAP = [
   { phase: 1, title: "Fundaciones", detail: "Usuarios, roles, sucursales, equipos, auditoría", done: true },
-  { phase: 2, title: "CRM", detail: "Contactos, leads, propietarios, búsqueda global", done: false },
+  { phase: 2, title: "CRM", detail: "Contactos, leads, propietarios, búsqueda global", done: true },
   { phase: 3, title: "Propiedades", detail: "Inventario, multimedia, captaciones, tasaciones", done: false },
   { phase: 4, title: "Matching", detail: "Compatibilidad cliente ↔ propiedad", done: false },
   { phase: 5, title: "Agenda y visitas", detail: "Calendario, tareas, feedback", done: false },
@@ -27,42 +28,65 @@ export default async function DashboardPage() {
   const canAudit = hasPermission(ctx, "audit.read");
   const recent = canAudit ? await listAuditLogs(db, ctx, { page: 1, pageSize: 6 }) : null;
 
+  const leads = await leadStats(db, ctx);
+  const FUNNEL: LeadStatus[] = ["new", "contacted", "qualified", "visit", "offer", "reservation", "won"];
+  const funnel = leads ? FUNNEL.map((st) => ({ status: st, n: leads.byStatus[st] ?? 0 })) : [];
+  const openLeads = funnel.filter((f) => f.status !== "won").reduce((a, f) => a + f.n, 0);
+  const maxStage = Math.max(1, ...funnel.map((f) => f.n));
+
   const stats = [
-    {
-      label: "Usuarios activos",
-      value: summary.active,
-      sub: `${summary.members} en total`,
-      icon: Users,
-      href: "/admin/users",
-    },
-    {
-      label: "Sucursales",
-      value: summary.branches,
-      sub: "activas",
-      icon: Building2,
-      href: "/admin/branches",
-    },
-    { label: "Equipos", value: summary.teams, sub: "activos", icon: UsersRound, href: "/admin/teams" },
-    {
-      label: "Roles",
-      value: summary.roles,
-      sub: "de sistema y propios",
-      icon: ShieldCheck,
-      href: "/admin/roles",
-    },
+    ...(leads
+      ? [
+          {
+            label: "Leads nuevos",
+            value: leads.newLast30Days,
+            sub: "últimos 30 días",
+            icon: Inbox,
+            href: "/crm/leads?status=new",
+          },
+          {
+            label: "Sin atender",
+            value: leads.unattended,
+            sub: leads.unattended ? "nadie registró contacto todavía" : "todos atendidos",
+            icon: BellRing,
+            href: "/crm/leads?status=new&unattended=1",
+            alert: leads.unattended > 0,
+          },
+          {
+            label: "Leads abiertos",
+            value: openLeads,
+            sub: "en el embudo",
+            icon: Target,
+            href: "/crm/leads",
+          },
+        ]
+      : []),
+    ...(hasPermission(ctx, "users.read")
+      ? [
+          {
+            label: "Usuarios activos",
+            value: summary.active,
+            sub: `${summary.branches} sucursales · ${summary.teams} equipos`,
+            icon: Users,
+            href: "/admin/users",
+          },
+        ]
+      : []),
   ];
 
   return (
     <>
       <PageHeader
         title={`Hola, ${user.name.split(" ")[0]}`}
-        description="Los indicadores comerciales (propiedades, leads, visitas, comisiones, morosidad) aparecen aquí a medida que se habilitan sus módulos."
+        description="Leads según tu alcance. Propiedades, visitas, comisiones y morosidad se suman a medida que se habilitan sus módulos."
       />
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {stats.map(({ label, value, sub, icon: Icon, href }) => (
+        {stats.map(({ label, value, sub, icon: Icon, href, ...rest }) => (
           <Link key={label} href={href} className="group">
-            <Card className="p-4 transition-colors group-hover:border-border-strong">
+            <Card
+              className={`p-4 transition-colors group-hover:border-border-strong ${"alert" in rest && rest.alert ? "border-warning/60 bg-warning-soft/40" : ""}`}
+            >
               <div className="flex items-center justify-between text-sm text-muted-foreground">
                 {label}
                 <Icon className="size-4" aria-hidden />
@@ -73,6 +97,41 @@ export default async function DashboardPage() {
           </Link>
         ))}
       </div>
+
+      {leads && (
+        <Card className="mt-6">
+          <div className="flex items-center justify-between border-b px-4 py-3">
+            <h2 className="text-sm font-semibold">Embudo comercial</h2>
+            <Link href="/crm/leads" className="text-xs text-primary hover:underline">
+              Ver leads
+            </Link>
+          </div>
+          <ol className="grid gap-2 p-4">
+            {funnel.map((f) => (
+              <li key={f.status}>
+                <Link
+                  href={`/crm/leads?status=${f.status}`}
+                  className="grid grid-cols-[6.5rem_1fr_2.5rem] items-center gap-3 text-sm hover:opacity-80"
+                >
+                  <span className="text-muted-foreground">{LEAD_STATUS_LABELS[f.status]}</span>
+                  <span className="h-2.5 overflow-hidden rounded-full bg-surface-muted" aria-hidden>
+                    <span
+                      className="block h-full rounded-full bg-primary"
+                      style={{ width: `${(f.n / maxStage) * 100}%` }}
+                    />
+                  </span>
+                  <span className="text-right font-medium tabular">{f.n}</span>
+                </Link>
+              </li>
+            ))}
+          </ol>
+          <p className="border-t px-4 py-2 text-xs text-muted-foreground">
+            Cantidad actual de leads en cada etapa
+            {(leads.byStatus.lost ?? 0) > 0 ? ` · ${leads.byStatus.lost} perdidos` : ""}. Las tasas de
+            conversión llegan con los reportes (Fase 13).
+          </p>
+        </Card>
+      )}
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1.3fr_1fr]">
         <Card>
