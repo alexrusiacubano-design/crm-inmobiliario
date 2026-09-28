@@ -16,7 +16,8 @@ export type IconName =
   | "calendar"
   | "file"
   | "wallet"
-  | "settings";
+  | "settings"
+  | "chart";
 
 export interface NavItem {
   href: string;
@@ -220,6 +221,20 @@ export const NAVIGATION: NavSection[] = [
         description: "Requiere un proveedor de email configurado.",
       },
       {
+        href: "/communications/inbox",
+        label: "nav.communications.inbox",
+        permission: "communication.read",
+        plannedPhase: 10,
+        description: "Consultas que el asistente virtual no resolvió y derivó a una persona.",
+      },
+      {
+        href: "/communications/chat",
+        label: "nav.communications.chat",
+        permission: "communication.read",
+        plannedPhase: 10,
+        description: "Mensajes internos del equipo: directos y grupos.",
+      },
+      {
         href: "/communications/templates",
         label: "nav.communications.templates",
         permission: "template.manage",
@@ -269,6 +284,42 @@ export const NAVIGATION: NavSection[] = [
         permission: "report.read",
         plannedPhase: 13,
         description: "Conversión, tiempos de venta y rendimiento por agente.",
+      },
+    ],
+  },
+  {
+    key: "performance",
+    label: "nav.performance",
+    icon: "chart",
+    items: [
+      {
+        href: "/performance/goals",
+        label: "nav.performance.goals",
+        permission: "report.read",
+        plannedPhase: 13,
+        description:
+          "Actividad semanal contra la meta individual: presentaciones, captaciones, reservas y boletos.",
+      },
+      {
+        href: "/performance/career",
+        label: "nav.performance.career",
+        permission: "commission.read",
+        plannedPhase: 9,
+        description: "Escalones de comisión según facturación acumulada.",
+      },
+      {
+        href: "/performance/ranking",
+        label: "nav.performance.ranking",
+        permission: "report.read",
+        plannedPhase: 13,
+        description: "Ranking por puntos de agentes y sucursales por temporada.",
+      },
+      {
+        href: "/performance/closing-map",
+        label: "nav.performance.closingMap",
+        permission: "report.read",
+        plannedPhase: 13,
+        description: "Mapa de operaciones vendidas, alquiladas y reservadas.",
       },
     ],
   },

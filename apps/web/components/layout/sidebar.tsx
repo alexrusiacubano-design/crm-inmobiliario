@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  BarChart3,
   Briefcase,
   Building2,
   CalendarDays,
@@ -32,6 +33,7 @@ export const ICONS: Record<IconName, LucideIcon> = {
   file: FileText,
   wallet: Wallet,
   settings: Settings2,
+  chart: BarChart3,
 };
 
 function isActive(pathname: string, href: string): boolean {
