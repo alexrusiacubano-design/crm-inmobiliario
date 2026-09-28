@@ -23,6 +23,7 @@ import {
   LEAD_OPERATIONS,
   LEAD_SOURCES,
   LEAD_STATUSES,
+  RELATION_TYPES,
 } from "@crm/shared/crm";
 import { createdAt, deletedAt, id, updatedAt } from "./_helpers";
 import { user } from "./auth";
@@ -315,5 +316,52 @@ export const searchDocument = pgTable(
     primaryKey({ columns: [t.entityType, t.entityId] }),
     index("search_document_org_idx").on(t.organizationId, t.entityType),
     index("search_document_body_trgm").using("gin", sql`${t.body} gin_trgm_ops`),
+  ],
+);
+
+export const relationTypeEnum = pgEnum("relation_type", RELATION_TYPES);
+
+/** Fechas importantes de un contacto (cumpleaños, vencimientos, aniversarios). */
+export const contactDate = pgTable(
+  "contact_date",
+  {
+    id: id(),
+    organizationId: uuid("organization_id")
+      .notNull()
+      .references(() => organization.id),
+    contactId: uuid("contact_id")
+      .notNull()
+      .references(() => contact.id, { onDelete: "cascade" }),
+    label: text("label").notNull(),
+    date: date("date").notNull(),
+    yearly: boolean("yearly").notNull().default(false),
+    createdById: uuid("created_by_id").references(() => user.id),
+    createdAt: createdAt(),
+  },
+  (t) => [index("contact_date_contact_idx").on(t.organizationId, t.contactId)],
+);
+
+/** Vínculo entre dos contactos. Se guarda una vez y se muestra desde ambos lados. */
+export const contactRelation = pgTable(
+  "contact_relation",
+  {
+    id: id(),
+    organizationId: uuid("organization_id")
+      .notNull()
+      .references(() => organization.id),
+    contactId: uuid("contact_id")
+      .notNull()
+      .references(() => contact.id, { onDelete: "cascade" }),
+    relatedContactId: uuid("related_contact_id")
+      .notNull()
+      .references(() => contact.id, { onDelete: "cascade" }),
+    type: relationTypeEnum("type").notNull(),
+    note: text("note"),
+    createdById: uuid("created_by_id").references(() => user.id),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    uniqueIndex("contact_relation_pair_uq").on(t.organizationId, t.contactId, t.relatedContactId, t.type),
+    index("contact_relation_related_idx").on(t.organizationId, t.relatedContactId),
   ],
 );

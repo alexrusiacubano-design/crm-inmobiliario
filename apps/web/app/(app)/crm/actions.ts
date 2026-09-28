@@ -2,7 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import {
+  addContactDate,
+  addContactRelation,
   assignLead,
+  deleteContactDate,
+  removeContactRelation,
   changeLeadStatus,
   createContact,
   createLead,
@@ -152,4 +156,48 @@ export async function dismissDuplicateAction(candidateId: string): Promise<Actio
 
 export async function globalSearchAction(q: string): Promise<ActionResult<SearchHit[]>> {
   return runAction((db, ctx) => globalSearch(db, ctx, { q }));
+}
+
+function crmDone<T>(r: ActionResult<T>): ActionResult<T> {
+  if (r.ok) {
+    revalidatePath("/crm", "layout");
+    revalidatePath("/dashboard");
+  }
+  return r;
+}
+
+export async function addContactDateAction(input: unknown): Promise<ActionResult<undefined>> {
+  return crmDone(
+    await runAction(async (db, ctx) => {
+      await addContactDate(db, ctx, input);
+      return undefined;
+    }),
+  );
+}
+
+export async function deleteContactDateAction(id: string): Promise<ActionResult<undefined>> {
+  return crmDone(
+    await runAction(async (db, ctx) => {
+      await deleteContactDate(db, ctx, id);
+      return undefined;
+    }),
+  );
+}
+
+export async function addContactRelationAction(input: unknown): Promise<ActionResult<undefined>> {
+  return crmDone(
+    await runAction(async (db, ctx) => {
+      await addContactRelation(db, ctx, input);
+      return undefined;
+    }),
+  );
+}
+
+export async function removeContactRelationAction(id: string): Promise<ActionResult<undefined>> {
+  return crmDone(
+    await runAction(async (db, ctx) => {
+      await removeContactRelation(db, ctx, id);
+      return undefined;
+    }),
+  );
 }

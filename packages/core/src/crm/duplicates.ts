@@ -1,7 +1,12 @@
 import { and, desc, eq, inArray, isNull, ne, or, sql } from "drizzle-orm";
 import {
+  acquisition,
   activity,
+  calendarEvent,
   contact,
+  contactDate,
+  contactRelation,
+  propertyOwner,
   contactChannel,
   contactTag,
   duplicateCandidate,
@@ -313,6 +318,42 @@ export async function mergeContacts(db: Db, ctx: RequestContext, rawInput: unkno
       select ${survivor.id}, tag_id from contact_tag where contact_id = ${merged.id}
       on conflict do nothing`);
     await tx.delete(contactTag).where(eq(contactTag.contactId, merged.id));
+
+    // 4b) Agenda, fechas importantes, vínculos, captaciones y copropiedad.
+    await tx
+      .update(calendarEvent)
+      .set({ contactId: survivor.id })
+      .where(eq(calendarEvent.contactId, merged.id));
+    await tx.update(contactDate).set({ contactId: survivor.id }).where(eq(contactDate.contactId, merged.id));
+    await tx.execute(sql`
+      insert into contact_relation (id, organization_id, contact_id, related_contact_id, type, note, created_by_id, created_at)
+      select gen_random_uuid(), organization_id,
+             case when contact_id = ${merged.id} then ${survivor.id}::uuid else contact_id end,
+             case when related_contact_id = ${merged.id} then ${survivor.id}::uuid else related_contact_id end,
+             type, note, created_by_id, created_at
+      from contact_relation
+      where (contact_id = ${merged.id} or related_contact_id = ${merged.id})
+        and not (contact_id in (${merged.id}, ${survivor.id}) and related_contact_id in (${merged.id}, ${survivor.id}))
+      on conflict do nothing`);
+    await tx
+      .delete(contactRelation)
+      .where(or(eq(contactRelation.contactId, merged.id), eq(contactRelation.relatedContactId, merged.id)));
+    await tx
+      .update(acquisition)
+      .set({ ownerContactId: survivor.id })
+      .where(eq(acquisition.ownerContactId, merged.id));
+    // Si ambos eran copropietarios de la misma propiedad, se suman las participaciones.
+    await tx.execute(sql`
+      update property_owner s set share_basis_points = s.share_basis_points + m.share_basis_points
+      from property_owner m
+      where s.contact_id = ${survivor.id} and m.contact_id = ${merged.id} and s.property_id = m.property_id`);
+    await tx.execute(sql`
+      delete from property_owner m using property_owner s
+      where m.contact_id = ${merged.id} and s.contact_id = ${survivor.id} and s.property_id = m.property_id`);
+    await tx
+      .update(propertyOwner)
+      .set({ contactId: survivor.id })
+      .where(eq(propertyOwner.contactId, merged.id));
 
     // 5) Perfil de propietario: se conserva el del sobreviviente si existe.
     const [survivorOwner] = await tx

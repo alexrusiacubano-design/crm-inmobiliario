@@ -1,5 +1,8 @@
 import {
+  eventsFor,
   getContact,
+  listContactDates,
+  listContactRelations,
   hasPermission,
   listAssignees,
   listEntityDocuments,
@@ -17,7 +20,7 @@ import {
   formatBasisPoints,
   formatCI,
 } from "@crm/shared";
-import { AlertTriangle, FileSearch } from "lucide-react";
+import { AlertTriangle, CalendarDays, FileSearch, History, MessageCircle } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -27,7 +30,14 @@ import { EditContactButton } from "@/components/crm/contact-dialog";
 import type { ContactFormValues } from "@/components/crm/contact-fields";
 import { NewLeadButton } from "@/components/crm/lead-dialog";
 import { OwnerPanel } from "@/components/crm/owner-panel";
+import { EventListCard } from "@/components/agenda/event-list-card";
 import { EventsPanel } from "@/components/agenda/events-panel";
+import { ScheduleButton } from "@/components/agenda/schedule-button";
+import { toView } from "@/components/agenda/shared";
+import { describeActivity } from "@/components/crm/activity-labels";
+import { ContactDatesCard, RelationsCard } from "@/components/crm/contact-extras";
+import { Button } from "@/components/ui/button";
+import { DEFAULT_TZ, ymdInTz } from "@/lib/tz";
 import { Timeline } from "@/components/crm/timeline";
 import { PropertyStatusBadge } from "@/components/properties/badges";
 import { DocumentsPanel } from "@/components/properties/documents-panel";
@@ -67,11 +77,20 @@ export default async function ContactPage({
   if ("redirectTo" in data) redirect(`/crm/contacts/${data.redirectTo}`);
   const { contact: c, channels, tags, leads, owner, duplicates, permissions } = data;
   const assignees = permissions.assign ? await listAssignees(db, ctx) : undefined;
-  const [timeline, ownedProperties, documents] = await Promise.all([
+  const tz = ctx.organization.timezone || DEFAULT_TZ;
+  const summary = tab === "summary";
+  const [timeline, ownedProperties, documents, upcoming, recent, dates, relations] = await Promise.all([
     tab === "timeline" ? listTimeline(db, ctx, { contactId: c.id }) : Promise.resolve(null),
     tab === "owner" ? listOwnerProperties(db, ctx, c.id) : Promise.resolve(null),
     tab === "documents" ? listEntityDocuments(db, ctx, "contact", c.id) : Promise.resolve(null),
+    summary ? eventsFor(db, ctx, { contactId: c.id }) : Promise.resolve(null),
+    summary ? listTimeline(db, ctx, { contactId: c.id, limit: 5 }) : Promise.resolve(null),
+    summary ? listContactDates(db, ctx, c.id, ymdInTz(new Date(), tz)) : Promise.resolve(null),
+    summary ? listContactRelations(db, ctx, c.id) : Promise.resolve(null),
   ]);
+  const canSchedule = hasPermission(ctx, "visit.manage") || hasPermission(ctx, "task.manage");
+  const waChannel =
+    channels.find((ch) => ch.type === "whatsapp") ?? channels.find((ch) => ch.type === "phone");
 
   const formValues: ContactFormValues = {
     kind: c.kind,
@@ -124,6 +143,23 @@ export default async function ContactPage({
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
+          {waChannel && (
+            <Button size="sm" variant="secondary" asChild>
+              <a
+                href={channelHref("whatsapp", waChannel.normalized)}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <MessageCircle /> WhatsApp
+              </a>
+            </Button>
+          )}
+          {canSchedule && (
+            <ScheduleButton
+              tz={tz}
+              defaults={{ type: "visit", contact: { id: c.id, label: c.displayName } }}
+            />
+          )}
           {permissions.delete && <DeleteContactButton contactId={c.id} name={c.displayName} />}
           {permissions.update && (
             <EditContactButton contactId={c.id} initial={formValues} assignees={assignees} />
@@ -354,6 +390,67 @@ export default async function ContactPage({
               </ul>
             )}
           </Card>
+        </div>
+      )}
+      {summary && (
+        <div className="mt-5 grid gap-5 lg:grid-cols-2">
+          <Card>
+            <div className="flex items-center justify-between border-b px-4 py-3">
+              <h2 className="text-sm font-semibold">Próximas acciones</h2>
+              <Link href="?tab=agenda" className="text-xs text-primary hover:underline">
+                Ver agenda
+              </Link>
+            </div>
+            {upcoming && upcoming.upcoming.length > 0 ? (
+              <EventListCard events={upcoming.upcoming.slice(0, 4).map(toView)} tz={tz} showDate closeFirst />
+            ) : (
+              <EmptyState
+                icon={CalendarDays}
+                title="Nada agendado"
+                description="Usá “Agendar” para la próxima visita o llamada."
+                className="py-8"
+              />
+            )}
+          </Card>
+          <Card>
+            <div className="flex items-center justify-between border-b px-4 py-3">
+              <h2 className="text-sm font-semibold">Historial reciente</h2>
+              <Link href="?tab=timeline" className="text-xs text-primary hover:underline">
+                Ver todo
+              </Link>
+            </div>
+            {recent && recent.items.length > 0 ? (
+              <ul className="divide-y text-sm">
+                {recent.items.map((i) => (
+                  <li key={i.id} className="px-4 py-2.5">
+                    <p className="flex items-center justify-between gap-2">
+                      <span className="truncate font-medium">{describeActivity(i)}</span>
+                      <time className="shrink-0 text-xs text-muted-foreground">
+                        {formatDateTime(i.occurredAt)}
+                      </time>
+                    </p>
+                    {i.body && <p className="line-clamp-2 text-xs text-muted-foreground">{i.body}</p>}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <EmptyState icon={History} title="Sin actividad" className="py-8" />
+            )}
+          </Card>
+          {dates && (
+            <ContactDatesCard
+              contactId={c.id}
+              canEdit={permissions.update}
+              items={dates.map((d) => ({
+                id: d.id,
+                label: d.label,
+                date: d.date,
+                yearly: d.yearly,
+                next: d.next,
+              }))}
+            />
+          )}
+          {relations && <RelationsCard contactId={c.id} canEdit={permissions.update} items={relations} />}
         </div>
       )}
       {!hasPermission(ctx, "contact.read") && (

@@ -7,6 +7,7 @@ import {
   LEAD_LOST_REASONS,
   LEAD_OPERATIONS,
   LEAD_SOURCES,
+  RELATION_TYPES,
   LEAD_STATUSES,
   PROPERTY_FEATURES,
   PROPERTY_TYPES,
@@ -240,8 +241,15 @@ export const mergeContactsSchema = z
   .object({ survivorId: uuidSchema, mergedId: uuidSchema })
   .refine((v) => v.survivorId !== v.mergedId, "No se puede fusionar un contacto consigo mismo");
 
+export const CLIENT_STATES = ["active", "closed", "discarded", "all"] as const;
+export type ClientState = (typeof CLIENT_STATES)[number];
+
 export const contactListSchema = listQuerySchema.extend({
   role: z.enum(["all", "client", "owner"]).catch("all").default("all"),
+  /** Solo con role=client: activo (lead abierto), cerrado (ganado), descartado (todo perdido). */
+  state: z.enum(CLIENT_STATES).catch("active").default("active"),
+  source: z.enum(LEAD_SOURCES).optional().catch(undefined),
+  operation: z.enum(LEAD_OPERATIONS).optional().catch(undefined),
   tag: z.string().trim().max(40).optional().catch(undefined),
   assignedUserId: uuidSchema.optional().catch(undefined),
 });
@@ -263,3 +271,29 @@ export const leadListSchema = listQuerySchema.extend({
 export type LeadListQuery = z.infer<typeof leadListSchema>;
 
 export const globalSearchSchema = z.object({ q: z.string().trim().min(2).max(80) });
+
+export const contactDateSchema = z.object({
+  contactId: uuidSchema,
+  label: z.string().trim().min(2, "Descripción: mínimo 2 caracteres").max(80),
+  date: z.iso.date("Fecha inválida"),
+  /** Se repite todos los años (cumpleaños, aniversario de compra…). */
+  yearly: z.boolean().default(false),
+});
+
+export const contactRelationSchema = z
+  .object({
+    contactId: uuidSchema,
+    relatedContactId: uuidSchema,
+    type: z.enum(RELATION_TYPES),
+    note: z
+      .string()
+      .trim()
+      .max(200)
+      .optional()
+      .nullable()
+      .transform((v) => (v ? v : null)),
+  })
+  .refine((v) => v.contactId !== v.relatedContactId, {
+    message: "No se puede vincular un contacto consigo mismo",
+    path: ["relatedContactId"],
+  });

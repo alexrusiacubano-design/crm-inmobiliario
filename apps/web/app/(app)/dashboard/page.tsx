@@ -6,6 +6,7 @@ import {
   listAcquisitions,
   listProperties,
   propertyStats,
+  upcomingContactDates,
 } from "@crm/core";
 import { getDb } from "@crm/db";
 import {
@@ -37,6 +38,7 @@ import Link from "next/link";
 import { EventListCard } from "@/components/agenda/event-list-card";
 import { toView } from "@/components/agenda/shared";
 import { daysUntil, formatDay, price } from "@/components/properties/format";
+import { ymdInTz } from "@/lib/tz";
 import { PrivateImage } from "@/components/properties/private-image";
 import { Badge, Card, EmptyState } from "@/components/ui/misc";
 import { requirePagePermission } from "@/lib/session";
@@ -99,13 +101,15 @@ export default async function DashboardPage() {
   const canProps = hasPermission(ctx, "property.read");
   const canAcq = hasPermission(ctx, "acquisition.read");
 
-  const [leads, props, expiring, latest, acq, agenda] = await Promise.all([
+  const tzEarly = ctx.organization.timezone || TZ;
+  const [leads, props, expiring, latest, acq, agenda, dates] = await Promise.all([
     leadStats(db, ctx),
     propertyStats(db, ctx),
     expiringExclusivities(db, ctx, 30),
     canProps ? listProperties(db, ctx, { status: "active", page: 1, pageSize: 6 }) : null,
     canAcq ? listAcquisitions(db, ctx, { stage: "open", page: 1, pageSize: 5 }) : null,
     agendaOverview(db, ctx),
+    upcomingContactDates(db, ctx, ymdInTz(new Date(), tzEarly), 14),
   ]);
   const tz = ctx.organization.timezone || TZ;
 
@@ -270,6 +274,31 @@ export default async function DashboardPage() {
             </Card>
           </section>
         </div>
+      )}
+
+      {dates.length > 0 && (
+        <section>
+          <SectionTitle>Fechas importantes · próximos 14 días</SectionTitle>
+          <Card className="rounded-xl">
+            <ul className="divide-y text-sm">
+              {dates.map((d) => (
+                <li key={d.id}>
+                  <Link
+                    href={`/crm/contacts/${d.contactId}`}
+                    className="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-surface-muted"
+                  >
+                    <span className="min-w-0 truncate">
+                      <span className="font-medium">{d.contactName}</span> · {d.label}
+                    </span>
+                    <Badge tone={d.next && d.next.days <= 2 ? "warning" : "outline"}>
+                      {d.next?.days === 0 ? "hoy" : d.next?.days === 1 ? "mañana" : `en ${d.next?.days} días`}
+                    </Badge>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        </section>
       )}
 
       {/* KPIs */}

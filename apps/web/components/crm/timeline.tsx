@@ -1,6 +1,8 @@
 "use client";
 
 import {
+  CalendarCheck,
+  ListChecks,
   ArrowRightLeft,
   Building,
   CalendarClock,
@@ -19,20 +21,13 @@ import {
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import {
-  INTERACTION_TYPE_LABELS,
-  INTERACTION_TYPES,
-  LEAD_LOST_REASON_LABELS,
-  LEAD_STATUS_LABELS,
-  type InteractionType,
-  type LeadLostReason,
-  type LeadStatus,
-} from "@crm/shared/crm";
+import { INTERACTION_TYPE_LABELS, INTERACTION_TYPES, type InteractionType } from "@crm/shared/crm";
 import { loadTimelineAction, logInteractionAction } from "@/app/(app)/crm/actions";
 import { Button } from "@/components/ui/button";
 import { Select, Textarea } from "@/components/ui/form";
 import { Card, EmptyState } from "@/components/ui/misc";
 import { cn, formatDateTime } from "@/lib/utils";
+import { describeActivity } from "./activity-labels";
 
 export interface TimelineItem {
   id: string;
@@ -60,46 +55,9 @@ const ICONS: Record<string, LucideIcon> = {
   lead_assigned: UserRoundCheck,
   search_updated: Search,
   owner_updated: Building,
+  visit: CalendarCheck,
+  task: ListChecks,
 };
-
-function describe(item: TimelineItem): string {
-  const p = (item.payload ?? {}) as Record<string, unknown>;
-  const dir = item.direction === "inbound" ? " recibido" : item.direction === "outbound" ? " realizado" : "";
-  switch (item.type) {
-    case "note":
-      return "Nota";
-    case "call":
-      return item.direction === "inbound" ? "Llamada recibida" : "Llamada realizada";
-    case "whatsapp":
-      return `WhatsApp${dir}`;
-    case "email":
-      return `Email${dir}`;
-    case "meeting":
-      return "Reunión";
-    case "contact_created":
-      return "Se creó el contacto";
-    case "contact_updated":
-      return "Se editaron los datos del contacto";
-    case "contact_merged":
-      return "Se fusionó un contacto duplicado";
-    case "lead_created":
-      return `Nuevo lead ${String(p.code ?? item.leadCode ?? "")}`;
-    case "lead_status_changed": {
-      const from = LEAD_STATUS_LABELS[p.from as LeadStatus] ?? String(p.from);
-      const to = LEAD_STATUS_LABELS[p.to as LeadStatus] ?? String(p.to);
-      const reason = p.lostReason ? ` · ${LEAD_LOST_REASON_LABELS[p.lostReason as LeadLostReason]}` : "";
-      return `${from} → ${to}${reason}${p.automatic ? " (automático)" : ""}`;
-    }
-    case "lead_assigned":
-      return "Cambio de responsable";
-    case "search_updated":
-      return "Se actualizó la búsqueda";
-    case "owner_updated":
-      return "Datos de propietario";
-    default:
-      return item.type;
-  }
-}
 
 export function Timeline({
   initial,
@@ -225,7 +183,7 @@ export function Timeline({
                 </span>
                 <div className="min-w-0 flex-1 pt-0.5">
                   <p className="text-sm">
-                    <span className="font-medium">{describe(item)}</span>
+                    <span className="font-medium">{describeActivity(item)}</span>
                     {showLeadLinks && item.leadId && item.leadCode && (
                       <Link
                         href={`/crm/leads/${item.leadId}`}

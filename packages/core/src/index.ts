@@ -17,6 +17,7 @@ export * from "./crm/leads";
 export * from "./crm/owners";
 export * from "./crm/duplicates";
 export * from "./crm/timeline";
+export * from "./crm/extras";
 export * from "./storage/provider";
 export * from "./properties/helpers";
 export * from "./properties/properties";

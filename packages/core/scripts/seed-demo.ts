@@ -1,6 +1,7 @@
 import { createDb } from "@crm/db";
 import { seedDemoAgenda } from "../src/agenda/demo-seed";
 import { seedDemoCrm } from "../src/crm/demo-seed";
+import { seedDemoContactExtras } from "../src/crm/extras-demo";
 import { seedDemoProperties } from "../src/properties/demo-seed";
 import { getStorage } from "../src/storage/provider";
 
@@ -33,6 +34,8 @@ async function main() {
     console.info(
       a.skipped ? "Agenda DEMO ya cargada: no se cargó nada." : `Agenda DEMO: ${a.events} eventos.`,
     );
+    const x = await seedDemoContactExtras(db);
+    console.info(x.skipped ? "Fechas y vínculos DEMO ya cargados." : `Fechas y vínculos DEMO: ${x.items}.`);
   } finally {
     await pool.end();
   }

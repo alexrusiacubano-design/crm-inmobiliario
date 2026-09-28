@@ -216,3 +216,26 @@ export const INTERACTION_TYPE_LABELS: Record<InteractionType, string> = {
   email: "Email",
   meeting: "Reunión",
 };
+
+/** Vínculos entre contactos (se muestran en ambas fichas). */
+export const RELATION_TYPES = [
+  "spouse",
+  "family",
+  "partner",
+  "lawyer",
+  "notary",
+  "guarantor",
+  "referrer",
+  "other",
+] as const;
+export type RelationType = (typeof RELATION_TYPES)[number];
+export const RELATION_TYPE_LABELS: Record<RelationType, string> = {
+  spouse: "Cónyuge o pareja",
+  family: "Familiar",
+  partner: "Socio",
+  lawyer: "Abogado",
+  notary: "Escribano",
+  guarantor: "Garante",
+  referrer: "Lo refirió",
+  other: "Otro",
+};

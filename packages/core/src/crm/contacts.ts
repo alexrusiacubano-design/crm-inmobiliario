@@ -1,4 +1,18 @@
-import { and, asc, count, desc, eq, exists, ilike, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  exists,
+  ilike,
+  inArray,
+  isNull,
+  not,
+  or,
+  sql,
+  type SQL,
+} from "drizzle-orm";
 import {
   branch,
   contact,
@@ -18,6 +32,8 @@ import {
   normalizePhone,
   normalizeText,
   OPEN_LEAD_STATUSES,
+  type LeadOperation,
+  type LeadSource,
   type ChannelInput,
 } from "@crm/shared";
 import { contactInputSchema, contactListSchema, updateContactSchema } from "@crm/shared/validation/crm";
@@ -307,6 +323,16 @@ export async function deleteContact(db: Db, ctx: RequestContext, contactId: stri
   });
 }
 
+/** Estado comercial de un contacto según sus leads (vista simple tipo tablero). */
+function clientStateOf(
+  stats: { open: number; won: number; total: number } | undefined,
+): "active" | "closed" | "discarded" | null {
+  if (!stats || stats.total === 0) return null;
+  if (stats.open > 0) return "active";
+  if (stats.won > 0) return "closed";
+  return "discarded";
+}
+
 export async function listContacts(db: DbOrTx, ctx: RequestContext, rawQuery: unknown) {
   const q = parseInput(contactListSchema, rawQuery);
   const readCode = q.role === "owner" ? "owner.read" : "contact.read";
@@ -358,20 +384,22 @@ export async function listContacts(db: DbOrTx, ctx: RequestContext, rawQuery: un
     );
   }
   if (q.role === "client") {
-    conditions.push(
+    const leadOf = (extra?: SQL) =>
       exists(
         db
           .select({ one: sql`1` })
           .from(lead)
-          .where(
-            and(
-              eq(lead.contactId, contact.id),
-              isNull(lead.deletedAt),
-              inArray(lead.status, [...OPEN_LEAD_STATUSES]),
-            ),
-          ),
-      ),
-    );
+          .where(and(eq(lead.contactId, contact.id), isNull(lead.deletedAt), extra)),
+      );
+    const open = leadOf(inArray(lead.status, [...OPEN_LEAD_STATUSES]));
+    const won = leadOf(eq(lead.status, "won"));
+    if (q.state === "active") conditions.push(open);
+    else if (q.state === "closed") conditions.push(and(won, not(open)));
+    else if (q.state === "discarded")
+      conditions.push(and(leadOf(eq(lead.status, "lost")), not(open), not(won)));
+    else conditions.push(leadOf());
+    if (q.source) conditions.push(leadOf(eq(lead.source, q.source)));
+    if (q.operation) conditions.push(leadOf(eq(lead.operation, q.operation)));
   }
   if (q.tag) {
     conditions.push(
@@ -403,7 +431,11 @@ export async function listContacts(db: DbOrTx, ctx: RequestContext, rawQuery: un
       .leftJoin(user, eq(user.id, contact.assignedUserId))
       .leftJoin(branch, eq(branch.id, contact.branchId))
       .where(where)
-      .orderBy(asc(contact.displayName), asc(contact.id))
+      .orderBy(
+        ...(q.role === "client"
+          ? [desc(contact.createdAt), desc(contact.id)]
+          : [asc(contact.displayName), asc(contact.id)]),
+      )
       .limit(q.pageSize)
       .offset((q.page - 1) * q.pageSize),
     db.select({ total: count() }).from(contact).where(where),
@@ -430,6 +462,10 @@ export async function listContacts(db: DbOrTx, ctx: RequestContext, rawQuery: un
           .select({
             contactId: lead.contactId,
             open: sql<number>`count(*) filter (where ${lead.status} in ('new','contacted','qualified','visit','offer','reservation'))::int`,
+            won: sql<number>`count(*) filter (where ${lead.status} = 'won')::int`,
+            total: sql<number>`count(*)::int`,
+            lastSource: sql<LeadSource | null>`(array_agg(${lead.source} order by ${lead.createdAt} desc))[1]`,
+            lastOperation: sql<LeadOperation | null>`(array_agg(${lead.operation} order by ${lead.createdAt} desc))[1]`,
           })
           .from(lead)
           .where(and(inArray(lead.contactId, ids), isNull(lead.deletedAt)))
@@ -453,6 +489,12 @@ export async function listContacts(db: DbOrTx, ctx: RequestContext, rawQuery: un
         email: email?.value ?? null,
         tags: tags.filter((t) => t.contactId === r.id).map((t) => t.name),
         openLeads: leadStats.find((l) => l.contactId === r.id)?.open ?? 0,
+        clientState: clientStateOf(leadStats.find((l) => l.contactId === r.id)),
+        lastSource: leadStats.find((l) => l.contactId === r.id)?.lastSource ?? null,
+        lastOperation: leadStats.find((l) => l.contactId === r.id)?.lastOperation ?? null,
+        whatsapp:
+          own.some((c) => c.type === "whatsapp") ||
+          (phone?.type === "phone" && (phone.value ?? "").replace(/\D/g, "").length >= 8),
         isOwner: owners.some((o) => o.contactId === r.id),
       };
     }),
