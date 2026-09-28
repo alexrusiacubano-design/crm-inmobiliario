@@ -64,6 +64,42 @@ interface DemoProperty {
   video?: string;
 }
 
+/** Coordenadas aproximadas de cada barrio para el mapa de cierres (datos DEMO). */
+const DEMO_COORDS: Record<string, { latitude: string; longitude: string }> = {
+  pocitos: { latitude: "-34.911500", longitude: "-56.150700" },
+  cordon: { latitude: "-34.902900", longitude: "-56.178900" },
+  carrasco: { latitude: "-34.887000", longitude: "-56.056000" },
+  peninsula: { latitude: "-34.963000", longitude: "-54.946000" },
+  "parque-rodo": { latitude: "-34.912500", longitude: "-56.167800" },
+  "local-centro": { latitude: "-34.905800", longitude: "-56.191200" },
+  "punta-carretas": { latitude: "-34.923200", longitude: "-56.158900" },
+  malvin: { latitude: "-34.893000", longitude: "-56.100000" },
+};
+
+/** Completa coordenadas DEMO en bases sembradas antes de que existiera el mapa. */
+export async function backfillDemoCoordinates(db: Db): Promise<number> {
+  const [org] = await db.select().from(organization).where(eq(organization.slug, DEMO_ORG_SLUG));
+  if (!org?.isDemo) return 0;
+  let n = 0;
+  for (const d of PROPERTIES) {
+    const c = DEMO_COORDS[d.key];
+    if (!c) continue;
+    const updated = await db
+      .update(property)
+      .set(c)
+      .where(
+        and(
+          eq(property.organizationId, org.id),
+          eq(property.title, d.title),
+          sql`${property.latitude} is null`,
+        ),
+      )
+      .returning({ id: property.id });
+    n += updated.length;
+  }
+  return n;
+}
+
 const PROPERTIES: DemoProperty[] = [
   {
     key: "pocitos",
@@ -341,6 +377,7 @@ export async function seedDemoProperties(
       description: d.description,
       ...zone(geo, d.locality, d.neighborhood),
       address: d.address,
+      ...(DEMO_COORDS[d.key] ?? {}),
       bedrooms: d.bedrooms ?? null,
       bathrooms: d.bathrooms ?? null,
       garages: d.garages ?? null,

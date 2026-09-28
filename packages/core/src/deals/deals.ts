@@ -6,6 +6,7 @@ import {
   deal,
   dealCommission,
   dealParticipant,
+  dealStageEvent,
   lead,
   locality,
   membership,
@@ -331,6 +332,13 @@ export async function createDeal(db: Db, ctx: RequestContext, rawInput: unknown)
       })
       .returning();
     if (!row) throw new Error("No se pudo crear la operación");
+    await tx.insert(dealStageEvent).values({
+      organizationId: ctx.organizationId,
+      dealId: row.id,
+      fromStage: null,
+      toStage: "negotiation",
+      actorUserId: ctx.userId,
+    });
 
     // Participantes por defecto: quien captó la propiedad y quien lleva la operación.
     const lister = p.captadorUserId ?? p.assignedUserId;
@@ -433,6 +441,14 @@ export async function changeDealStage(db: Db, ctx: RequestContext, rawInput: unk
       })
       .where(eq(deal.id, before.id))
       .returning();
+
+    await tx.insert(dealStageEvent).values({
+      organizationId: ctx.organizationId,
+      dealId: before.id,
+      fromStage: before.stage,
+      toStage: input.stage,
+      actorUserId: ctx.userId,
+    });
 
     // Efectos sobre la propiedad y el lead.
     if (input.stage === "reserved")

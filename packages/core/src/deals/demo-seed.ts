@@ -1,7 +1,8 @@
 import { and, asc, count, eq, inArray, isNull } from "drizzle-orm";
-import { deal, lead, organization, property, type Db } from "@crm/db";
+import { agentGoal, deal, lead, organization, property, type Db } from "@crm/db";
 import { DEMO_ORG_SLUG } from "@crm/db/seed";
 import { ctxForDemo } from "../properties/demo-seed";
+import { saveGoals } from "../performance/performance";
 import { changeDealStage, collectCommission, createDeal, getDeal, setDealCommissions } from "./deals";
 
 function monthsAgo(n: number, day = 15): string {
@@ -87,4 +88,29 @@ export async function seedDemoDeals(db: Db): Promise<{ skipped: boolean; deals: 
   await changeDealStage(db, agent, { id: notary.id, stage: "reserved" });
   await changeDealStage(db, agent, { id: notary.id, stage: "notary" });
   return { skipped: false, deals: 2 };
+}
+
+/** Metas generales DEMO (ejemplo) si la organización todavía no tiene. */
+export async function seedDemoGoals(db: Db): Promise<boolean> {
+  const [org] = await db.select().from(organization).where(eq(organization.slug, DEMO_ORG_SLUG));
+  if (!org?.isDemo) return false;
+  const [existing] = await db
+    .select({ n: count() })
+    .from(agentGoal)
+    .where(eq(agentGoal.organizationId, org.id));
+  if ((existing?.n ?? 0) > 0) return false;
+  const admin = await ctxForDemo(db, org.id, "superadmin");
+  await saveGoals(db, admin, {
+    userId: null,
+    goals: [
+      { metric: "visits_done", monthlyTarget: 12 },
+      { metric: "properties_listed", monthlyTarget: 2 },
+      { metric: "leads_attended", monthlyTarget: 20 },
+      { metric: "reservations", monthlyTarget: 2 },
+      { metric: "signed", monthlyTarget: 1 },
+      { metric: "sales_closed", monthlyTarget: 1 },
+      { metric: "rentals_closed", monthlyTarget: 2 },
+    ],
+  });
+  return true;
 }

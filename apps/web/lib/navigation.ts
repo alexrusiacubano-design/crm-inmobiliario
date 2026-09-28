@@ -295,8 +295,8 @@ export const NAVIGATION: NavSection[] = [
       {
         href: "/performance/goals",
         label: "nav.performance.goals",
-        permission: "report.read",
-        plannedPhase: 13,
+        permission: "dashboard.read",
+        plannedPhase: null,
         description:
           "Actividad semanal contra la meta individual: presentaciones, captaciones, reservas y boletos.",
       },
@@ -310,15 +310,15 @@ export const NAVIGATION: NavSection[] = [
       {
         href: "/performance/ranking",
         label: "nav.performance.ranking",
-        permission: "report.read",
-        plannedPhase: 13,
+        permission: "dashboard.read",
+        plannedPhase: null,
         description: "Ranking por puntos de agentes y sucursales por temporada.",
       },
       {
         href: "/performance/closing-map",
         label: "nav.performance.closingMap",
-        permission: "report.read",
-        plannedPhase: 13,
+        permission: "property.read",
+        plannedPhase: null,
         description: "Mapa de operaciones vendidas, alquiladas y reservadas.",
       },
     ],

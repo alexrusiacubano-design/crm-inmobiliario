@@ -6,3 +6,4 @@ export * from "./property";
 export { newId } from "./_helpers";
 export * from "./agenda";
 export * from "./deals";
+export * from "./performance";

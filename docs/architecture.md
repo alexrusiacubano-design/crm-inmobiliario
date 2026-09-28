@@ -91,3 +91,16 @@ Suspender o cambiar la contraseña de un usuario cierra sus sesiones.
   resultado solo en visitas.
 - **Zona horaria.** Los días se calculan en la zona de la organización (`organization.timezone`),
   tanto en SQL (agenda de hoy) como en la UI (`apps/web/lib/tz.ts`).
+
+## Operaciones, comisiones y rendimiento
+
+- **Operación (`deal`).** Propiedad + cliente + precio. Etapas con transiciones en
+  `canTransitionDeal`; cada cambio queda en `deal_stage_event` (append-only) y mueve el estado de
+  la propiedad y del lead. Cerrar exige `deal.close`.
+- **Honorarios.** Uno por parte (`deal_commission`); cobrar exige `commission.manage` y un cobro no
+  se modifica. El reparto (`deal_participant`) suma 100 % y guarda el porcentaje del agente según
+  su escalón al cerrar (`commission_tier`, configurable).
+- **Dinero sin float.** Parte del agente = honorario × reparto × porcentaje, con `percentage()`
+  (half-even). Los pesos se suman a la facturación en USD con el tipo de cambio de referencia.
+- **Métricas y puntos** se calculan de lo registrado (agenda, propiedades, leads, etapas y cobros);
+  no hay carga manual. Las reglas de puntos (`POINT_RULES`) se muestran en pantalla.

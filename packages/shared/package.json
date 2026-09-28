@@ -17,7 +17,8 @@
     "./agenda": "./src/agenda.ts",
     "./validation/agenda": "./src/validation/agenda.ts",
     "./deals": "./src/deals.ts",
-    "./validation/deals": "./src/validation/deals.ts"
+    "./validation/deals": "./src/validation/deals.ts",
+    "./performance": "./src/performance.ts"
   },
   "scripts": {
     "lint": "eslint .",

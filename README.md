@@ -8,7 +8,8 @@ copropiedad, documentos con control de acceso, captaciones con exclusividad y ta
 **Fase 5 — Agenda y visitas** (calendario mes/semana/día/lista, visitas con resultado, agenda de hoy y
 visitas sin cerrar en el dashboard, pestaña de agenda en fichas de contacto y propiedad), más
 **Operaciones y comisiones** (etapas hasta la firma, honorarios por parte, cobros, reparto entre agentes,
-finanzas del agente y plan de carrera con escalones configurables).
+finanzas del agente y plan de carrera con escalones configurables) y **Rendimiento** (métricas del parte
+contra metas, competencia por puntos y mapa de cierres).
 
 ## Stack
 
