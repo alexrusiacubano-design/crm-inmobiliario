@@ -1,0 +1,26 @@
+{
+  "name": "@crm/core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Servicios de dominio: toda escritura pasa por aquí (permisos, validación, auditoría, eventos).",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@crm/db": "workspace:*",
+    "@crm/shared": "workspace:*",
+    "better-auth": "^1.7.6",
+    "drizzle-orm": "^0.45.3",
+    "zod": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.18.0",
+    "vitest": "^4.0.0"
+  }
+}

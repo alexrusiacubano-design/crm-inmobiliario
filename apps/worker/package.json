@@ -1,0 +1,23 @@
+{
+  "name": "@crm/worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Proceso en segundo plano: entrega de eventos del outbox. Automatizaciones y jobs programados llegan en fases posteriores.",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "echo \"worker: la lógica de entrega se prueba en @crm/core\""
+  },
+  "dependencies": {
+    "@crm/core": "workspace:*",
+    "@crm/db": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.18.0",
+    "tsx": "^4.20.0",
+    "vitest": "^4.0.0"
+  }
+}

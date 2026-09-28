@@ -1,0 +1,7 @@
+node_modules
+.next
+.turbo
+pnpm-lock.yaml
+packages/db/migrations/meta
+playwright-report
+test-results

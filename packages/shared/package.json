@@ -1,0 +1,25 @@
+{
+  "name": "@crm/shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Código puro compartido entre servidor y cliente: catálogo de permisos, roles de sistema, dinero y esquemas de validación.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./money": "./src/money.ts",
+    "./rbac": "./src/rbac/index.ts",
+    "./validation": "./src/validation/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "zod": "^4.1.0"
+  },
+  "devDependencies": {
+    "fast-check": "^4.3.0",
+    "vitest": "^4.0.0"
+  }
+}
