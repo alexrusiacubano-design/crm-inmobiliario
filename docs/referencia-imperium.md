@@ -17,7 +17,7 @@ Leyenda: ✅ ya existe en el repo · 🟡 existe parcial · 🔜 fase del roadma
 | Gestión       | Captaciones        | Kanban Llamando → Pre-captación → Tasando → Listo, filtro venta/alquiler, alta con portal de origen, padrón, mapa, propietario, URL del aviso                                     | ✅ F3 (etapas propias); padrón/mapa 🔜 F11                      |
 | Gestión       | Mis Operaciones    | Operaciones en escribanía: Pendientes/Cerradas, filtro alquiler/venta, comprador, estado "En validación escribanía"                                                               | 🔜 F7 (Operaciones)                                             |
 | Gestión       | Tasaciones         | Tasación automática con comparables; KPIs total/completadas/borradores/valor mediano; confianza                                                                                   | ✅ F3 (manual); comparables automáticos 🔜 F4                   |
-| Gestión       | Calendario         | Mes/Semana/Día/Lista; tipos Visita, Reunión, Llamada, Recordatorio, Otro                                                                                                          | 🔜 F5                                                           |
+| Gestión       | Calendario         | Mes/Semana/Día/Lista; tipos Visita, Reunión, Llamada, Recordatorio, Otro                                                                                                          | ✅ F5                                                           |
 | Integraciones | Agente virtual     | Consultas que el bot no resolvió: Abiertas/Pendientes/Tomadas/Resueltas/Rechazadas                                                                                                | 🔜 F10 (bandeja de consultas) + F12 (bot)                       |
 | Integraciones | Marketplace        | Tienda interna de créditos para IA y planes                                                                                                                                       | Fuera de alcance (no aplica a una sola inmobiliaria)            |
 | Comunidad     | Mensajes           | Chat interno 1-a-1 y grupos en tiempo real                                                                                                                                        | 🔜 F10                                                          |
@@ -37,7 +37,7 @@ Bloques de Imperium y cómo quedan en el nuestro, con datos reales y sin inventa
 
 1. **Saludo** con fecha larga en español y 3 contadores (captaciones abiertas, propiedades activas, leads sin atender).
 2. **KPIs**: leads nuevos, sin atender, clientes abiertos, propiedades activas, exclusividades por vencer.
-3. **Agenda de hoy / visitas sin cerrar**: tarjeta honesta que dice que llega en la Fase 5.
+3. **Agenda de hoy / visitas sin cerrar**: eventos del día del usuario y visitas pasadas sin resultado (Fase 5, se cierran desde el mismo dashboard).
 4. **Pipeline de captaciones** por etapa (reemplaza el kanban resumido de Imperium).
 5. **Nuevos ingresos**: últimas 6 propiedades con portada, operación, precio, dormitorios, baños y m².
 6. **Accesos rápidos**: Clientes, Propiedades, Captaciones, Tasaciones, Agenda, Comisiones.

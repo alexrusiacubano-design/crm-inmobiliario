@@ -27,6 +27,7 @@ import { EditContactButton } from "@/components/crm/contact-dialog";
 import type { ContactFormValues } from "@/components/crm/contact-fields";
 import { NewLeadButton } from "@/components/crm/lead-dialog";
 import { OwnerPanel } from "@/components/crm/owner-panel";
+import { EventsPanel } from "@/components/agenda/events-panel";
 import { Timeline } from "@/components/crm/timeline";
 import { PropertyStatusBadge } from "@/components/properties/badges";
 import { DocumentsPanel } from "@/components/properties/documents-panel";
@@ -42,7 +43,7 @@ const TABS = [
   { key: "timeline", label: "Timeline" },
   { key: "owner", label: "Propietario" },
   { key: "matches", label: "Propiedades compatibles", phase: 4 },
-  { key: "visits", label: "Visitas", phase: 5 },
+  { key: "agenda", label: "Agenda" },
   { key: "offers", label: "Ofertas", phase: 6 },
   { key: "documents", label: "Documentos" },
 ] as const;
@@ -187,7 +188,14 @@ export default async function ContactPage({
         })}
       </nav>
 
-      {tab === "timeline" && timeline ? (
+      {tab === "agenda" ? (
+        <EventsPanel
+          db={db}
+          ctx={ctx}
+          target={{ contactId: c.id }}
+          defaults={{ type: "visit", contact: { id: c.id, label: c.displayName } }}
+        />
+      ) : tab === "timeline" && timeline ? (
         <Timeline
           initial={timeline.items.map((i) => ({ ...i, occurredAt: i.occurredAt.toISOString() }))}
           nextCursor={timeline.nextCursor}

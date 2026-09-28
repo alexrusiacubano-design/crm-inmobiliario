@@ -23,3 +23,4 @@ export * from "./properties/properties";
 export * from "./properties/media";
 export * from "./properties/acquisitions";
 export * from "./documents/documents";
+export * from "./agenda/events";

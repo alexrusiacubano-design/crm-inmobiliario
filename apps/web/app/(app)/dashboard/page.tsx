@@ -1,4 +1,5 @@
 import {
+  agendaOverview,
   expiringExclusivities,
   hasPermission,
   leadStats,
@@ -33,6 +34,8 @@ import {
 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { EventListCard } from "@/components/agenda/event-list-card";
+import { toView } from "@/components/agenda/shared";
 import { daysUntil, formatDay, price } from "@/components/properties/format";
 import { PrivateImage } from "@/components/properties/private-image";
 import { Badge, Card, EmptyState } from "@/components/ui/misc";
@@ -43,21 +46,21 @@ export const metadata: Metadata = { title: "Dashboard" };
 
 const TZ = "America/Montevideo";
 
-function greeting(now: Date): string {
+function greeting(now: Date, tz: string): string {
   const hour = Number(
-    new Intl.DateTimeFormat("es-UY", { hour: "numeric", hour12: false, timeZone: TZ }).format(now),
+    new Intl.DateTimeFormat("es-UY", { hour: "numeric", hourCycle: "h23", timeZone: tz }).format(now),
   );
   if (hour >= 5 && hour < 12) return "Buenos días";
   if (hour >= 12 && hour < 20) return "Buenas tardes";
   return "Buenas noches";
 }
 
-function longDate(now: Date): string {
+function longDate(now: Date, tz: string): string {
   return new Intl.DateTimeFormat("es-UY", {
     weekday: "long",
     day: "numeric",
     month: "long",
-    timeZone: TZ,
+    timeZone: tz,
   }).format(now);
 }
 
@@ -96,13 +99,15 @@ export default async function DashboardPage() {
   const canProps = hasPermission(ctx, "property.read");
   const canAcq = hasPermission(ctx, "acquisition.read");
 
-  const [leads, props, expiring, latest, acq] = await Promise.all([
+  const [leads, props, expiring, latest, acq, agenda] = await Promise.all([
     leadStats(db, ctx),
     propertyStats(db, ctx),
     expiringExclusivities(db, ctx, 30),
     canProps ? listProperties(db, ctx, { status: "active", page: 1, pageSize: 6 }) : null,
     canAcq ? listAcquisitions(db, ctx, { stage: "open", page: 1, pageSize: 5 }) : null,
+    agendaOverview(db, ctx),
   ]);
+  const tz = ctx.organization.timezone || TZ;
 
   const activeProps = props
     ? (props.available ?? 0) + (props.published ?? 0) + (props.negotiating ?? 0) + (props.reserved ?? 0)
@@ -118,6 +123,8 @@ export default async function DashboardPage() {
   const firstName = user.name.split(" ")[0];
 
   const heroStats = [
+    agenda && { value: agenda.today.filter((e) => e.status === "scheduled").length, label: "en agenda hoy" },
+    agenda && { value: agenda.pendingClose.length, label: "sin cerrar" },
     canAcq && { value: openAcq, label: "captaciones abiertas" },
     canProps && { value: activeProps, label: "propiedades activas" },
     leads && { value: leads.unattended, label: "leads sin atender" },
@@ -194,9 +201,9 @@ export default async function DashboardPage() {
       {/* Saludo */}
       <section className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-primary-soft via-surface to-surface p-6 sm:p-8">
         <span className="mb-4 block h-0.5 w-8 rounded bg-primary" aria-hidden />
-        <p className="text-xs font-semibold tracking-wider text-primary uppercase">{longDate(now)}</p>
+        <p className="text-xs font-semibold tracking-wider text-primary uppercase">{longDate(now, tz)}</p>
         <h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">
-          {greeting(now)},
+          {greeting(now, tz)},
           <br />
           <span className="text-primary">{firstName}</span>
         </h1>
@@ -213,20 +220,57 @@ export default async function DashboardPage() {
         )}
       </section>
 
-      {/* Agenda de hoy (Fase 5) */}
-      <section>
-        <SectionTitle>Agenda de hoy</SectionTitle>
-        <Card className="flex items-center gap-3 p-4 text-sm">
-          <CalendarDays className="size-5 shrink-0 text-muted-foreground" aria-hidden />
-          <p className="text-muted-foreground">
-            Visitas, reuniones, llamadas y recordatorios del día, y las visitas que ya pasaron sin marcar
-            resultado, se muestran acá cuando se habilite la agenda.
-          </p>
-          <Badge tone="outline" className="ml-auto">
-            Fase 5
-          </Badge>
-        </Card>
-      </section>
+      {/* Agenda de hoy y visitas sin cerrar */}
+      {agenda && (
+        <div className="grid gap-8 lg:grid-cols-2">
+          <section>
+            <SectionTitle href="/agenda?view=day" linkLabel="Ver agenda">
+              Agenda de hoy
+            </SectionTitle>
+            <Card className="rounded-xl">
+              {agenda.today.length === 0 ? (
+                <EmptyState
+                  icon={CalendarDays}
+                  title="Nada agendado para hoy"
+                  description={
+                    agenda.upcoming7Days
+                      ? `Tenés ${agenda.upcoming7Days} ${agenda.upcoming7Days === 1 ? "evento" : "eventos"} en los próximos 7 días.`
+                      : "Agendá visitas y llamadas desde la agenda o la ficha del cliente."
+                  }
+                />
+              ) : (
+                <EventListCard events={agenda.today.map(toView)} tz={tz} />
+              )}
+            </Card>
+          </section>
+          <section>
+            <SectionTitle href="/agenda?view=list" linkLabel="Ir a la agenda">
+              Sin cerrar
+            </SectionTitle>
+            <Card className={cn("rounded-xl", agenda.pendingClose.length > 0 && "border-warning/60")}>
+              {agenda.pendingClose.length === 0 ? (
+                <EmptyState
+                  icon={CalendarClock}
+                  title="Todo al día"
+                  description="No hay visitas pasadas sin resultado."
+                />
+              ) : (
+                <>
+                  <p className="border-b px-4 py-2 text-xs text-muted-foreground">
+                    Ya pasaron y nadie marcó cómo salieron. Tocá una para cerrarla.
+                  </p>
+                  <EventListCard
+                    events={agenda.pendingClose.slice(0, 6).map(toView)}
+                    tz={tz}
+                    showDate
+                    closeFirst
+                  />
+                </>
+              )}
+            </Card>
+          </section>
+        </div>
+      )}
 
       {/* KPIs */}
       {kpis.length > 0 && (

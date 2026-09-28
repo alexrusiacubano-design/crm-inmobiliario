@@ -43,6 +43,13 @@
       "when": 1790579024526,
       "tag": "0005_property_guards",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790625799056,
+      "tag": "0006_agenda",
+      "breakpoints": true
     }
   ]
 }

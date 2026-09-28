@@ -13,7 +13,9 @@
     "./normalize": "./src/normalize.ts",
     "./validation/crm": "./src/validation/crm.ts",
     "./property": "./src/property.ts",
-    "./validation/property": "./src/validation/property.ts"
+    "./validation/property": "./src/validation/property.ts",
+    "./agenda": "./src/agenda.ts",
+    "./validation/agenda": "./src/validation/agenda.ts"
   },
   "scripts": {
     "lint": "eslint .",

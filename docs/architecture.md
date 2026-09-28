@@ -74,3 +74,20 @@ Suspender o cambiar la contraseña de un usuario cierra sus sesiones.
   magic bytes; imágenes re-codificadas a WebP sin EXIF; si falla la base, se borran los archivos
   subidos. Los documentos tienen visibilidad interna, restringida (responsable y supervisores) o
   confidencial (`document.sensitive.read`); la baja es lógica y cada descarga se audita.
+
+## Agenda y visitas (Fase 5)
+
+- **Un solo modelo.** `calendar_event` guarda visitas, reuniones, llamadas, recordatorios y tareas.
+  Las visitas se gobiernan con `visit.read/visit.manage` y el resto con `calendar.read/task.manage`;
+  el alcance lo define el responsable (`assigned_user_id`), del que se heredan sucursal y equipo.
+- **Agendar para otro** exige el permiso con alcance sobre el responsable resultante (recepción
+  agenda visitas para cualquiera; un agente solo para sí).
+- **Vínculos validados.** Contacto, lead y propiedad deben ser de la organización y visibles para
+  quien agenda; si llega un lead se toma su contacto.
+- **Cierre.** Realizado, cancelado o "no se presentó". Una visita realizada exige resultado
+  (interesado, segunda visita, intención de oferta, no le interesó) y puede llevar un puntaje 1–5;
+  el cierre queda en el timeline del contacto y emite `visit.completed` para métricas futuras.
+  Constraints en la base: fin ≥ inicio, puntaje 1–5, `closed_at` coherente con el estado y
+  resultado solo en visitas.
+- **Zona horaria.** Los días se calculan en la zona de la organización (`organization.timezone`),
+  tanto en SQL (agenda de hoy) como en la UI (`apps/web/lib/tz.ts`).

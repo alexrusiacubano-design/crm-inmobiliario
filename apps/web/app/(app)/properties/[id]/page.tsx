@@ -29,6 +29,7 @@ import { CheckCircle2, CircleAlert, ImageOff, Lock, Pencil } from "lucide-react"
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { EventsPanel } from "@/components/agenda/events-panel";
 import { AcquisitionStageBadge, PropertyStatusBadge } from "@/components/properties/badges";
 import { DocumentsPanel } from "@/components/properties/documents-panel";
 import { formatDay, minorToInput, price } from "@/components/properties/format";
@@ -56,7 +57,7 @@ const TABS = [
   { key: "documents", label: "Documentos" },
   { key: "history", label: "Historial" },
   { key: "matches", label: "Clientes compatibles", phase: 4 },
-  { key: "visits", label: "Visitas", phase: 5 },
+  { key: "agenda", label: "Visitas" },
   { key: "offers", label: "Ofertas", phase: 6 },
 ] as const;
 
@@ -234,7 +235,14 @@ export default async function PropertyPage({
         )}
       </nav>
 
-      {tab === "media" ? (
+      {tab === "agenda" ? (
+        <EventsPanel
+          db={db}
+          ctx={ctx}
+          target={{ propertyId: p.id }}
+          defaults={{ type: "visit", property: { id: p.id, label: `${p.code} · ${data.displayTitle}` } }}
+        />
+      ) : tab === "media" ? (
         <MediaManager
           propertyId={p.id}
           canEdit={can.update}

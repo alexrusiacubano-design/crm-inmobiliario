@@ -2,9 +2,11 @@
 
 CRM inmobiliario para Uruguay: ventas, alquileres, administración de alquileres, comisiones y reportes.
 Se construye por fases. Hecho: **Fase 1 — Fundaciones** (usuarios, roles, sucursales, auditoría),
-**Fase 2 — CRM** (contactos, leads, clientes, propietarios, duplicados, timeline y búsqueda global) y
+**Fase 2 — CRM** (contactos, leads, clientes, propietarios, duplicados, timeline y búsqueda global),
 **Fase 3 — Propiedades** (inventario con código PROP, fotos y planos, precios con historial,
-copropiedad, documentos con control de acceso, captaciones con exclusividad y tasaciones).
+copropiedad, documentos con control de acceso, captaciones con exclusividad y tasaciones) y
+**Fase 5 — Agenda y visitas** (calendario mes/semana/día/lista, visitas con resultado, agenda de hoy y
+visitas sin cerrar en el dashboard, pestaña de agenda en fichas de contacto y propiedad).
 
 ## Stack
 
@@ -63,7 +65,9 @@ El CRM DEMO trae 15 leads en todas las etapas del embudo, 4 propietarios (con cu
 `FIELD_ENCRYPTION_KEY` está configurada) y 2 pares de posibles duplicados para probar la fusión.
 Las propiedades DEMO son 8 (publicadas, en borrador, reservada, con rebajas de precio y copropiedad),
 con 6 captaciones en distintas etapas (una con exclusividad por vencer), tasaciones y documentos. Las
-fotos son ilustraciones generadas con la leyenda "DEMO", no imágenes de inmuebles reales.
+fotos son ilustraciones generadas con la leyenda "DEMO", no imágenes de inmuebles reales. La agenda DEMO
+trae 8 eventos relativos a la fecha del seed (visitas de hoy, una visita de ayer sin cerrar, una
+realizada con resultado, reuniones y recordatorios).
 
 Todo lo sembrado está marcado como DEMO (`organization.is_demo`, nombres con "(DEMO)", dominio
 reservado `example.com`). El seed se niega a correr con `NODE_ENV=production`.

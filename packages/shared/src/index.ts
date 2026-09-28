@@ -6,3 +6,5 @@ export * from "./normalize";
 export * from "./validation/crm";
 export * from "./property";
 export * from "./validation/property";
+export * from "./agenda";
+export * from "./validation/agenda";

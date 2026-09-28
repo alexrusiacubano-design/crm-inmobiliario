@@ -285,7 +285,7 @@ export function demoPdf(text: string): Buffer {
   return Buffer.from(out, "latin1");
 }
 
-async function ctxForDemo(db: Db, organizationId: string, key: string): Promise<RequestContext> {
+export async function ctxForDemo(db: Db, organizationId: string, key: string): Promise<RequestContext> {
   const [u] = await db
     .select({ id: user.id })
     .from(user)

@@ -133,7 +133,7 @@ export const NAVIGATION: NavSection[] = [
         href: "/commercial/visits",
         label: "nav.commercial.visits",
         permission: "visit.read",
-        plannedPhase: 5,
+        plannedPhase: null,
         description: "Calendario de visitas y feedback.",
       },
       {
@@ -249,7 +249,7 @@ export const NAVIGATION: NavSection[] = [
     icon: "calendar",
     href: "/agenda",
     permission: "calendar.read",
-    plannedPhase: 5,
+    plannedPhase: null,
   },
   {
     key: "documents",

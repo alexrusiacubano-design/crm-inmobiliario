@@ -1,4 +1,5 @@
 import { createDb } from "@crm/db";
+import { seedDemoAgenda } from "../src/agenda/demo-seed";
 import { seedDemoCrm } from "../src/crm/demo-seed";
 import { seedDemoProperties } from "../src/properties/demo-seed";
 import { getStorage } from "../src/storage/provider";
@@ -27,6 +28,10 @@ async function main() {
       p.skipped
         ? "Propiedades DEMO ya cargadas: no se cargó nada."
         : `Propiedades DEMO: ${p.properties} propiedades, ${p.acquisitions} captaciones.`,
+    );
+    const a = await seedDemoAgenda(db);
+    console.info(
+      a.skipped ? "Agenda DEMO ya cargada: no se cargó nada." : `Agenda DEMO: ${a.events} eventos.`,
     );
   } finally {
     await pool.end();
