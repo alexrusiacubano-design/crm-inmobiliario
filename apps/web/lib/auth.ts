@@ -18,10 +18,24 @@ if (!secret && process.env.NODE_ENV === "production") {
  * 2FA TOTP opcional y rate limiting persistente. El registro público está deshabilitado:
  * los usuarios los crea un administrador.
  */
+/** En Vercel se toma la URL del despliegue si no se configuró BETTER_AUTH_URL. */
+const vercelUrl = (host?: string) => (host ? `https://${host}` : undefined);
+const baseURL =
+  process.env.BETTER_AUTH_URL ??
+  vercelUrl(process.env.VERCEL_PROJECT_PRODUCTION_URL) ??
+  vercelUrl(process.env.VERCEL_URL);
+const trustedOrigins = [
+  baseURL,
+  vercelUrl(process.env.VERCEL_URL),
+  vercelUrl(process.env.VERCEL_BRANCH_URL),
+  vercelUrl(process.env.VERCEL_PROJECT_PRODUCTION_URL),
+].filter((o): o is string => Boolean(o));
+
 export const auth = betterAuth({
   appName: "Inmobiliaria CRM",
   secret,
-  baseURL: process.env.BETTER_AUTH_URL,
+  baseURL,
+  trustedOrigins,
   database: drizzleAdapter(getDb(), {
     provider: "pg",
     schema: {

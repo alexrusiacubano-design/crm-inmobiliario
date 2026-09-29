@@ -16,7 +16,8 @@
     "format:check": "prettier --check .",
     "db:generate": "pnpm --filter @crm/db generate",
     "db:migrate": "pnpm --filter @crm/db migrate",
-    "db:seed": "pnpm --filter @crm/db seed && pnpm --filter @crm/core seed:demo"
+    "db:seed": "pnpm --filter @crm/db seed && pnpm --filter @crm/core seed:demo",
+    "vercel:build": "pnpm db:migrate && pnpm db:seed && pnpm --filter @crm/web build"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.0",
