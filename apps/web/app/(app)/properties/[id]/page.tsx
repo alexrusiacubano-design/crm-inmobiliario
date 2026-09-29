@@ -3,6 +3,7 @@ import {
   getProperty,
   hasPermission,
   listEntityDocuments,
+  listOffers,
   listPriceHistory,
   listPropertyHistory,
   listValuationsFor,
@@ -35,6 +36,8 @@ import { notFound } from "next/navigation";
 import { EventsPanel } from "@/components/agenda/events-panel";
 import { NewDealButton } from "@/components/deals/new-deal-dialog";
 import { PropertyMatchesPanel } from "@/components/matching/property-matches-panel";
+import { OffersTable } from "@/components/deals/offers-table";
+import { DEFAULT_TZ, ymdInTz } from "@/lib/tz";
 import { AcquisitionStageBadge, PropertyStatusBadge } from "@/components/properties/badges";
 import { DocumentsPanel } from "@/components/properties/documents-panel";
 import { formatDay, minorToInput, price } from "@/components/properties/format";
@@ -63,7 +66,7 @@ const TABS = [
   { key: "history", label: "Historial" },
   { key: "matches", label: "Clientes compatibles" },
   { key: "agenda", label: "Visitas" },
-  { key: "offers", label: "Ofertas", phase: 6 },
+  { key: "offers", label: "Ofertas" },
 ] as const;
 
 export default async function PropertyPage({
@@ -83,12 +86,15 @@ export default async function PropertyPage({
   });
   const { property: p, permissions: can } = data;
 
-  const [priceHistory, history, documents, valuations, deals] = await Promise.all([
+  const [priceHistory, history, documents, valuations, deals, offers] = await Promise.all([
     tab === "prices" ? listPriceHistory(db, ctx, p.id) : Promise.resolve(null),
     tab === "history" ? listPropertyHistory(db, ctx, p.id) : Promise.resolve(null),
     tab === "documents" ? listEntityDocuments(db, ctx, "property", p.id) : Promise.resolve(null),
     tab === "valuations" ? listValuationsFor(db, ctx, { propertyId: p.id }) : Promise.resolve(null),
     dealsForProperty(db, ctx, p.id),
+    tab === "offers" && hasPermission(ctx, "offer.read")
+      ? listOffers(db, ctx, { status: "all", propertyId: p.id })
+      : Promise.resolve(null),
   ]);
   const openDeals = deals.filter((d) => d.stage !== "closed" && d.stage !== "fallen");
 
@@ -235,37 +241,47 @@ export default async function PropertyPage({
       )}
 
       <nav aria-label="Secciones de la propiedad" className="mb-5 flex gap-1 overflow-x-auto border-b">
-        {TABS.map((t) =>
-          "phase" in t ? (
-            <span
-              key={t.key}
-              className="flex shrink-0 cursor-not-allowed items-center gap-1 px-3 py-2 text-sm text-muted-foreground/60"
-              title={`Disponible en la Fase ${t.phase}`}
-            >
-              {t.label} <span className="text-[10px]">F{t.phase}</span>
-            </span>
-          ) : (
-            <Link
-              key={t.key}
-              href={`?tab=${t.key}`}
-              aria-current={tab === t.key ? "page" : undefined}
-              className={cn(
-                "shrink-0 border-b-2 px-3 py-2 text-sm",
-                tab === t.key
-                  ? "border-primary font-medium text-foreground"
-                  : "border-transparent text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {t.label}
-              {t.key === "media" && (
-                <span className="ml-1 text-xs text-muted-foreground">{data.media.length}</span>
-              )}
-            </Link>
-          ),
-        )}
+        {TABS.map((t) => (
+          <Link
+            key={t.key}
+            href={`?tab=${t.key}`}
+            aria-current={tab === t.key ? "page" : undefined}
+            className={cn(
+              "shrink-0 border-b-2 px-3 py-2 text-sm",
+              tab === t.key
+                ? "border-primary font-medium text-foreground"
+                : "border-transparent text-muted-foreground hover:text-foreground",
+            )}
+          >
+            {t.label}
+            {t.key === "media" && (
+              <span className="ml-1 text-xs text-muted-foreground">{data.media.length}</span>
+            )}
+          </Link>
+        ))}
       </nav>
 
-      {tab === "matches" ? (
+      {tab === "offers" ? (
+        <Card>
+          <div className="border-b px-4 py-3">
+            <h2 className="text-sm font-semibold">Ofertas recibidas</h2>
+            <p className="text-xs text-muted-foreground">
+              De todas las operaciones de esta propiedad. Se responden desde cada operación.
+            </p>
+          </div>
+          {offers && offers.length > 0 ? (
+            <OffersTable
+              rows={offers}
+              showProperty={false}
+              today={ymdInTz(new Date(), ctx.organization.timezone || DEFAULT_TZ)}
+            />
+          ) : (
+            <p className="px-4 py-6 text-sm text-muted-foreground">
+              {offers ? "Sin ofertas registradas." : "Tu rol no incluye ver ofertas."}
+            </p>
+          )}
+        </Card>
+      ) : tab === "matches" ? (
         <PropertyMatchesPanel db={db} ctx={ctx} propertyId={p.id} />
       ) : tab === "agenda" ? (
         <EventsPanel

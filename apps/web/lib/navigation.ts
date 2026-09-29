@@ -140,14 +140,14 @@ export const NAVIGATION: NavSection[] = [
         href: "/commercial/offers",
         label: "nav.commercial.offers",
         permission: "offer.read",
-        plannedPhase: 6,
+        plannedPhase: null,
         description: "Ofertas y contraofertas con historial inmutable.",
       },
       {
         href: "/commercial/reservations",
         label: "nav.commercial.reservations",
         permission: "reservation.read",
-        plannedPhase: 6,
+        plannedPhase: null,
         description: "Reservas que bloquean la disponibilidad.",
       },
       {

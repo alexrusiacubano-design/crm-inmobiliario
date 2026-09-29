@@ -13,3 +13,5 @@ export * from "./validation/deals";
 export * from "./performance";
 export * from "./matching";
 export * from "./validation/matching";
+export * from "./offers";
+export * from "./validation/offers";

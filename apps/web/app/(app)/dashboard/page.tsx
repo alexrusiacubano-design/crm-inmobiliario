@@ -1,3 +1,4 @@
+import { daysBetween } from "@crm/shared/offers";
 import {
   agendaOverview,
   expiringExclusivities,
@@ -9,6 +10,8 @@ import {
   propertyStats,
   upcomingContactDates,
   myNewMatches,
+  expiringReservations,
+  pendingOffersCount,
 } from "@crm/core";
 import { getDb } from "@crm/db";
 import {
@@ -105,17 +108,20 @@ export default async function DashboardPage() {
   const canAcq = hasPermission(ctx, "acquisition.read");
 
   const tzEarly = ctx.organization.timezone || TZ;
-  const [leads, props, expiring, latest, acq, agenda, dates, deals, matches] = await Promise.all([
-    leadStats(db, ctx),
-    propertyStats(db, ctx),
-    expiringExclusivities(db, ctx, 30),
-    canProps ? listProperties(db, ctx, { status: "active", page: 1, pageSize: 6 }) : null,
-    canAcq ? listAcquisitions(db, ctx, { stage: "open", page: 1, pageSize: 5 }) : null,
-    agendaOverview(db, ctx),
-    upcomingContactDates(db, ctx, ymdInTz(new Date(), tzEarly), 14),
-    hasPermission(ctx, "deal.read") ? listDeals(db, ctx, { status: "open", pageSize: 5 }) : null,
-    myNewMatches(db, ctx, 5),
-  ]);
+  const [leads, props, expiring, latest, acq, agenda, dates, deals, matches, reservationsDue, offersDue] =
+    await Promise.all([
+      leadStats(db, ctx),
+      propertyStats(db, ctx),
+      expiringExclusivities(db, ctx, 30),
+      canProps ? listProperties(db, ctx, { status: "active", page: 1, pageSize: 6 }) : null,
+      canAcq ? listAcquisitions(db, ctx, { stage: "open", page: 1, pageSize: 5 }) : null,
+      agendaOverview(db, ctx),
+      upcomingContactDates(db, ctx, ymdInTz(new Date(), tzEarly), 14),
+      hasPermission(ctx, "deal.read") ? listDeals(db, ctx, { status: "open", pageSize: 5 }) : null,
+      myNewMatches(db, ctx, 5),
+      expiringReservations(db, ctx, ymdInTz(new Date(), tzEarly), 7),
+      pendingOffersCount(db, ctx, ymdInTz(new Date(), tzEarly)),
+    ]);
   const tz = ctx.organization.timezone || TZ;
 
   const activeProps = props
@@ -312,6 +318,48 @@ export default async function DashboardPage() {
                   </Link>
                 </li>
               ))}
+            </ul>
+          </Card>
+        </section>
+      )}
+
+      {(reservationsDue.length > 0 || (offersDue && offersDue.pending > 0)) && (
+        <section>
+          <SectionTitle>Negociaciones que requieren atención</SectionTitle>
+          <Card className="rounded-xl">
+            <ul className="divide-y text-sm">
+              {offersDue && offersDue.pending > 0 && (
+                <li>
+                  <Link
+                    href="/commercial/offers"
+                    className="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-surface-muted"
+                  >
+                    <span>
+                      <span className="font-medium">{offersDue.pending}</span> oferta(s) sin responder
+                    </span>
+                    {offersDue.expired > 0 && <Badge tone="danger">{offersDue.expired} vencida(s)</Badge>}
+                  </Link>
+                </li>
+              )}
+              {reservationsDue.map((r) => {
+                const days = daysBetween(ymdInTz(new Date(), tz), r.expiresAt);
+                return (
+                  <li key={r.id}>
+                    <Link
+                      href={`/commercial/deals/${r.dealId}`}
+                      className="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-surface-muted"
+                    >
+                      <span className="min-w-0 truncate">
+                        Reserva de <span className="font-medium">{r.clientName}</span>{" "}
+                        <span className="font-mono text-xs text-muted-foreground">{r.dealCode}</span>
+                      </span>
+                      <Badge tone={days < 0 ? "danger" : "warning"}>
+                        {days < 0 ? "vencida" : days === 0 ? "vence hoy" : `vence en ${days} días`}
+                      </Badge>
+                    </Link>
+                  </li>
+                );
+              })}
             </ul>
           </Card>
         </section>

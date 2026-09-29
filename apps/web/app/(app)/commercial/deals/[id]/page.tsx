@@ -1,10 +1,13 @@
-import { getDeal, listDealUsers, NotFoundError, ValidationError } from "@crm/core";
+import { dealOffers, getDeal, listDealUsers, NotFoundError, ValidationError } from "@crm/core";
 import { getDb } from "@crm/db";
 import { dealStageLabel, PROPERTY_OPERATION_LABELS } from "@crm/shared";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CommissionsCard, DealStageControls, ParticipantsCard } from "@/components/deals/deal-controls";
+import { OffersCard } from "@/components/deals/offers-card";
+import { DEFAULT_TZ, ymdInTz } from "@/lib/tz";
+import { formatDateTime } from "@/lib/utils";
 import { PropertyStatusBadge } from "@/components/properties/badges";
 import { formatDay, price } from "@/components/properties/format";
 import { Badge, Card } from "@/components/ui/misc";
@@ -21,7 +24,11 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
     throw error;
   });
   const { deal: d, property: p, permissions: can } = data;
-  const users = can.manage || can.commissions ? await listDealUsers(db, ctx) : [];
+  const [users, negotiation] = await Promise.all([
+    can.manage || can.commissions ? listDealUsers(db, ctx) : Promise.resolve([]),
+    dealOffers(db, ctx, d.id),
+  ]);
+  const today = ymdInTz(new Date(), ctx.organization.timezone || DEFAULT_TZ);
   const open = d.stage !== "closed" && d.stage !== "fallen";
 
   return (
@@ -49,12 +56,53 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
         operation={d.operation}
         canManage={can.manage}
         canClose={can.close}
+        reservationFlow={negotiation.canManageReservations}
+        activeReservation={negotiation.reservations.some((r) => r.status === "active")}
       />
       {d.stage === "fallen" && d.fallenReason && (
         <p className="mt-2 text-sm text-muted-foreground">Motivo: {d.fallenReason}</p>
       )}
 
       <div className="mt-5 grid gap-5 lg:grid-cols-2">
+        {(negotiation.offers.length > 0 ||
+          negotiation.reservations.length > 0 ||
+          (open && (negotiation.canManageOffers || negotiation.canManageReservations))) && (
+          <OffersCard
+            dealId={d.id}
+            stage={d.stage}
+            operation={d.operation}
+            defaultCurrency={d.currency}
+            today={today}
+            canManageOffers={negotiation.canManageOffers}
+            canManageReservations={negotiation.canManageReservations}
+            canManageDeal={can.manage}
+            offers={negotiation.offers.map((o) => ({
+              id: o.id,
+              party: o.party,
+              currency: o.currency,
+              amountMinor: o.amountMinor.toString(),
+              conditions: o.conditions,
+              validUntil: o.validUntil,
+              status: o.status,
+              responseNote: o.responseNote,
+              createdAtLabel: formatDateTime(o.createdAt),
+              createdByName: o.createdByName,
+            }))}
+            reservations={negotiation.reservations.map((r) => ({
+              id: r.id,
+              currency: r.currency,
+              depositMinor: r.depositMinor.toString(),
+              receivedAt: r.receivedAt,
+              expiresAt: r.expiresAt,
+              holder: r.holder,
+              receiptNumber: r.receiptNumber,
+              status: r.status,
+              notes: r.notes,
+              cancelReason: r.cancelReason,
+              refundedAt: r.refundedAt,
+            }))}
+          />
+        )}
         <Card>
           <h2 className="border-b px-4 py-3 text-sm font-semibold">Datos</h2>
           <dl className="grid gap-3 p-4 text-sm sm:grid-cols-2">

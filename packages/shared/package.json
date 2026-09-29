@@ -20,7 +20,9 @@
     "./validation/deals": "./src/validation/deals.ts",
     "./performance": "./src/performance.ts",
     "./matching": "./src/matching.ts",
-    "./validation/matching": "./src/validation/matching.ts"
+    "./validation/matching": "./src/validation/matching.ts",
+    "./offers": "./src/offers.ts",
+    "./validation/offers": "./src/validation/offers.ts"
   },
   "scripts": {
     "lint": "eslint .",

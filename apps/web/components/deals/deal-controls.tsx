@@ -40,12 +40,17 @@ export function DealStageControls({
   operation,
   canManage,
   canClose,
+  reservationFlow = false,
+  activeReservation = false,
 }: {
   dealId: string;
   stage: DealStage;
   operation: PropertyOperation;
   canManage: boolean;
   canClose: boolean;
+  /** Reservar se hace registrando la seña (tarjeta de ofertas y reserva). */
+  reservationFlow?: boolean;
+  activeReservation?: boolean;
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -116,7 +121,12 @@ export function DealStageControls({
       )}
       {open && canManage && (
         <div className="mt-4 flex flex-wrap gap-2">
-          {next && next !== "closed" && (
+          {next === "reserved" && reservationFlow ? (
+            <span className="self-center text-xs text-muted-foreground">
+              Para reservar, registrá la seña en “Ofertas y reserva”.
+            </span>
+          ) : null}
+          {next && next !== "closed" && !(next === "reserved" && reservationFlow) && (
             <Button size="sm" loading={pending} onClick={() => move(next)}>
               <Check /> Pasar a {dealStageLabel(next, operation).toLowerCase()}
             </Button>
@@ -130,14 +140,20 @@ export function DealStageControls({
               <Check /> Cerrar operación
             </Button>
           )}
-          {prev && (
+          {prev && !activeReservation && (
             <Button size="sm" variant="ghost" disabled={pending} onClick={() => move(prev)}>
               <Undo2 /> Volver a {dealStageLabel(prev, operation).toLowerCase()}
             </Button>
           )}
-          <Button size="sm" variant="ghost" className="text-danger" onClick={() => setDialog("fall")}>
-            <CircleX /> Se cayó
-          </Button>
+          {activeReservation ? (
+            <span className="self-center text-xs text-muted-foreground">
+              Con seña vigente, volver atrás o dar de baja se hace cancelando la reserva.
+            </span>
+          ) : (
+            <Button size="sm" variant="ghost" className="text-danger" onClick={() => setDialog("fall")}>
+              <CircleX /> Se cayó
+            </Button>
+          )}
         </div>
       )}
 

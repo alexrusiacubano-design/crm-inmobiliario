@@ -5,7 +5,9 @@ import {
   contact,
   deal,
   dealCommission,
+  dealOffer,
   dealParticipant,
+  dealReservation,
   dealStageEvent,
   lead,
   locality,
@@ -53,7 +55,7 @@ import { emitEvent } from "../events";
 import { propertyDisplayTitle, propertyRef, syncPropertySearch } from "../properties/helpers";
 import { nextCode } from "../sequences";
 
-type DealRow = typeof deal.$inferSelect;
+export type DealRow = typeof deal.$inferSelect;
 
 export function dealRef(
   d: Pick<DealRow, "organizationId" | "assignedUserId" | "branchId" | "teamId">,
@@ -68,7 +70,7 @@ export function dealRef(
 
 const OFFERABLE: readonly PropertyStatus[] = ["available", "published", "negotiating", "reserved"];
 
-async function loadForWrite(tx: DbOrTx, ctx: RequestContext, id: string) {
+export async function loadDealForWrite(tx: DbOrTx, ctx: RequestContext, id: string) {
   const [row] = await tx
     .select()
     .from(deal)
@@ -392,7 +394,7 @@ export async function createDeal(db: Db, ctx: RequestContext, rawInput: unknown)
 export async function updateDeal(db: Db, ctx: RequestContext, rawInput: unknown) {
   const input = parseInput(updateDealSchema, rawInput);
   return db.transaction(async (tx) => {
-    const before = await loadForWrite(tx, ctx, input.id);
+    const before = await loadDealForWrite(tx, ctx, input.id);
     requirePermission(ctx, "deal.manage", dealRef(before));
     if (!OPEN_DEAL_STAGES.includes(before.stage)) throw new ConflictError("La operación ya está cerrada");
     const [after] = await tx
@@ -419,123 +421,164 @@ export async function updateDeal(db: Db, ctx: RequestContext, rawInput: unknown)
 export async function changeDealStage(db: Db, ctx: RequestContext, rawInput: unknown) {
   const input = parseInput(dealStageSchema, rawInput);
   return db.transaction(async (tx) => {
-    const before = await loadForWrite(tx, ctx, input.id);
+    const before = await loadDealForWrite(tx, ctx, input.id);
     requirePermission(ctx, input.stage === "closed" ? "deal.close" : "deal.manage", dealRef(before));
-    if (!canTransitionDeal(before.stage, input.stage))
-      throw new ConflictError(
-        `No se puede pasar de ${DEAL_STAGE_LABELS[before.stage]} a ${DEAL_STAGE_LABELS[input.stage]}`,
-      );
-    if (input.stage === "negotiation" && before.stage === "fallen") {
-      const [p] = await tx.select().from(property).where(eq(property.id, before.propertyId));
-      if (!p || !OFFERABLE.includes(p.status)) throw new ConflictError("La propiedad ya no está disponible");
+    // Con una seña vigente, volver atrás o caerse se hace cancelando la reserva (qué pasa con la seña).
+    if (input.stage === "fallen" || input.stage === "negotiation") {
+      const [active] = await tx
+        .select({ id: dealReservation.id })
+        .from(dealReservation)
+        .where(and(eq(dealReservation.dealId, before.id), eq(dealReservation.status, "active")));
+      if (active)
+        throw new ConflictError(
+          "La operación tiene una reserva vigente: cancelala indicando si la seña se devuelve o se retiene",
+        );
     }
+    return applyDealStage(tx, ctx, before, input);
+  });
+}
 
-    const today = new Date().toISOString().slice(0, 10);
-    const [after] = await tx
-      .update(deal)
-      .set({
-        stage: input.stage,
-        stageChangedAt: new Date(),
-        closedAt: input.stage === "closed" ? (input.closedAt ?? today) : null,
-        fallenReason: input.stage === "fallen" ? input.fallenReason : null,
-      })
-      .where(eq(deal.id, before.id))
-      .returning();
+/**
+ * Aplica un cambio de etapa ya autorizado (lo usan también reservas y ofertas dentro de su
+ * transacción): valida la transición, mueve propiedad, lead, seña y ofertas, y deja rastro.
+ */
+export async function applyDealStage(
+  tx: DbOrTx,
+  ctx: RequestContext,
+  before: DealRow,
+  input: { stage: DealStage; closedAt?: string | null; fallenReason?: string | null; note?: string | null },
+) {
+  if (!canTransitionDeal(before.stage, input.stage))
+    throw new ConflictError(
+      `No se puede pasar de ${DEAL_STAGE_LABELS[before.stage]} a ${DEAL_STAGE_LABELS[input.stage]}`,
+    );
+  if (input.stage === "negotiation" && before.stage === "fallen") {
+    const [p] = await tx.select().from(property).where(eq(property.id, before.propertyId));
+    if (!p || !OFFERABLE.includes(p.status)) throw new ConflictError("La propiedad ya no está disponible");
+  }
 
-    await tx.insert(dealStageEvent).values({
-      organizationId: ctx.organizationId,
-      dealId: before.id,
-      fromStage: before.stage,
-      toStage: input.stage,
-      actorUserId: ctx.userId,
-    });
+  const today = new Date().toISOString().slice(0, 10);
+  const [after] = await tx
+    .update(deal)
+    .set({
+      stage: input.stage,
+      stageChangedAt: new Date(),
+      closedAt: input.stage === "closed" ? (input.closedAt ?? today) : null,
+      fallenReason: input.stage === "fallen" ? input.fallenReason : null,
+    })
+    .where(eq(deal.id, before.id))
+    .returning();
 
-    // Efectos sobre la propiedad y el lead.
-    if (input.stage === "reserved")
-      await setPropertyStatus(tx, ctx, before.propertyId, "reserved", before.code);
-    if (input.stage === "closed") {
-      if (before.operation === "sale")
-        await setPropertyStatus(tx, ctx, before.propertyId, "sold", before.code);
-      else if (before.operation === "rent")
-        await setPropertyStatus(tx, ctx, before.propertyId, "rented", before.code);
-      await snapshotRates(tx, ctx, before.id);
-      if (before.leadId) {
-        const [l] = await tx.select().from(lead).where(eq(lead.id, before.leadId));
-        if (l && l.status !== "won" && l.status !== "lost") {
-          await tx
-            .update(lead)
-            .set({ status: "won", statusChangedAt: new Date(), closedAt: new Date() })
-            .where(eq(lead.id, l.id));
-          await syncLeadSearch(tx, [l.id]);
-          await logActivity(tx, ctx, {
-            type: "lead_status_changed",
-            contactId: l.contactId,
-            leadId: l.id,
-            payload: { from: l.status, to: "won", automatic: true, dealId: before.id },
-          });
-        }
+  await tx.insert(dealStageEvent).values({
+    organizationId: ctx.organizationId,
+    dealId: before.id,
+    fromStage: before.stage,
+    toStage: input.stage,
+    actorUserId: ctx.userId,
+  });
+
+  // Efectos sobre la propiedad y el lead.
+  if (input.stage === "reserved")
+    await setPropertyStatus(tx, ctx, before.propertyId, "reserved", before.code);
+  if (input.stage === "closed") {
+    if (before.operation === "sale") await setPropertyStatus(tx, ctx, before.propertyId, "sold", before.code);
+    else if (before.operation === "rent")
+      await setPropertyStatus(tx, ctx, before.propertyId, "rented", before.code);
+    await snapshotRates(tx, ctx, before.id);
+    if (before.leadId) {
+      const [l] = await tx.select().from(lead).where(eq(lead.id, before.leadId));
+      if (l && l.status !== "won" && l.status !== "lost") {
+        await tx
+          .update(lead)
+          .set({ status: "won", statusChangedAt: new Date(), closedAt: new Date() })
+          .where(eq(lead.id, l.id));
+        await syncLeadSearch(tx, [l.id]);
+        await logActivity(tx, ctx, {
+          type: "lead_status_changed",
+          contactId: l.contactId,
+          leadId: l.id,
+          payload: { from: l.status, to: "won", automatic: true, dealId: before.id },
+        });
       }
     }
-    if (input.stage === "fallen") {
-      const [others] = await tx
-        .select({ n: sql<number>`count(*)::int` })
-        .from(deal)
-        .where(
-          and(
-            eq(deal.propertyId, before.propertyId),
-            ne(deal.id, before.id),
-            isNull(deal.deletedAt),
-            inArray(deal.stage, [...OPEN_DEAL_STAGES]),
-          ),
-        );
-      const [p] = await tx.select().from(property).where(eq(property.id, before.propertyId));
-      if ((others?.n ?? 0) === 0 && p && (p.status === "negotiating" || p.status === "reserved"))
-        await setPropertyStatus(
-          tx,
-          ctx,
-          p.id,
-          p.publishedAt ? "published" : "available",
-          `${before.code} se cayó`,
-        );
-      await tx
-        .update(dealCommission)
-        .set({ status: "cancelled" })
-        .where(and(eq(dealCommission.dealId, before.id), eq(dealCommission.status, "pending")));
-    }
+  }
+  if (input.stage === "fallen") {
+    const [others] = await tx
+      .select({ n: sql<number>`count(*)::int` })
+      .from(deal)
+      .where(
+        and(
+          eq(deal.propertyId, before.propertyId),
+          ne(deal.id, before.id),
+          isNull(deal.deletedAt),
+          inArray(deal.stage, [...OPEN_DEAL_STAGES]),
+        ),
+      );
+    const [p] = await tx.select().from(property).where(eq(property.id, before.propertyId));
+    if ((others?.n ?? 0) === 0 && p && (p.status === "negotiating" || p.status === "reserved"))
+      await setPropertyStatus(
+        tx,
+        ctx,
+        p.id,
+        p.publishedAt ? "published" : "available",
+        `${before.code} se cayó`,
+      );
+    await tx
+      .update(dealCommission)
+      .set({ status: "cancelled" })
+      .where(and(eq(dealCommission.dealId, before.id), eq(dealCommission.status, "pending")));
+  }
 
-    await logActivity(tx, ctx, {
-      type: "offer",
-      contactId: before.clientContactId,
-      leadId: before.leadId,
-      body: `${before.code}: ${DEAL_STAGE_LABELS[input.stage]}${input.fallenReason ? ` · ${input.fallenReason}` : ""}${input.note ? ` · ${input.note}` : ""}`,
-      payload: { dealId: before.id, from: before.stage, to: input.stage },
-    });
-    await writeAudit(tx, ctx, {
-      action: "deal.stage_change",
-      entityType: "deal",
-      entityId: before.id,
-      before: { stage: before.stage },
-      after: { stage: input.stage, fallenReason: input.fallenReason },
-    });
-    await emitEvent(tx, ctx, {
-      type:
-        input.stage === "closed"
-          ? "deal.closed"
-          : input.stage === "fallen"
-            ? "deal.fallen"
-            : "deal.stage_changed",
-      aggregateType: "deal",
-      aggregateId: before.id,
-      payload: { from: before.stage, to: input.stage, propertyId: before.propertyId },
-    });
-    return after;
+  // La seña vigente pasa a boleto/contrato cuando la operación avanza.
+  if (["notary", "signed", "closed"].includes(input.stage))
+    await tx
+      .update(dealReservation)
+      .set({ status: "converted", closedAt: new Date() })
+      .where(and(eq(dealReservation.dealId, before.id), eq(dealReservation.status, "active")));
+  // Si se cae, las ofertas sin responder quedan retiradas.
+  if (input.stage === "fallen")
+    await tx
+      .update(dealOffer)
+      .set({
+        status: "withdrawn",
+        respondedAt: new Date(),
+        respondedById: ctx.userId,
+        responseNote: "La operación se cayó",
+      })
+      .where(and(eq(dealOffer.dealId, before.id), eq(dealOffer.status, "pending")));
+
+  await logActivity(tx, ctx, {
+    type: "offer",
+    contactId: before.clientContactId,
+    leadId: before.leadId,
+    body: `${before.code}: ${DEAL_STAGE_LABELS[input.stage]}${input.fallenReason ? ` · ${input.fallenReason}` : ""}${input.note ? ` · ${input.note}` : ""}`,
+    payload: { dealId: before.id, from: before.stage, to: input.stage },
   });
+  await writeAudit(tx, ctx, {
+    action: "deal.stage_change",
+    entityType: "deal",
+    entityId: before.id,
+    before: { stage: before.stage },
+    after: { stage: input.stage, fallenReason: input.fallenReason },
+  });
+  await emitEvent(tx, ctx, {
+    type:
+      input.stage === "closed"
+        ? "deal.closed"
+        : input.stage === "fallen"
+          ? "deal.fallen"
+          : "deal.stage_changed",
+    aggregateType: "deal",
+    aggregateId: before.id,
+    payload: { from: before.stage, to: input.stage, propertyId: before.propertyId },
+  });
+  return after;
 }
 
 export async function setDealCommissions(db: Db, ctx: RequestContext, rawInput: unknown) {
   const input = parseInput(dealCommissionsSchema, rawInput);
   return db.transaction(async (tx) => {
-    const d = await loadForWrite(tx, ctx, input.dealId);
+    const d = await loadDealForWrite(tx, ctx, input.dealId);
     if (!hasPermission(ctx, "commission.manage", dealRef(d)))
       requirePermission(ctx, "deal.manage", dealRef(d));
     if (d.stage === "fallen") throw new ConflictError("La operación se cayó");
@@ -588,7 +631,7 @@ export async function collectCommission(db: Db, ctx: RequestContext, rawInput: u
       )
       .for("update");
     if (!c) throw new NotFoundError("Honorario");
-    const d = await loadForWrite(tx, ctx, c.dealId);
+    const d = await loadDealForWrite(tx, ctx, c.dealId);
     requirePermission(ctx, "commission.manage", dealRef(d));
     if (c.status !== "pending") throw new ConflictError("El honorario no está pendiente");
     await tx
@@ -619,7 +662,7 @@ export async function collectCommission(db: Db, ctx: RequestContext, rawInput: u
 export async function setDealParticipants(db: Db, ctx: RequestContext, rawInput: unknown) {
   const input = parseInput(dealParticipantsSchema, rawInput);
   return db.transaction(async (tx) => {
-    const d = await loadForWrite(tx, ctx, input.dealId);
+    const d = await loadDealForWrite(tx, ctx, input.dealId);
     if (!hasPermission(ctx, "commission.manage", dealRef(d)))
       requirePermission(ctx, "deal.manage", dealRef(d));
     const members = await tx
@@ -659,7 +702,7 @@ export async function setDealParticipants(db: Db, ctx: RequestContext, rawInput:
 // Lecturas
 // ---------------------------------------------------------------------------------------------
 
-function dealScope(ctx: RequestContext): SQL {
+export function dealScope(ctx: RequestContext): SQL {
   const own = scopeCondition(ctx, "deal.read", {
     ownerUserId: deal.assignedUserId,
     branchId: deal.branchId,

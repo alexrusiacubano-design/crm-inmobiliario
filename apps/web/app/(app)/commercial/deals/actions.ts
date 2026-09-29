@@ -2,6 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import {
+  cancelReservation,
+  createOffer,
+  createReservation,
+  extendReservation,
+  respondOffer,
   changeDealStage,
   collectCommission,
   createDeal,
@@ -16,7 +21,7 @@ import { runAction, type ActionResult } from "@/lib/actions";
 
 function done<T>(r: ActionResult<T>): ActionResult<T> {
   if (r.ok) {
-    for (const p of ["/commercial/deals", "/finance", "/performance", "/properties", "/crm"])
+    for (const p of ["/commercial", "/finance", "/performance", "/properties", "/crm"])
       revalidatePath(p, "layout");
     revalidatePath("/dashboard");
   }
@@ -74,4 +79,24 @@ export async function saveCommissionPlanAction(input: unknown): Promise<ActionRe
       return undefined;
     }),
   );
+}
+
+function unit(fn: Parameters<typeof runAction<undefined>>[0]) {
+  return runAction(fn);
+}
+
+export async function createOfferAction(input: unknown): Promise<ActionResult<undefined>> {
+  return done(await unit(async (db, ctx) => void (await createOffer(db, ctx, input))));
+}
+export async function respondOfferAction(input: unknown): Promise<ActionResult<undefined>> {
+  return done(await unit(async (db, ctx) => void (await respondOffer(db, ctx, input))));
+}
+export async function createReservationAction(input: unknown): Promise<ActionResult<undefined>> {
+  return done(await unit(async (db, ctx) => void (await createReservation(db, ctx, input))));
+}
+export async function extendReservationAction(input: unknown): Promise<ActionResult<undefined>> {
+  return done(await unit(async (db, ctx) => void (await extendReservation(db, ctx, input))));
+}
+export async function cancelReservationAction(input: unknown): Promise<ActionResult<undefined>> {
+  return done(await unit(async (db, ctx) => void (await cancelReservation(db, ctx, input))));
 }

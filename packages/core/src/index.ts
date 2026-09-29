@@ -28,3 +28,4 @@ export * from "./agenda/events";
 export * from "./deals/deals";
 export * from "./performance/performance";
 export * from "./matching/matching";
+export * from "./deals/offers";

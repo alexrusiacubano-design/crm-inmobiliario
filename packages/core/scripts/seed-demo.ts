@@ -3,6 +3,7 @@ import { seedDemoAgenda } from "../src/agenda/demo-seed";
 import { seedDemoCrm } from "../src/crm/demo-seed";
 import { seedDemoContactExtras } from "../src/crm/extras-demo";
 import { seedDemoDeals, seedDemoGoals } from "../src/deals/demo-seed";
+import { seedDemoOffers } from "../src/deals/offers-demo";
 import { backfillDemoCoordinates, seedDemoProperties } from "../src/properties/demo-seed";
 import { getStorage } from "../src/storage/provider";
 
@@ -42,6 +43,8 @@ async function main() {
     const coords = await backfillDemoCoordinates(db);
     if (coords) console.info(`Coordenadas DEMO completadas: ${coords}.`);
     if (await seedDemoGoals(db)) console.info("Metas DEMO cargadas.");
+    const o = await seedDemoOffers(db);
+    console.info(o.skipped ? "Ofertas DEMO ya cargadas." : `Negociaciones DEMO: ${o.deals}.`);
   } finally {
     await pool.end();
   }

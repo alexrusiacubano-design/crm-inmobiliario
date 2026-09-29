@@ -125,3 +125,19 @@ Suspender o cambiar la contraseña de un usuario cierra sus sesiones.
   reales (operaciones firmadas o cerradas) sobre precios publicados. Devuelve la mediana de precio
   por m², un valor sugerido y una confianza según la cantidad de muestras. El agente revisa y
   registra la tasación como siempre.
+
+## Ofertas y reservas (Fase 6)
+
+- **Dentro de la operación.** Las ofertas (`deal_offer`) y la reserva (`deal_reservation`) cuelgan
+  de una operación; se gestionan con `offer.manage` / `reservation.manage` sobre su alcance.
+- **Ofertas inmutables.** Monto, moneda y parte no se modifican ni se borran (trigger); una
+  contraoferta es una fila nueva que apunta a la anterior, que queda "contraofertada". Solo una
+  pendiente por operación (índice único parcial). Aceptar fija el precio de la operación y ajusta
+  el honorario sugerido por la comisión pactada si seguía pendiente.
+- **Reserva con seña.** Registrarla pasa la operación y la propiedad a Reservada. Guarda monto,
+  quién tiene la seña (inmobiliaria, propietario, escribanía), recibo y vencimiento; se puede
+  prorrogar. Una vigente por operación. Al avanzar a escribanía/garantía queda "convertida".
+- **Baja con seña vigente.** No se vuelve atrás ni se cae la operación a mano: se cancela la
+  reserva indicando si la seña se devuelve (con fecha) o se retiene, y si se sigue negociando o
+  la operación se cae (libera la propiedad y anula honorarios pendientes).
+- Todo queda en el timeline del cliente, la auditoría y eventos `offer.*` / `reservation.*`.
