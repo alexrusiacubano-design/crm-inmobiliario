@@ -24,12 +24,26 @@ const baseURL =
   process.env.BETTER_AUTH_URL ??
   vercelUrl(process.env.VERCEL_PROJECT_PRODUCTION_URL) ??
   vercelUrl(process.env.VERCEL_URL);
-const trustedOrigins = [
+const staticOrigins = [
   baseURL,
   vercelUrl(process.env.VERCEL_URL),
   vercelUrl(process.env.VERCEL_BRANCH_URL),
   vercelUrl(process.env.VERCEL_PROJECT_PRODUCTION_URL),
 ].filter((o): o is string => Boolean(o));
+
+/**
+ * Orígenes aceptados para el login. En Vercel un mismo despliegue responde en varios
+ * dominios (producción, rama, alias del team), así que además del configurado se acepta el
+ * propio dominio de la petición: sigue bloqueando formularios enviados desde otros sitios.
+ */
+function trustedOrigins(request?: Request): string[] {
+  if (!request || !process.env.VERCEL) return staticOrigins;
+  try {
+    return [...staticOrigins, new URL(request.url).origin];
+  } catch {
+    return staticOrigins;
+  }
+}
 
 export const auth = betterAuth({
   appName: "Inmobiliaria CRM",
