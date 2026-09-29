@@ -22,7 +22,9 @@
     "./matching": "./src/matching.ts",
     "./validation/matching": "./src/validation/matching.ts",
     "./offers": "./src/offers.ts",
-    "./validation/offers": "./src/validation/offers.ts"
+    "./validation/offers": "./src/validation/offers.ts",
+    "./rentals": "./src/rentals.ts",
+    "./validation/rentals": "./src/validation/rentals.ts"
   },
   "scripts": {
     "lint": "eslint .",

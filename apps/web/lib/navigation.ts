@@ -175,7 +175,7 @@ export const NAVIGATION: NavSection[] = [
         href: "/rentals/contracts",
         label: "nav.rentals.contracts",
         permission: "contract.read",
-        plannedPhase: 7,
+        plannedPhase: null,
         description: "Contratos, partes y alertas de vencimiento.",
       },
       {
@@ -196,7 +196,7 @@ export const NAVIGATION: NavSection[] = [
         href: "/rentals/renewals",
         label: "nav.rentals.renewals",
         permission: "contract.read",
-        plannedPhase: 7,
+        plannedPhase: null,
         description: "Renovaciones y rescisiones.",
       },
     ],

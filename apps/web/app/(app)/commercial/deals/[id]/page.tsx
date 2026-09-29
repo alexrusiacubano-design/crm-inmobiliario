@@ -1,4 +1,12 @@
-import { dealOffers, getDeal, listDealUsers, NotFoundError, ValidationError } from "@crm/core";
+import {
+  contractForDeal,
+  dealOffers,
+  getDeal,
+  hasPermission,
+  listDealUsers,
+  NotFoundError,
+  ValidationError,
+} from "@crm/core";
 import { getDb } from "@crm/db";
 import { dealStageLabel, PROPERTY_OPERATION_LABELS } from "@crm/shared";
 import type { Metadata } from "next";
@@ -6,6 +14,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CommissionsCard, DealStageControls, ParticipantsCard } from "@/components/deals/deal-controls";
 import { OffersCard } from "@/components/deals/offers-card";
+import { NewContractButton } from "@/components/rentals/new-contract-dialog";
 import { DEFAULT_TZ, ymdInTz } from "@/lib/tz";
 import { formatDateTime } from "@/lib/utils";
 import { PropertyStatusBadge } from "@/components/properties/badges";
@@ -28,6 +37,12 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
     can.manage || can.commissions ? listDealUsers(db, ctx) : Promise.resolve([]),
     dealOffers(db, ctx, d.id),
   ]);
+  const contract = d.operation !== "sale" ? await contractForDeal(db, ctx, d.id) : null;
+  const canContract =
+    d.operation !== "sale" &&
+    !contract &&
+    ["notary", "signed", "closed"].includes(d.stage) &&
+    hasPermission(ctx, "contract.manage");
   const today = ymdInTz(new Date(), ctx.organization.timezone || DEFAULT_TZ);
   const open = d.stage !== "closed" && d.stage !== "fallen";
 
@@ -59,6 +74,35 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
         reservationFlow={negotiation.canManageReservations}
         activeReservation={negotiation.reservations.some((r) => r.status === "active")}
       />
+      {(contract || canContract) && (
+        <div className="mt-3 flex flex-wrap items-center gap-2 rounded-md border bg-primary-soft/40 px-4 py-2 text-sm">
+          {contract ? (
+            <>
+              Contrato de alquiler:{" "}
+              <Link
+                href={`/rentals/contracts/${contract.id}`}
+                className="font-mono text-primary hover:underline"
+              >
+                {contract.code}
+              </Link>
+            </>
+          ) : (
+            <>
+              <span>Con el contrato firmado, cargalo para seguir vencimientos y ajustes.</span>
+              <NewContractButton
+                label="Crear contrato"
+                preset={{
+                  dealId: d.id,
+                  property: { id: p.id, label: `${p.code} · ${p.label}` },
+                  tenant: { id: d.clientContactId, label: data.clientName },
+                  currency: d.currency,
+                  rent: (d.priceMinor / 100n).toString(),
+                }}
+              />
+            </>
+          )}
+        </div>
+      )}
       {d.stage === "fallen" && d.fallenReason && (
         <p className="mt-2 text-sm text-muted-foreground">Motivo: {d.fallenReason}</p>
       )}

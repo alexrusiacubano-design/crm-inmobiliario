@@ -141,3 +141,18 @@ Suspender o cambiar la contraseña de un usuario cierra sus sesiones.
   reserva indicando si la seña se devuelve (con fecha) o se retiene, y si se sigue negociando o
   la operación se cae (libera la propiedad y anula honorarios pendientes).
 - Todo queda en el timeline del cliente, la auditoría y eventos `offer.*` / `reservation.*`.
+
+## Contratos de alquiler (Fase 7)
+
+- **`rental_contract`.** Propiedad, inquilino, plazo (inicio + meses → fin), alquiler vigente, día
+  de pago, ajuste (IPC, UI, % fijo o sin ajuste, cada N meses), depósito, garantía y comisión de
+  administración (para liquidaciones). Un contrato vigente por propiedad (índice único parcial).
+  Se crea suelto o desde una operación de alquiler firmada; la propiedad pasa a Alquilada.
+- **Historial del alquiler** (`rental_contract_rent`, append-only): inicial, ajustes, acuerdos y
+  renovaciones con el porcentaje aplicado. Los ajustes redondean a pesos enteros sin float y
+  corren el próximo ajuste según la frecuencia (nunca después del fin).
+- **Renovación:** el contrato queda "renovado" y nace uno nuevo encadenado desde el día siguiente
+  al vencimiento, con las mismas partes y condiciones. **Finalizar / rescindir** (rescisión con
+  motivo obligatorio) libera la propiedad.
+- **Avisos:** vencimientos a 90 días y ajustes a 30 (incluye vencidos y atrasados) en la bandeja
+  de renovaciones, el listado y el dashboard. Permisos `contract.read` / `contract.manage`.

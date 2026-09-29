@@ -1,4 +1,5 @@
 import {
+  activeContractFor,
   dealsForProperty,
   getProperty,
   hasPermission,
@@ -86,7 +87,7 @@ export default async function PropertyPage({
   });
   const { property: p, permissions: can } = data;
 
-  const [priceHistory, history, documents, valuations, deals, offers] = await Promise.all([
+  const [priceHistory, history, documents, valuations, deals, offers, contract] = await Promise.all([
     tab === "prices" ? listPriceHistory(db, ctx, p.id) : Promise.resolve(null),
     tab === "history" ? listPropertyHistory(db, ctx, p.id) : Promise.resolve(null),
     tab === "documents" ? listEntityDocuments(db, ctx, "property", p.id) : Promise.resolve(null),
@@ -95,6 +96,7 @@ export default async function PropertyPage({
     tab === "offers" && hasPermission(ctx, "offer.read")
       ? listOffers(db, ctx, { status: "all", propertyId: p.id })
       : Promise.resolve(null),
+    activeContractFor(db, ctx, p.id),
   ]);
   const openDeals = deals.filter((d) => d.stage !== "closed" && d.stage !== "fallen");
 
@@ -228,6 +230,15 @@ export default async function PropertyPage({
         </div>
       </div>
 
+      {contract && (
+        <div className="mb-4 flex flex-wrap items-center gap-2 rounded-md border bg-primary-soft/40 px-4 py-2 text-sm">
+          <span className="font-medium">Alquilada:</span>
+          <Link href={`/rentals/contracts/${contract.id}`} className="hover:underline">
+            <span className="font-mono">{contract.code}</span> · {contract.tenantName} ·{" "}
+            {price(contract.rentMinor, contract.currency)} por mes · vence el {formatDay(contract.endDate)}
+          </Link>
+        </div>
+      )}
       {openDeals.length > 0 && (
         <div className="mb-4 flex flex-wrap items-center gap-2 rounded-md border border-warning/50 bg-warning-soft/40 px-4 py-2 text-sm">
           <span className="font-medium">Operaciones:</span>

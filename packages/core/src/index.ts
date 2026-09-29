@@ -29,3 +29,4 @@ export * from "./deals/deals";
 export * from "./performance/performance";
 export * from "./matching/matching";
 export * from "./deals/offers";
+export * from "./rentals/contracts";

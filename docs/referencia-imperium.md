@@ -31,6 +31,10 @@ Leyenda: ✅ ya existe en el repo · 🟡 existe parcial · 🔜 fase del roadma
 | Análisis      | Competencia        | Ranking por puntos de agentes y oficinas por temporada                                                                                                                            | ✅ ranking por puntos (reglas visibles) de agentes y sucursales                              |
 | Soporte       | Ayuda              | Documentación, asistente IA, tickets                                                                                                                                              | 🔜 F15                                                                                       |
 
+## Más allá de Imperium
+
+- Contratos de alquiler (F7): plazos, ajustes IPC/UI/fijo, renovaciones encadenadas, rescisiones y avisos.
+
 ## Dashboard del agente (lo que se construyó en esta entrega)
 
 Bloques de Imperium y cómo quedan en el nuestro, con datos reales y sin inventar nada:

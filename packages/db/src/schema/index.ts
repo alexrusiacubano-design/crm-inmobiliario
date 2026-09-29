@@ -9,3 +9,4 @@ export * from "./deals";
 export * from "./performance";
 export * from "./matching";
 export * from "./offers";
+export * from "./rentals";

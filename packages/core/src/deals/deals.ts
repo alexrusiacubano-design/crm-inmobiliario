@@ -81,7 +81,7 @@ export async function loadDealForWrite(tx: DbOrTx, ctx: RequestContext, id: stri
 }
 
 /** Cambia el estado de la propiedad por la operación, dejando rastro en la auditoría. */
-async function setPropertyStatus(
+export async function setPropertyStatus(
   tx: DbOrTx,
   ctx: RequestContext,
   propertyId: string,

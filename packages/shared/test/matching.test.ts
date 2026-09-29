@@ -91,7 +91,13 @@ describe("scoreMatch", () => {
   });
 
   it("en alquiler, mascotas y amueblado importan", () => {
-    const rent: MatchProfile = { ...profile, operation: "rent", priceMaxMinor: null, pets: true, furnished: "yes" };
+    const rent: MatchProfile = {
+      ...profile,
+      operation: "rent",
+      priceMaxMinor: null,
+      pets: true,
+      furnished: "yes",
+    };
     const rp: MatchProperty = { ...prop, operations: ["rent"], price: null };
     expect(scoreMatch(rent, rp, rate).rejectedBy).toBe("mascotas");
     const r = scoreMatch(rent, { ...rp, petsAllowed: true }, rate);
@@ -107,7 +113,11 @@ describe("scoreMatch", () => {
       areaMin: 200,
       features: ["pool", "barbecue", "terrace"],
     };
-    const r = scoreMatch(p, { ...prop, bedrooms: 1, price: { currency: "USD", amountMinor: 210_000_00n } }, rate);
+    const r = scoreMatch(
+      p,
+      { ...prop, bedrooms: 1, price: { currency: "USD", amountMinor: 210_000_00n } },
+      rate,
+    );
     expect(r.score).toBeLessThan(50);
     expect(r.eligible).toBe(false);
   });

@@ -16,7 +16,7 @@ interface Link {
   label: string;
 }
 
-function Picker({
+export function Picker({
   kind,
   label,
   value,

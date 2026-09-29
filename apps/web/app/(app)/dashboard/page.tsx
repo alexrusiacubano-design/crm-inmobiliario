@@ -12,6 +12,7 @@ import {
   myNewMatches,
   expiringReservations,
   pendingOffersCount,
+  rentalAlerts,
 } from "@crm/core";
 import { getDb } from "@crm/db";
 import {
@@ -30,6 +31,7 @@ import {
   Gavel,
   Calculator,
   ChevronRight,
+  FileSignature,
   Home,
   ImageOff,
   Inbox,
@@ -108,20 +110,33 @@ export default async function DashboardPage() {
   const canAcq = hasPermission(ctx, "acquisition.read");
 
   const tzEarly = ctx.organization.timezone || TZ;
-  const [leads, props, expiring, latest, acq, agenda, dates, deals, matches, reservationsDue, offersDue] =
-    await Promise.all([
-      leadStats(db, ctx),
-      propertyStats(db, ctx),
-      expiringExclusivities(db, ctx, 30),
-      canProps ? listProperties(db, ctx, { status: "active", page: 1, pageSize: 6 }) : null,
-      canAcq ? listAcquisitions(db, ctx, { stage: "open", page: 1, pageSize: 5 }) : null,
-      agendaOverview(db, ctx),
-      upcomingContactDates(db, ctx, ymdInTz(new Date(), tzEarly), 14),
-      hasPermission(ctx, "deal.read") ? listDeals(db, ctx, { status: "open", pageSize: 5 }) : null,
-      myNewMatches(db, ctx, 5),
-      expiringReservations(db, ctx, ymdInTz(new Date(), tzEarly), 7),
-      pendingOffersCount(db, ctx, ymdInTz(new Date(), tzEarly)),
-    ]);
+  const [
+    leads,
+    props,
+    expiring,
+    latest,
+    acq,
+    agenda,
+    dates,
+    deals,
+    matches,
+    reservationsDue,
+    offersDue,
+    rentals,
+  ] = await Promise.all([
+    leadStats(db, ctx),
+    propertyStats(db, ctx),
+    expiringExclusivities(db, ctx, 30),
+    canProps ? listProperties(db, ctx, { status: "active", page: 1, pageSize: 6 }) : null,
+    canAcq ? listAcquisitions(db, ctx, { stage: "open", page: 1, pageSize: 5 }) : null,
+    agendaOverview(db, ctx),
+    upcomingContactDates(db, ctx, ymdInTz(new Date(), tzEarly), 14),
+    hasPermission(ctx, "deal.read") ? listDeals(db, ctx, { status: "open", pageSize: 5 }) : null,
+    myNewMatches(db, ctx, 5),
+    expiringReservations(db, ctx, ymdInTz(new Date(), tzEarly), 7),
+    pendingOffersCount(db, ctx, ymdInTz(new Date(), tzEarly)),
+    rentalAlerts(db, ctx, ymdInTz(new Date(), tzEarly)),
+  ]);
   const tz = ctx.organization.timezone || TZ;
 
   const activeProps = props
@@ -214,6 +229,12 @@ export default async function DashboardPage() {
       perm: hasPermission(ctx, "valuation.read"),
     },
     { label: "Agenda", href: "/agenda", icon: CalendarDays, perm: hasPermission(ctx, "calendar.read") },
+    {
+      label: "Contratos",
+      href: "/rentals/contracts",
+      icon: FileSignature,
+      perm: hasPermission(ctx, "contract.read"),
+    },
     {
       label: "Comisiones",
       href: "/finance/commissions",
@@ -360,6 +381,47 @@ export default async function DashboardPage() {
                   </li>
                 );
               })}
+            </ul>
+          </Card>
+        </section>
+      )}
+
+      {rentals && (rentals.expiring.length > 0 || rentals.adjustments.length > 0) && (
+        <section>
+          <SectionTitle href="/rentals/renewals" linkLabel="Ver renovaciones">
+            Alquileres · vencimientos y ajustes
+          </SectionTitle>
+          <Card className="rounded-xl">
+            <ul className="divide-y text-sm">
+              {[
+                ...rentals.expiring.map((c) => ({
+                  c,
+                  what:
+                    c.endDate < ymdInTz(new Date(), tz)
+                      ? "Vencido"
+                      : `Vence el ${c.endDate.split("-").reverse().join("/")}`,
+                })),
+                ...rentals.adjustments.map((c) => ({
+                  c,
+                  what: `Ajuste el ${(c.nextAdjustmentAt ?? "").split("-").reverse().join("/")}`,
+                })),
+              ]
+                .slice(0, 6)
+                .map(({ c, what }) => (
+                  <li key={`${c.id}-${what}`}>
+                    <Link
+                      href={`/rentals/contracts/${c.id}`}
+                      className="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-surface-muted"
+                    >
+                      <span className="min-w-0 truncate">
+                        <span className="font-medium">{c.propertyAddress || c.propertyLabel}</span> ·{" "}
+                        {c.tenantName}{" "}
+                        <span className="font-mono text-xs text-muted-foreground">{c.code}</span>
+                      </span>
+                      <Badge tone={what === "Vencido" ? "danger" : "warning"}>{what}</Badge>
+                    </Link>
+                  </li>
+                ))}
             </ul>
           </Card>
         </section>
