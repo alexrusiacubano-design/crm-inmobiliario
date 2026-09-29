@@ -183,6 +183,7 @@ export default async function AcquisitionPage({ params }: { params: Promise<{ id
                 acquisitionId={a.id}
                 propertyId={a.propertyId}
                 defaultCurrency={a.currency}
+                subject={{ localityId: a.localityId, neighborhoodId: a.neighborhoodId }}
               />
             )}
           </div>

@@ -11,3 +11,5 @@ export * from "./validation/agenda";
 export * from "./deals";
 export * from "./validation/deals";
 export * from "./performance";
+export * from "./matching";
+export * from "./validation/matching";

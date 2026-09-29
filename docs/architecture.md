@@ -104,3 +104,24 @@ Suspender o cambiar la contraseña de un usuario cierra sus sesiones.
   (half-even). Los pesos se suman a la facturación en USD con el tipo de cambio de referencia.
 - **Métricas y puntos** se calculan de lo registrado (agenda, propiedades, leads, etapas y cobros);
   no hay carga manual. Las reglas de puntos (`POINT_RULES`) se muestran en pantalla.
+
+## Matching y comparables (Fase 4)
+
+- **Reglas puras.** `scoreMatch` (`packages/shared/src/matching.ts`) decide si una propiedad sirve
+  para una búsqueda y con qué puntaje (0–100). Excluyen: operación, estado ofrecible (disponible,
+  publicada, en negociación), tipo, zona (barrio, localidad o departamento), precio más de 10 %
+  arriba del máximo, dos dormitorios menos y mascotas en alquiler. El resto penaliza. Se sugiere
+  desde 50 %. Los motivos se guardan con la sugerencia y se muestran al agente.
+- **Monedas.** Precios y gastos comunes se convierten a la moneda de la búsqueda con el tipo de
+  cambio de referencia de la organización, en enteros (sin float).
+- **`property_match`.** Una fila por lead × propiedad con estado (sugerida, enviada, le interesa,
+  descartada). Se recalcula al abrir la ficha del lead, la de la propiedad, el tablero de
+  matching o el dashboard: las sugerencias que dejan de cumplir se borran si nadie las trabajó y
+  quedan inactivas si ya se enviaron. Enviar y marcar interés quedan en el timeline del cliente.
+- **Alcance.** El inventario es de toda la inmobiliaria; los leads se ven según `lead.read`.
+  Cambiar el estado exige `lead.update` sobre el lead y `matching.run`.
+- **Comparables.** `suggestComparables` busca en el inventario propio mismo tipo y operación, el
+  mismo barrio (o la localidad si hay menos de 3) y ±35 % de metraje; prefiere precios de cierre
+  reales (operaciones firmadas o cerradas) sobre precios publicados. Devuelve la mediana de precio
+  por m², un valor sugerido y una confianza según la cantidad de muestras. El agente revisa y
+  registra la tasación como siempre.

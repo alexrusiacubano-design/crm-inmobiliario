@@ -34,6 +34,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { EventsPanel } from "@/components/agenda/events-panel";
 import { NewDealButton } from "@/components/deals/new-deal-dialog";
+import { PropertyMatchesPanel } from "@/components/matching/property-matches-panel";
 import { AcquisitionStageBadge, PropertyStatusBadge } from "@/components/properties/badges";
 import { DocumentsPanel } from "@/components/properties/documents-panel";
 import { formatDay, minorToInput, price } from "@/components/properties/format";
@@ -60,7 +61,7 @@ const TABS = [
   { key: "valuations", label: "Tasaciones" },
   { key: "documents", label: "Documentos" },
   { key: "history", label: "Historial" },
-  { key: "matches", label: "Clientes compatibles", phase: 4 },
+  { key: "matches", label: "Clientes compatibles" },
   { key: "agenda", label: "Visitas" },
   { key: "offers", label: "Ofertas", phase: 6 },
 ] as const;
@@ -264,7 +265,9 @@ export default async function PropertyPage({
         )}
       </nav>
 
-      {tab === "agenda" ? (
+      {tab === "matches" ? (
+        <PropertyMatchesPanel db={db} ctx={ctx} propertyId={p.id} />
+      ) : tab === "agenda" ? (
         <EventsPanel
           db={db}
           ctx={ctx}

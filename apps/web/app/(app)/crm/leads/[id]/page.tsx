@@ -1,6 +1,7 @@
 import {
   geoNames,
   getLead,
+  leadMatches,
   listAssignees,
   listGeo,
   listTimeline,
@@ -27,6 +28,8 @@ import { ChannelIcon, LeadStatusBadge, channelHref } from "@/components/crm/badg
 import { LeadAssignControl, LeadStatusControl, LeadStepper } from "@/components/crm/lead-controls";
 import { EditSearchButton, type SearchFormValues } from "@/components/crm/search-profile-form";
 import { Timeline } from "@/components/crm/timeline";
+import { MatchList } from "@/components/matching/match-list";
+import { toMatchItem } from "@/components/matching/serialize";
 import { Card } from "@/components/ui/misc";
 import { requireSession } from "@/lib/session";
 import { formatDateTime } from "@/lib/utils";
@@ -57,7 +60,7 @@ export default async function LeadPage({ params }: { params: Promise<{ id: strin
     throw error;
   });
   const { lead: l, contact: c, search: s, permissions } = data;
-  const [timeline, assignees, geo, zones] = await Promise.all([
+  const [timeline, assignees, geo, zones, matches] = await Promise.all([
     listTimeline(db, ctx, { leadId: l.id }),
     permissions.assign ? listAssignees(db, ctx) : Promise.resolve([]),
     permissions.update ? listGeo(db) : Promise.resolve(null),
@@ -68,7 +71,15 @@ export default async function LeadPage({ params }: { params: Promise<{ id: strin
           neighborhoodIds: s.neighborhoodIds,
         })
       : Promise.resolve(null),
+    leadMatches(db, ctx, l.id),
   ]);
+  const matchItems = matches.items.map(toMatchItem);
+  const activeMatches = matchItems.filter((m) => m.active && m.status !== "discarded").length;
+  const phone =
+    c.channels.find((ch) => ch.type === "whatsapp")?.normalized ??
+    c.channels.find((ch) => ch.type === "phone")?.normalized ??
+    null;
+  const firstName = c.displayName.split(" ")[0] ?? "";
 
   const searchInitial: SearchFormValues | null = s && {
     operation: s.operation,
@@ -220,20 +231,38 @@ export default async function LeadPage({ params }: { params: Promise<{ id: strin
                 </div>
               ))}
             </dl>
-            <p className="border-t px-4 py-2.5 text-xs text-muted-foreground">
-              Las propiedades compatibles aparecen aquí cuando esté el matching (Fase 4).
-            </p>
           </Card>
         </div>
 
-        <div>
-          <h2 className="mb-2 text-sm font-semibold">Timeline</h2>
-          <Timeline
-            initial={timeline.items.map((i) => ({ ...i, occurredAt: i.occurredAt.toISOString() }))}
-            nextCursor={timeline.nextCursor}
-            leadId={l.id}
-            canLog={permissions.update}
-          />
+        <div className="grid content-start gap-5">
+          <section aria-labelledby="matches-title">
+            <div className="mb-2 flex items-center justify-between">
+              <h2 id="matches-title" className="text-sm font-semibold">
+                Propiedades sugeridas{" "}
+                <span className="font-normal text-muted-foreground">{activeMatches}</span>
+              </h2>
+              <Link href="/commercial/matching" className="text-xs text-primary hover:underline">
+                Ver todo el matching
+              </Link>
+            </div>
+            <MatchList
+              items={matchItems}
+              canManage={matches.canManage}
+              phone={phone}
+              firstName={firstName}
+              hasProfile={matches.hasProfile}
+              open={matches.open}
+            />
+          </section>
+          <div>
+            <h2 className="mb-2 text-sm font-semibold">Timeline</h2>
+            <Timeline
+              initial={timeline.items.map((i) => ({ ...i, occurredAt: i.occurredAt.toISOString() }))}
+              nextCursor={timeline.nextCursor}
+              leadId={l.id}
+              canLog={permissions.update}
+            />
+          </div>
         </div>
       </div>
     </>

@@ -27,3 +27,4 @@ export * from "./documents/documents";
 export * from "./agenda/events";
 export * from "./deals/deals";
 export * from "./performance/performance";
+export * from "./matching/matching";

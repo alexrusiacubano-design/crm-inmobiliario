@@ -45,6 +45,12 @@ export function describeActivity(item: {
       return "Se actualizó la búsqueda";
     case "owner_updated":
       return "Datos de propietario";
+    case "property_sent":
+      return `Propiedad enviada: ${String(p.code ?? "")} ${String(p.title ?? "")}`.trim();
+    case "match_feedback":
+      return p.status === "interested"
+        ? `Le interesa ${String(p.code ?? "")} ${String(p.title ?? "")}`.trim()
+        : `Descartó ${String(p.code ?? "")} ${String(p.title ?? "")}`.trim();
     case "visit":
       return "Visita realizada";
     case "task":

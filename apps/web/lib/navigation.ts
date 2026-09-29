@@ -125,8 +125,8 @@ export const NAVIGATION: NavSection[] = [
       {
         href: "/commercial/matching",
         label: "nav.commercial.matching",
-        permission: "matching.run",
-        plannedPhase: 4,
+        permission: "lead.read",
+        plannedPhase: null,
         description: "Compatibilidad entre búsquedas y propiedades.",
       },
       {

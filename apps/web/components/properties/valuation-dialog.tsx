@@ -1,10 +1,15 @@
 "use client";
 
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Sparkles, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
+import { PROPERTY_TYPE_LABELS, PROPERTY_TYPES, type PropertyType } from "@crm/shared/crm";
+import { CONFIDENCE_LABELS } from "@crm/shared/matching";
+import { formatMoney, money } from "@crm/shared/money";
 import { VALUATION_METHOD_LABELS, VALUATION_METHODS, type ValuationMethod } from "@crm/shared/property";
+import { suggestComparablesAction } from "@/app/(app)/commercial/matching/actions";
+import { minorToInput } from "@/components/properties/format";
 import { createValuationAction } from "@/app/(app)/properties/actions";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter } from "@/components/ui/dialog";
@@ -24,10 +29,13 @@ export function NewValuationButton({
   propertyId,
   acquisitionId,
   defaultCurrency = "USD",
+  subject,
 }: {
   propertyId?: string | null;
   acquisitionId?: string | null;
   defaultCurrency?: "USD" | "UYU";
+  /** Datos para buscar comparables cuando todavía no hay propiedad (captación). */
+  subject?: { localityId?: number | null; neighborhoodId?: number | null } | null;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -41,6 +49,62 @@ export function NewValuationButton({
   const [comparables, setComparables] = useState<Comparable[]>([]);
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [pending, startTransition] = useTransition();
+  const [suggesting, startSuggest] = useTransition();
+  const [compType, setCompType] = useState<PropertyType>("apartment");
+  const [compArea, setCompArea] = useState("");
+  const [compInfo, setCompInfo] = useState<string | null>(null);
+
+  const suggest = () =>
+    startSuggest(async () => {
+      const r = await suggestComparablesAction(
+        propertyId
+          ? { propertyId, operation: "sale" }
+          : {
+              type: compType,
+              operation: "sale",
+              localityId: subject?.localityId ?? null,
+              neighborhoodId: subject?.neighborhoodId ?? null,
+              areaM2: compArea || null,
+            },
+      );
+      if (!r.ok) return void toast.error(r.error);
+      const d = r.data;
+      if (!d.items.length) {
+        setCompInfo("No hay propiedades parecidas en el inventario para comparar.");
+        return;
+      }
+      setCurrency(d.currency);
+      setComparables(
+        d.items.slice(0, 20).map((i) => ({
+          address: [
+            i.code,
+            i.address ?? i.displayTitle,
+            i.neighborhoodName,
+            i.source === "closed" ? "(cierre)" : null,
+          ]
+            .filter(Boolean)
+            .join(" · ")
+            .slice(0, 200),
+          price: minorToInput(i.priceMinor),
+          areaM2: i.areaM2 ? String(i.areaM2).replace(".", ",") : "",
+          url: "",
+        })),
+      );
+      if (d.suggestedValue) {
+        const v = BigInt(d.suggestedValue);
+        const round = (x: bigint) => (x / 100_000n) * 100_000n; // a miles
+        setValue(minorToInput(round(v)));
+        setMin(minorToInput(round((v * 93n) / 100n)));
+        setMax(minorToInput(round((v * 107n) / 100n)));
+      }
+      const ppm = d.medianPricePerM2 ? formatMoney(money(BigInt(d.medianPricePerM2), d.currency)) : null;
+      setCompInfo(
+        `${d.items.length} comparable(s) ${d.zone === "neighborhood" ? "del barrio" : d.zone === "locality" ? "de la localidad" : ""}` +
+          (d.closedCount ? `, ${d.closedCount} con precio de cierre real` : "") +
+          (ppm ? ` · mediana ${ppm}/m²` : "") +
+          ` · confianza ${CONFIDENCE_LABELS[d.confidence].toLowerCase()}. Revisá y ajustá antes de registrar.`,
+      );
+    });
 
   const reset = () => {
     setMethod("comparables");
@@ -52,6 +116,7 @@ export function NewValuationButton({
     setNotes("");
     setComparables([]);
     setErrors({});
+    setCompInfo(null);
   };
 
   return (
@@ -142,6 +207,38 @@ export function NewValuationButton({
           </div>
           <fieldset className="grid gap-2">
             <legend className="mb-1 text-sm font-medium">Comparables</legend>
+            <div className="flex flex-wrap items-end gap-2 rounded-md border border-dashed p-3">
+              {!propertyId && (
+                <>
+                  <Field label="Tipo" htmlFor="co-t">
+                    <Select
+                      id="co-t"
+                      value={compType}
+                      onChange={(e) => setCompType(e.target.value as PropertyType)}
+                    >
+                      {PROPERTY_TYPES.map((t) => (
+                        <option key={t} value={t}>
+                          {PROPERTY_TYPE_LABELS[t]}
+                        </option>
+                      ))}
+                    </Select>
+                  </Field>
+                  <Field label="m² aprox." htmlFor="co-area">
+                    <Input
+                      id="co-area"
+                      inputMode="numeric"
+                      className="w-24"
+                      value={compArea}
+                      onChange={(e) => setCompArea(e.target.value.replace(/\D/g, ""))}
+                    />
+                  </Field>
+                </>
+              )}
+              <Button type="button" size="sm" variant="secondary" loading={suggesting} onClick={suggest}>
+                <Sparkles /> Sugerir desde el inventario
+              </Button>
+              {compInfo && <p className="basis-full text-xs text-muted-foreground">{compInfo}</p>}
+            </div>
             {comparables.map((c, i) => {
               const upd = (patch: Partial<Comparable>) =>
                 setComparables(comparables.map((x, j) => (j === i ? { ...x, ...patch } : x)));

@@ -8,6 +8,7 @@ import {
   listProperties,
   propertyStats,
   upcomingContactDates,
+  myNewMatches,
 } from "@crm/core";
 import { getDb } from "@crm/db";
 import {
@@ -104,7 +105,7 @@ export default async function DashboardPage() {
   const canAcq = hasPermission(ctx, "acquisition.read");
 
   const tzEarly = ctx.organization.timezone || TZ;
-  const [leads, props, expiring, latest, acq, agenda, dates, deals] = await Promise.all([
+  const [leads, props, expiring, latest, acq, agenda, dates, deals, matches] = await Promise.all([
     leadStats(db, ctx),
     propertyStats(db, ctx),
     expiringExclusivities(db, ctx, 30),
@@ -113,6 +114,7 @@ export default async function DashboardPage() {
     agendaOverview(db, ctx),
     upcomingContactDates(db, ctx, ymdInTz(new Date(), tzEarly), 14),
     hasPermission(ctx, "deal.read") ? listDeals(db, ctx, { status: "open", pageSize: 5 }) : null,
+    myNewMatches(db, ctx, 5),
   ]);
   const tz = ctx.organization.timezone || TZ;
 
@@ -311,6 +313,39 @@ export default async function DashboardPage() {
                 </li>
               ))}
             </ul>
+          </Card>
+        </section>
+      )}
+
+      {matches && matches.total > 0 && (
+        <section>
+          <SectionTitle>
+            Propiedades para ofrecer · {matches.total}
+            {matches.lastWeek > 0 ? ` (${matches.lastWeek} nuevas esta semana)` : ""}
+          </SectionTitle>
+          <Card className="rounded-xl">
+            <ul className="divide-y text-sm">
+              {matches.items.map((m) => (
+                <li key={m.id}>
+                  <Link
+                    href={`/crm/leads/${m.leadId}`}
+                    className="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-surface-muted"
+                  >
+                    <span className="min-w-0 truncate">
+                      <span className="font-medium">{m.contactName}</span> ← {m.displayTitle}{" "}
+                      <span className="font-mono text-xs text-muted-foreground">{m.code}</span>
+                    </span>
+                    <Badge tone={m.score >= 90 ? "success" : "primary"}>{m.score} %</Badge>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            <Link
+              href="/commercial/matching?mine=1"
+              className="block border-t px-4 py-2 text-xs text-primary hover:underline"
+            >
+              Ver todo el matching
+            </Link>
           </Card>
         </section>
       )}

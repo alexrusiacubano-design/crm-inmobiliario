@@ -193,6 +193,7 @@ export const ACTIVITY_TYPES = [
   "search_updated",
   "owner_updated",
   "property_sent",
+  "match_feedback",
   "visit",
   "offer",
   "document",
