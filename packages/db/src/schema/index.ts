@@ -10,3 +10,4 @@ export * from "./performance";
 export * from "./matching";
 export * from "./offers";
 export * from "./rentals";
+export * from "./guarantees";

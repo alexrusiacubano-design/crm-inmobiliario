@@ -17,3 +17,5 @@ export * from "./offers";
 export * from "./validation/offers";
 export * from "./rentals";
 export * from "./validation/rentals";
+export * from "./guarantees";
+export * from "./validation/guarantees";

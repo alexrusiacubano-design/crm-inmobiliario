@@ -9,6 +9,7 @@ import {
   propertyOwner,
   rentalContract,
   rentalContractRent,
+  rentalGuarantee,
   user,
   type Db,
   type DbOrTx,
@@ -378,6 +379,17 @@ export async function renewContract(db: Db, ctx: RequestContext, rawInput: unkno
       })
       .returning();
     if (!row) throw new Error("No se pudo renovar");
+    // Las garantías del contrato siguen con la renovación (se controla su vencimiento aparte).
+    await tx
+      .update(rentalGuarantee)
+      .set({ contractId: row.id })
+      .where(
+        and(
+          eq(rentalGuarantee.contractId, c.id),
+          inArray(rentalGuarantee.status, ["active", "approved", "in_process", "expired"]),
+          isNull(rentalGuarantee.deletedAt),
+        ),
+      );
     await tx.insert(rentalContractRent).values({
       organizationId: ctx.organizationId,
       contractId: row.id,
@@ -433,6 +445,20 @@ export async function closeContract(db: Db, ctx: RequestContext, rawInput: unkno
       c,
       `Contrato ${c.code} ${CONTRACT_STATUS_LABELS[input.kind].toLowerCase()}`,
     );
+    // Sin contrato vigente, sus garantías quedan liberadas.
+    await tx
+      .update(rentalGuarantee)
+      .set({
+        status: "released",
+        statusNote: `Contrato ${c.code} ${CONTRACT_STATUS_LABELS[input.kind].toLowerCase()}`,
+      })
+      .where(
+        and(
+          eq(rentalGuarantee.contractId, c.id),
+          inArray(rentalGuarantee.status, ["active", "expired"]),
+          isNull(rentalGuarantee.deletedAt),
+        ),
+      );
     await logActivity(tx, ctx, {
       type: "document",
       contactId: c.tenantContactId,

@@ -1,4 +1,4 @@
-import { getContract, NotFoundError, ValidationError } from "@crm/core";
+import { getContract, hasPermission, listGuarantees, NotFoundError, ValidationError } from "@crm/core";
 import { getDb } from "@crm/db";
 import { formatBasisPoints } from "@crm/shared";
 import {
@@ -13,6 +13,8 @@ import { notFound } from "next/navigation";
 import { PropertyStatusBadge } from "@/components/properties/badges";
 import { formatDay, price } from "@/components/properties/format";
 import { ContractActions } from "@/components/rentals/contract-actions";
+import { toGuaranteeView } from "@/components/rentals/guarantee-serialize";
+import { GuaranteesPanel } from "@/components/rentals/guarantees-panel";
 import { ContractAlertBadges, ContractStatusBadge } from "@/components/rentals/badges";
 import { Card } from "@/components/ui/misc";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
@@ -31,6 +33,9 @@ export default async function ContractPage({ params }: { params: Promise<{ id: s
     throw error;
   });
   const { contract: c, property: p } = data;
+  const guarantees = hasPermission(ctx, "guarantee.read")
+    ? await listGuarantees(getDb(), ctx, { status: "all", contractId: c.id }, today)
+    : null;
   const wa = whatsappLink(data.tenantPhone);
 
   const facts: [string, React.ReactNode][] = [
@@ -164,6 +169,14 @@ export default async function ContractPage({ params }: { params: Promise<{ id: s
         </Card>
 
         <div className="grid content-start gap-5">
+          {guarantees && (
+            <GuaranteesPanel
+              items={guarantees.items.map(toGuaranteeView)}
+              canManage={guarantees.canManage && c.status === "active"}
+              tenant={{ id: c.tenantContactId, label: data.tenantName }}
+              contractId={c.id}
+            />
+          )}
           <Card>
             <h2 className="border-b px-4 py-3 text-sm font-semibold">Historial del alquiler</h2>
             <Table>

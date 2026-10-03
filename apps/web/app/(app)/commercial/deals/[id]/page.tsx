@@ -4,6 +4,7 @@ import {
   getDeal,
   hasPermission,
   listDealUsers,
+  listGuarantees,
   NotFoundError,
   ValidationError,
 } from "@crm/core";
@@ -15,6 +16,8 @@ import { notFound } from "next/navigation";
 import { CommissionsCard, DealStageControls, ParticipantsCard } from "@/components/deals/deal-controls";
 import { OffersCard } from "@/components/deals/offers-card";
 import { NewContractButton } from "@/components/rentals/new-contract-dialog";
+import { toGuaranteeView } from "@/components/rentals/guarantee-serialize";
+import { GuaranteesPanel } from "@/components/rentals/guarantees-panel";
 import { DEFAULT_TZ, ymdInTz } from "@/lib/tz";
 import { formatDateTime } from "@/lib/utils";
 import { PropertyStatusBadge } from "@/components/properties/badges";
@@ -37,13 +40,17 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
     can.manage || can.commissions ? listDealUsers(db, ctx) : Promise.resolve([]),
     dealOffers(db, ctx, d.id),
   ]);
+  const today = ymdInTz(new Date(), ctx.organization.timezone || DEFAULT_TZ);
   const contract = d.operation !== "sale" ? await contractForDeal(db, ctx, d.id) : null;
+  const guarantees =
+    d.operation !== "sale" && hasPermission(ctx, "guarantee.read")
+      ? await listGuarantees(db, ctx, { status: "all", tenantContactId: d.clientContactId }, today)
+      : null;
   const canContract =
     d.operation !== "sale" &&
     !contract &&
     ["notary", "signed", "closed"].includes(d.stage) &&
     hasPermission(ctx, "contract.manage");
-  const today = ymdInTz(new Date(), ctx.organization.timezone || DEFAULT_TZ);
   const open = d.stage !== "closed" && d.stage !== "fallen";
 
   return (
@@ -214,6 +221,16 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
           <Card className="p-4 text-sm text-muted-foreground">Tu rol no incluye los honorarios.</Card>
         )}
 
+        {guarantees && (
+          <GuaranteesPanel
+            title="Garantía del inquilino"
+            items={guarantees.items.map(toGuaranteeView)}
+            canManage={guarantees.canManage && d.stage !== "fallen"}
+            tenant={{ id: d.clientContactId, label: data.clientName }}
+            contractId={contract?.id ?? null}
+            dealId={d.id}
+          />
+        )}
         <ParticipantsCard
           dealId={d.id}
           items={data.participants}

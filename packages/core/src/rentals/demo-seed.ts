@@ -1,10 +1,11 @@
 import { and, asc, count, eq, inArray, isNull, ne } from "drizzle-orm";
-import { deal, lead, organization, property, rentalContract, type Db } from "@crm/db";
-import { addMonths } from "@crm/shared";
+import { deal, lead, organization, property, rentalContract, rentalGuarantee, type Db } from "@crm/db";
+import { addDaysYmd, addMonths } from "@crm/shared";
 import { DEMO_ORG_SLUG } from "@crm/db/seed";
 import { changeDealStage } from "../deals/deals";
 import { ctxForDemo } from "../properties/demo-seed";
 import { createContract } from "./contracts";
+import { changeGuaranteeStatus, createGuarantee, setGuaranteeRequirement } from "./guarantees";
 
 const today = () => new Date().toISOString().slice(0, 10);
 const firstOfMonth = (ymd: string) => `${ymd.slice(0, 7)}-01`;
@@ -92,4 +93,65 @@ export async function seedDemoContracts(db: Db): Promise<{ skipped: boolean; con
     contracts += 1;
   }
   return { skipped: false, contracts };
+}
+
+/** Garantías DEMO: una vigente que vence pronto y un seguro de fianza en trámite. */
+export async function seedDemoGuarantees(db: Db): Promise<{ skipped: boolean; guarantees: number }> {
+  const [org] = await db.select().from(organization).where(eq(organization.slug, DEMO_ORG_SLUG));
+  if (!org?.isDemo) throw new Error("No existe la organización DEMO");
+  const [existing] = await db
+    .select({ n: count() })
+    .from(rentalGuarantee)
+    .where(eq(rentalGuarantee.organizationId, org.id));
+  if ((existing?.n ?? 0) > 0) return { skipped: true, guarantees: 0 };
+  const admin = await ctxForDemo(db, org.id, "administracion");
+  const contracts = await db
+    .select()
+    .from(rentalContract)
+    .where(and(eq(rentalContract.organizationId, org.id), eq(rentalContract.status, "active")))
+    .orderBy(asc(rentalContract.endDate));
+  const t = today();
+  let n = 0;
+  const [soon, later] = contracts;
+  if (soon) {
+    const g = await createGuarantee(
+      db,
+      admin,
+      {
+        tenantContactId: soon.tenantContactId,
+        contractId: soon.id,
+        type: "anda",
+        provider: "ANDA",
+        reference: "DEMO-ANDA-001",
+        currency: soon.currency,
+        coverage: ((soon.rentMinor * 12n) / 100n).toString(),
+        validFrom: soon.startDate,
+        validUntil: addDaysYmd(t, 40),
+      },
+      t,
+    );
+    for (let i = 0; i < g.requirements.length; i++)
+      await setGuaranteeRequirement(db, admin, { id: g.id, index: i, done: true });
+    await changeGuaranteeStatus(db, admin, { id: g.id, status: "approved" });
+    await changeGuaranteeStatus(db, admin, { id: g.id, status: "active" });
+    n += 1;
+  }
+  if (later) {
+    const g = await createGuarantee(
+      db,
+      admin,
+      {
+        tenantContactId: later.tenantContactId,
+        contractId: later.id,
+        type: "insurance",
+        provider: "Aseguradora DEMO",
+        notes: "Pidieron recibos de los últimos 3 meses",
+      },
+      t,
+    );
+    await setGuaranteeRequirement(db, admin, { id: g.id, index: 0, done: true });
+    await setGuaranteeRequirement(db, admin, { id: g.id, index: 1, done: true });
+    n += 1;
+  }
+  return { skipped: false, guarantees: n };
 }

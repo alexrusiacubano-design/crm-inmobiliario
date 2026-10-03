@@ -168,7 +168,7 @@ export const NAVIGATION: NavSection[] = [
         href: "/rentals/guarantees",
         label: "nav.rentals.guarantees",
         permission: "guarantee.read",
-        plannedPhase: 8,
+        plannedPhase: null,
         description: "Garantías configurables: CGN, MVOT, ANDA, aseguradoras, depósito.",
       },
       {

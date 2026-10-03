@@ -13,6 +13,7 @@ import {
   expiringReservations,
   pendingOffersCount,
   rentalAlerts,
+  listGuarantees,
 } from "@crm/core";
 import { getDb } from "@crm/db";
 import {
@@ -137,6 +138,9 @@ export default async function DashboardPage() {
     pendingOffersCount(db, ctx, ymdInTz(new Date(), tzEarly)),
     rentalAlerts(db, ctx, ymdInTz(new Date(), tzEarly)),
   ]);
+  const guaranteeAlerts = hasPermission(ctx, "guarantee.read")
+    ? (await listGuarantees(db, ctx, { status: "alerts" }, ymdInTz(new Date(), tzEarly))).items
+    : [];
   const tz = ctx.organization.timezone || TZ;
 
   const activeProps = props
@@ -386,22 +390,37 @@ export default async function DashboardPage() {
         </section>
       )}
 
-      {rentals && (rentals.expiring.length > 0 || rentals.adjustments.length > 0) && (
+      {((rentals && (rentals.expiring.length > 0 || rentals.adjustments.length > 0)) ||
+        guaranteeAlerts.length > 0) && (
         <section>
           <SectionTitle href="/rentals/renewals" linkLabel="Ver renovaciones">
             Alquileres · vencimientos y ajustes
           </SectionTitle>
           <Card className="rounded-xl">
             <ul className="divide-y text-sm">
+              {guaranteeAlerts.length > 0 && (
+                <li>
+                  <Link
+                    href="/rentals/guarantees"
+                    className="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-surface-muted"
+                  >
+                    <span>
+                      <span className="font-medium">{guaranteeAlerts.length}</span> garantía(s) para revisar
+                      (trámites, requisitos o vencimientos)
+                    </span>
+                    <Badge tone="warning">Garantías</Badge>
+                  </Link>
+                </li>
+              )}
               {[
-                ...rentals.expiring.map((c) => ({
+                ...(rentals?.expiring ?? []).map((c) => ({
                   c,
                   what:
                     c.endDate < ymdInTz(new Date(), tz)
                       ? "Vencido"
                       : `Vence el ${c.endDate.split("-").reverse().join("/")}`,
                 })),
-                ...rentals.adjustments.map((c) => ({
+                ...(rentals?.adjustments ?? []).map((c) => ({
                   c,
                   what: `Ajuste el ${(c.nextAdjustmentAt ?? "").split("-").reverse().join("/")}`,
                 })),

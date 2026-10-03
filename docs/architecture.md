@@ -156,3 +156,17 @@ Suspender o cambiar la contraseña de un usuario cierra sus sesiones.
   motivo obligatorio) libera la propiedad.
 - **Avisos:** vencimientos a 90 días y ajustes a 30 (incluye vencidos y atrasados) en la bandeja
   de renovaciones, el listado y el dashboard. Permisos `contract.read` / `contract.manage`.
+
+## Garantías (Fase 8)
+
+- **`rental_guarantee`.** Tipos de Uruguay: ANDA, CGN, Fondo de Garantía del MVOT, seguro de
+  fianza, depósito (BHU, inmobiliaria, propietario) y garantía propietaria con fiador. Guarda
+  entidad, n.º de póliza o certificado, cobertura, vigencia y una lista de requisitos que se
+  copia del tipo y se puede ampliar.
+- **Trámite:** en trámite → aprobada / rechazada (con motivo) → vigente → vencida o liberada.
+  Pasar a vigente exige contrato vinculado y requisitos completos (también hay constraint en la
+  base). Se puede iniciar desde la operación de alquiler, antes del contrato.
+- **Con el contrato:** al renovar, las garantías pasan al contrato nuevo; al finalizar o
+  rescindir, las vigentes quedan liberadas.
+- **Avisos:** vencimiento a 60 días, trámite demorado (más de 15 días), requisitos pendientes,
+  garantía que no cubre hasta el fin del contrato y contratos vigentes sin garantía.
