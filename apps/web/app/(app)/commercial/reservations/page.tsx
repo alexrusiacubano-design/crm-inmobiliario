@@ -120,7 +120,7 @@ export default async function ReservationsPage({
                       </span>
                     </TD>
                     <TD>{x.clientName}</TD>
-                    <TD className="text-right font-semibold tabular">
+                    <TD className="text-right font-semibold tabular whitespace-nowrap">
                       {price(x.depositMinor, x.currency)}
                       {x.receiptNumber && (
                         <span className="block text-xs font-normal text-muted-foreground">

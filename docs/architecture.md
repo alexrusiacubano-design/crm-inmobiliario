@@ -170,3 +170,20 @@ Suspender o cambiar la contraseña de un usuario cierra sus sesiones.
   rescindir, las vigentes quedan liberadas.
 - **Avisos:** vencimiento a 60 días, trámite demorado (más de 15 días), requisitos pendientes,
   garantía que no cubre hasta el fin del contrato y contratos vigentes sin garantía.
+
+## Cobros y liquidaciones (Fase 9)
+
+- **Cuotas (`rent_charge`)**: una por contrato y mes, con vencimiento en el día de pago. Se
+  generan por período (idempotente) con el alquiler vigente según el historial y prorrateo por
+  días si el contrato empieza o termina dentro del mes. Conceptos (`rent_charge_line`,
+  append-only): alquiler, gastos comunes, contribución, recargo por mora, bonificación (resta).
+- **Pagos (`rent_payment`, append-only)**: parciales permitidos, nunca por encima del saldo.
+  Anular es un contra-asiento negativo que referencia al original (una sola vez, con motivo, y
+  solo si la cuota no está liquidada). Estado de la cuota: pendiente, parcial, pagada o vencida.
+- **Liquidación (`owner_settlement`)**: cobrado − comisión de administración (solo sobre la parte
+  de alquiler cobrada) − descuentos detallados = neto, repartido entre propietarios por
+  participación con `allocate` (la suma da exacto). Borrador → aprobada → pagada (fecha y
+  referencia) o anulada con motivo; una vigente por cuota. CHECK en la base: neto = cobrado −
+  comisión − descuentos.
+- Permisos: `rent.read/manage`, `payment.register`, `payment.void`, `settlement.read/manage`.
+  La facturación electrónica (CFE) sigue pendiente: requiere un proveedor habilitado por DGI.

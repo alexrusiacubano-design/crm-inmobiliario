@@ -19,3 +19,5 @@ export * from "./rentals";
 export * from "./validation/rentals";
 export * from "./guarantees";
 export * from "./validation/guarantees";
+export * from "./billing";
+export * from "./validation/billing";

@@ -1,4 +1,13 @@
-import { getContract, hasPermission, listGuarantees, NotFoundError, ValidationError } from "@crm/core";
+import {
+  getContract,
+  hasPermission,
+  listCharges,
+  listGuarantees,
+  NotFoundError,
+  ValidationError,
+} from "@crm/core";
+import { periodLabel } from "@crm/shared/billing";
+import { ChargeStatusBadge } from "@/components/rentals/charge-badge";
 import { getDb } from "@crm/db";
 import { formatBasisPoints } from "@crm/shared";
 import {
@@ -33,6 +42,9 @@ export default async function ContractPage({ params }: { params: Promise<{ id: s
     throw error;
   });
   const { contract: c, property: p } = data;
+  const charges = hasPermission(ctx, "rent.read")
+    ? await listCharges(getDb(), ctx, { contractId: c.id }, today)
+    : null;
   const guarantees = hasPermission(ctx, "guarantee.read")
     ? await listGuarantees(getDb(), ctx, { status: "all", contractId: c.id }, today)
     : null;
@@ -176,6 +188,38 @@ export default async function ContractPage({ params }: { params: Promise<{ id: s
               tenant={{ id: c.tenantContactId, label: data.tenantName }}
               contractId={c.id}
             />
+          )}
+          {charges && charges.items.length > 0 && (
+            <Card>
+              <div className="flex items-center justify-between border-b px-4 py-3">
+                <h2 className="text-sm font-semibold">Cuenta corriente</h2>
+                <span className="text-xs text-muted-foreground">
+                  Saldo:{" "}
+                  <strong className={cn(charges.totals.overdueCount > 0 && "text-danger")}>
+                    {price(charges.totals.outstanding[c.currency], c.currency)}
+                  </strong>
+                </span>
+              </div>
+              <ul className="divide-y text-sm">
+                {[...charges.items]
+                  .reverse()
+                  .slice(0, 12)
+                  .map((ch) => (
+                    <li key={ch.id}>
+                      <Link
+                        href={`/rentals/charges/${ch.id}`}
+                        className="flex items-center justify-between gap-3 px-4 py-2 hover:bg-surface-muted"
+                      >
+                        <span className="capitalize">{periodLabel(ch.period)}</span>
+                        <span className="flex items-center gap-2">
+                          <span className="tabular">{price(ch.totalMinor, ch.currency)}</span>
+                          <ChargeStatusBadge status={ch.status} daysLate={ch.daysLate} />
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+              </ul>
+            </Card>
           )}
           <Card>
             <h2 className="border-b px-4 py-3 text-sm font-semibold">Historial del alquiler</h2>

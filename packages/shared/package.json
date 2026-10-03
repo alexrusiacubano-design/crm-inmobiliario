@@ -26,7 +26,9 @@
     "./rentals": "./src/rentals.ts",
     "./validation/rentals": "./src/validation/rentals.ts",
     "./guarantees": "./src/guarantees.ts",
-    "./validation/guarantees": "./src/validation/guarantees.ts"
+    "./validation/guarantees": "./src/validation/guarantees.ts",
+    "./billing": "./src/billing.ts",
+    "./validation/billing": "./src/validation/billing.ts"
   },
   "scripts": {
     "lint": "eslint .",

@@ -35,6 +35,7 @@ Leyenda: ✅ ya existe en el repo · 🟡 existe parcial · 🔜 fase del roadma
 
 - Contratos de alquiler (F7): plazos, ajustes IPC/UI/fijo, renovaciones encadenadas, rescisiones y avisos.
 - Garantías (F8): ANDA, CGN, MVOT, seguros, depósitos y fiador, con requisitos, trámite y vencimientos.
+- Cobros y liquidaciones (F9): cuotas mensuales, pagos parciales con contra-asiento, morosidad y liquidación al propietario descontando la comisión.
 
 ## Dashboard del agente (lo que se construyó en esta entrega)
 

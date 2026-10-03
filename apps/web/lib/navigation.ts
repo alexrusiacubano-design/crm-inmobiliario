@@ -182,14 +182,14 @@ export const NAVIGATION: NavSection[] = [
         href: "/rentals/charges",
         label: "nav.rentals.charges",
         permission: "rent.read",
-        plannedPhase: 9,
+        plannedPhase: null,
         description: "Cobros mensuales, pagos parciales y morosidad.",
       },
       {
         href: "/rentals/settlements",
         label: "nav.rentals.settlements",
         permission: "settlement.read",
-        plannedPhase: 9,
+        plannedPhase: null,
         description: "Liquidaciones a propietarios.",
       },
       {

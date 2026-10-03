@@ -11,3 +11,4 @@ export * from "./matching";
 export * from "./offers";
 export * from "./rentals";
 export * from "./guarantees";
+export * from "./billing";

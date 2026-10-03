@@ -114,7 +114,9 @@ export default async function ContractsPage({
                   </TD>
                   <TD>{c.tenantName}</TD>
                   <TD className="text-muted-foreground">{c.ownerNames.join(", ") || "—"}</TD>
-                  <TD className="text-right font-semibold tabular">{price(c.rentMinor, c.currency)}</TD>
+                  <TD className="text-right font-semibold tabular whitespace-nowrap">
+                    {price(c.rentMinor, c.currency)}
+                  </TD>
                   <TD className="whitespace-nowrap">
                     {formatDay(c.startDate)} → {formatDay(c.endDate)}
                   </TD>

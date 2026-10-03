@@ -1,9 +1,20 @@
 import { and, asc, count, eq, inArray, isNull, ne } from "drizzle-orm";
-import { deal, lead, organization, property, rentalContract, rentalGuarantee, type Db } from "@crm/db";
+import {
+  deal,
+  lead,
+  organization,
+  property,
+  rentCharge,
+  rentChargeLine,
+  rentalContract,
+  rentalGuarantee,
+  type Db,
+} from "@crm/db";
 import { addDaysYmd, addMonths } from "@crm/shared";
 import { DEMO_ORG_SLUG } from "@crm/db/seed";
 import { changeDealStage } from "../deals/deals";
 import { ctxForDemo } from "../properties/demo-seed";
+import { changeSettlementStatus, createSettlement, generateCharges, registerPayment } from "./billing";
 import { createContract } from "./contracts";
 import { changeGuaranteeStatus, createGuarantee, setGuaranteeRequirement } from "./guarantees";
 
@@ -154,4 +165,51 @@ export async function seedDemoGuarantees(db: Db): Promise<{ skipped: boolean; gu
     n += 1;
   }
   return { skipped: false, guarantees: n };
+}
+
+/** Cobros DEMO: mes anterior cobrado y liquidado, mes actual con pago parcial. */
+export async function seedDemoBilling(db: Db): Promise<{ skipped: boolean; charges: number }> {
+  const [org] = await db.select().from(organization).where(eq(organization.slug, DEMO_ORG_SLUG));
+  if (!org?.isDemo) throw new Error("No existe la organización DEMO");
+  const [existing] = await db
+    .select({ n: count() })
+    .from(rentCharge)
+    .where(eq(rentCharge.organizationId, org.id));
+  if ((existing?.n ?? 0) > 0) return { skipped: true, charges: 0 };
+  const admin = await ctxForDemo(db, org.id, "administracion");
+  const accounting = await ctxForDemo(db, org.id, "contabilidad");
+  const t = today();
+  const current = firstOfMonth(t);
+  const previous = addMonths(current, -1);
+  const a = await generateCharges(db, admin, { period: previous });
+  const b = await generateCharges(db, admin, { period: current });
+  const charges = await db
+    .select()
+    .from(rentCharge)
+    .where(eq(rentCharge.organizationId, org.id))
+    .orderBy(asc(rentCharge.period));
+  for (const ch of charges) {
+    const lines = await db.select().from(rentChargeLine).where(eq(rentChargeLine.chargeId, ch.id));
+    const total = lines.reduce((s, l) => s + l.amountMinor, 0n);
+    if (ch.period === previous) {
+      await registerPayment(db, admin, {
+        chargeId: ch.id,
+        amount: (total / 100n).toString(),
+        paidAt: addDaysYmd(ch.dueDate, -1),
+        method: "transfer",
+        reference: "DEMO",
+      });
+      const s = await createSettlement(db, accounting, { chargeId: ch.id }).catch(() => null);
+      if (s) await changeSettlementStatus(db, accounting, { id: s.id, status: "approved" });
+    } else if (ch.period === current) {
+      await registerPayment(db, admin, {
+        chargeId: ch.id,
+        amount: (total / 200n).toString(),
+        paidAt: ch.dueDate < t ? ch.dueDate : t,
+        method: "cash",
+        reference: "Entrega parcial DEMO",
+      });
+    }
+  }
+  return { skipped: false, charges: a.created + b.created };
 }

@@ -14,6 +14,7 @@ import {
   pendingOffersCount,
   rentalAlerts,
   listGuarantees,
+  overdueCharges,
 } from "@crm/core";
 import { getDb } from "@crm/db";
 import {
@@ -138,6 +139,7 @@ export default async function DashboardPage() {
     pendingOffersCount(db, ctx, ymdInTz(new Date(), tzEarly)),
     rentalAlerts(db, ctx, ymdInTz(new Date(), tzEarly)),
   ]);
+  const overdueRent = await overdueCharges(db, ctx, ymdInTz(new Date(), tzEarly));
   const guaranteeAlerts = hasPermission(ctx, "guarantee.read")
     ? (await listGuarantees(db, ctx, { status: "alerts" }, ymdInTz(new Date(), tzEarly))).items
     : [];
@@ -391,13 +393,34 @@ export default async function DashboardPage() {
       )}
 
       {((rentals && (rentals.expiring.length > 0 || rentals.adjustments.length > 0)) ||
-        guaranteeAlerts.length > 0) && (
+        guaranteeAlerts.length > 0 ||
+        (overdueRent && overdueRent.items.length > 0)) && (
         <section>
           <SectionTitle href="/rentals/renewals" linkLabel="Ver renovaciones">
             Alquileres · vencimientos y ajustes
           </SectionTitle>
           <Card className="rounded-xl">
             <ul className="divide-y text-sm">
+              {overdueRent && overdueRent.items.length > 0 && (
+                <li>
+                  <Link
+                    href="/rentals/charges?status=overdue"
+                    className="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-surface-muted"
+                  >
+                    <span>
+                      <span className="font-medium">{overdueRent.items.length}</span> cuota(s) de alquiler
+                      vencida(s) ·{" "}
+                      {[
+                        overdueRent.amount.UYU ? price(overdueRent.amount.UYU, "UYU") : null,
+                        overdueRent.amount.USD ? price(overdueRent.amount.USD, "USD") : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" + ")}
+                    </span>
+                    <Badge tone="danger">Morosidad</Badge>
+                  </Link>
+                </li>
+              )}
               {guaranteeAlerts.length > 0 && (
                 <li>
                   <Link

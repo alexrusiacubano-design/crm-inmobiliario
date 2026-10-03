@@ -2,6 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import {
+  addChargeLine,
+  changeSettlementStatus,
+  createSettlement,
+  generateCharges,
+  registerPayment,
+  voidPayment,
   applyAdjustment,
   changeGuaranteeStatus,
   closeContract,
@@ -51,4 +57,25 @@ export async function changeGuaranteeStatusAction(input: unknown): Promise<Actio
 }
 export async function setGuaranteeRequirementAction(input: unknown): Promise<ActionResult<undefined>> {
   return done(await runAction(async (db, ctx) => void (await setGuaranteeRequirement(db, ctx, input))));
+}
+
+export async function generateChargesAction(
+  input: unknown,
+): Promise<ActionResult<{ created: number; skipped: number }>> {
+  return done(await runAction(async (db, ctx) => generateCharges(db, ctx, input)));
+}
+export async function addChargeLineAction(input: unknown): Promise<ActionResult<undefined>> {
+  return done(await runAction(async (db, ctx) => void (await addChargeLine(db, ctx, input))));
+}
+export async function registerPaymentAction(input: unknown): Promise<ActionResult<undefined>> {
+  return done(await runAction(async (db, ctx) => void (await registerPayment(db, ctx, input))));
+}
+export async function voidPaymentAction(input: unknown): Promise<ActionResult<undefined>> {
+  return done(await runAction(async (db, ctx) => void (await voidPayment(db, ctx, input))));
+}
+export async function createSettlementAction(input: unknown): Promise<ActionResult<undefined>> {
+  return done(await runAction(async (db, ctx) => void (await createSettlement(db, ctx, input))));
+}
+export async function changeSettlementStatusAction(input: unknown): Promise<ActionResult<undefined>> {
+  return done(await runAction(async (db, ctx) => void (await changeSettlementStatus(db, ctx, input))));
 }

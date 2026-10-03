@@ -31,3 +31,4 @@ export * from "./matching/matching";
 export * from "./deals/offers";
 export * from "./rentals/contracts";
 export * from "./rentals/guarantees";
+export * from "./rentals/billing";
