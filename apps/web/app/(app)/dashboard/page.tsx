@@ -15,6 +15,8 @@ import {
   rentalAlerts,
   listGuarantees,
   overdueCharges,
+  openInquiriesCount,
+  unreadChatCount,
 } from "@crm/core";
 import { getDb } from "@crm/db";
 import {
@@ -139,7 +141,11 @@ export default async function DashboardPage() {
     pendingOffersCount(db, ctx, ymdInTz(new Date(), tzEarly)),
     rentalAlerts(db, ctx, ymdInTz(new Date(), tzEarly)),
   ]);
-  const overdueRent = await overdueCharges(db, ctx, ymdInTz(new Date(), tzEarly));
+  const [overdueRent, inquiries, unreadChat] = await Promise.all([
+    overdueCharges(db, ctx, ymdInTz(new Date(), tzEarly)),
+    openInquiriesCount(db, ctx),
+    hasPermission(ctx, "communication.read") ? unreadChatCount(db, ctx) : Promise.resolve(0),
+  ]);
   const guaranteeAlerts = hasPermission(ctx, "guarantee.read")
     ? (await listGuarantees(db, ctx, { status: "alerts" }, ymdInTz(new Date(), tzEarly))).items
     : [];
@@ -347,6 +353,48 @@ export default async function DashboardPage() {
               ))}
             </ul>
           </Card>
+        </section>
+      )}
+
+      {((inquiries && (inquiries.open > 0 || inquiries.mine > 0)) || unreadChat > 0) && (
+        <section>
+          <SectionTitle>Comunicaciones</SectionTitle>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {inquiries && inquiries.open > 0 && (
+              <Link href="/communications/inbox?status=open" className="group">
+                <Card
+                  className={cn(
+                    "h-full rounded-xl p-4 group-hover:border-border-strong",
+                    inquiries.late > 0 && "border-warning/60 bg-warning-soft/40",
+                  )}
+                >
+                  <p className="text-sm text-muted-foreground">Consultas sin tomar</p>
+                  <p className="mt-1 text-3xl font-bold tabular">{inquiries.open}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {inquiries.late > 0 ? `${inquiries.late} esperan hace más de una hora` : "en la bandeja"}
+                  </p>
+                </Card>
+              </Link>
+            )}
+            {inquiries && inquiries.mine > 0 && (
+              <Link href="/communications/inbox?status=mine" className="group">
+                <Card className="h-full rounded-xl p-4 group-hover:border-border-strong">
+                  <p className="text-sm text-muted-foreground">Consultas que tomaste</p>
+                  <p className="mt-1 text-3xl font-bold tabular">{inquiries.mine}</p>
+                  <p className="text-xs text-muted-foreground">sin resolver</p>
+                </Card>
+              </Link>
+            )}
+            {unreadChat > 0 && (
+              <Link href="/communications/chat" className="group">
+                <Card className="h-full rounded-xl p-4 group-hover:border-border-strong">
+                  <p className="text-sm text-muted-foreground">Mensajes sin leer</p>
+                  <p className="mt-1 text-3xl font-bold tabular">{unreadChat}</p>
+                  <p className="text-xs text-muted-foreground">en el chat interno</p>
+                </Card>
+              </Link>
+            )}
+          </div>
         </section>
       )}
 

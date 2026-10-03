@@ -6,7 +6,8 @@ import { getSessionCookie } from "better-auth/cookies";
  * La validación real (sesión vigente, membresía activa, permisos) ocurre en el servidor en
  * cada página y server action; esto solo evita renders innecesarios.
  */
-const PUBLIC_PATHS = ["/login", "/api/auth"];
+// /api/inquiries se autentica con su propio secreto (webhook de consultas).
+const PUBLIC_PATHS = ["/login", "/api/auth", "/api/inquiries"];
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;

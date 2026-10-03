@@ -156,7 +156,7 @@ export function Timeline({
           {error && <p className="text-xs text-danger">{error}</p>}
           <div className="flex items-center justify-between gap-2">
             <p className="text-xs text-muted-foreground">
-              Registro manual. El envío de WhatsApp y email desde el CRM llega en la Fase 10.
+              Registro manual. Para enviar con plantilla usá los botones WhatsApp o Email del contacto.
             </p>
             <Button type="submit" size="sm" loading={pending} disabled={!body.trim()}>
               Registrar

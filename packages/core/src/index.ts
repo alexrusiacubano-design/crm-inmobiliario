@@ -32,3 +32,6 @@ export * from "./deals/offers";
 export * from "./rentals/contracts";
 export * from "./rentals/guarantees";
 export * from "./rentals/billing";
+export * from "./communications/inbox";
+export * from "./communications/chat";
+export * from "./communications/templates";

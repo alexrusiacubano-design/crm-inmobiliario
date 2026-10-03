@@ -4,6 +4,7 @@ import { seedDemoCrm } from "../src/crm/demo-seed";
 import { seedDemoContactExtras } from "../src/crm/extras-demo";
 import { seedDemoDeals, seedDemoGoals } from "../src/deals/demo-seed";
 import { seedDemoOffers } from "../src/deals/offers-demo";
+import { seedDemoCommunications } from "../src/communications/demo-seed";
 import { seedDemoBilling, seedDemoContracts, seedDemoGuarantees } from "../src/rentals/demo-seed";
 import { backfillDemoCoordinates, seedDemoProperties } from "../src/properties/demo-seed";
 import { getStorage } from "../src/storage/provider";
@@ -52,6 +53,8 @@ async function main() {
     console.info(g.skipped ? "Garantías DEMO ya cargadas." : `Garantías DEMO: ${g.guarantees}.`);
     const b = await seedDemoBilling(db);
     console.info(b.skipped ? "Cobros DEMO ya cargados." : `Cuotas DEMO: ${b.charges}.`);
+    const m = await seedDemoCommunications(db);
+    console.info(m.skipped ? "Comunicaciones DEMO ya cargadas." : `Consultas DEMO: ${m.inquiries}.`);
   } finally {
     await pool.end();
   }

@@ -187,3 +187,21 @@ Suspender o cambiar la contraseña de un usuario cierra sus sesiones.
   comisión − descuentos.
 - Permisos: `rent.read/manage`, `payment.register`, `payment.void`, `settlement.read/manage`.
   La facturación electrónica (CFE) sigue pendiente: requiere un proveedor habilitado por DGI.
+
+## Comunicaciones (Fase 10)
+
+- **Bandeja de consultas (`inquiry`)**: entran por el sitio, portales o el asistente con
+  `POST /api/inquiries?org=<slug>` (header `x-crm-key` = `INQUIRY_WEBHOOK_SECRET`, comparación en
+  tiempo constante, idempotente por `externalRef`) o se cargan a mano. Si el teléfono o email ya
+  existe se vincula el contacto. Abierta → tomada (o asignada por quien tiene `lead.assign`) →
+  resuelta / descartada con motivo; "Crear lead" la convierte reutilizando el contacto. Las sin
+  tomar las ve todo el que tiene `communication.read`; las tomadas, según su alcance. Aviso si
+  pasa más de una hora sin tomar. Recepción suma `communication.send` y `lead.assign`.
+- **Chat interno**: directos (sin duplicar, clave ordenada) y grupos con nombre; mensajes
+  append-only; solo los ven los participantes. Se actualiza cada 4 s por consulta (sin
+  websockets, funciona en Vercel). No leídos por conversación y en el dashboard.
+- **Plantillas (`message_template`)**: WhatsApp y email con variables ({{nombre}}, {{propiedad}},
+  {{precio}}…) validadas al guardar; se cargan cuatro sugeridas. El compositor completa las
+  variables, abre `wa.me` o `mailto:` con el texto y registra lo enviado en el timeline (y marca
+  el lead como contactado). El envío automático requiere WhatsApp Business Platform / un
+  proveedor de email.

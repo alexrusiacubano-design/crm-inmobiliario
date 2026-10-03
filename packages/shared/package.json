@@ -28,7 +28,9 @@
     "./guarantees": "./src/guarantees.ts",
     "./validation/guarantees": "./src/validation/guarantees.ts",
     "./billing": "./src/billing.ts",
-    "./validation/billing": "./src/validation/billing.ts"
+    "./validation/billing": "./src/validation/billing.ts",
+    "./communications": "./src/communications.ts",
+    "./validation/communications": "./src/validation/communications.ts"
   },
   "scripts": {
     "lint": "eslint .",

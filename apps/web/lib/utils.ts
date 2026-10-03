@@ -12,7 +12,11 @@ const dateTimeFormatter = new Intl.DateTimeFormat("es-UY", {
 });
 
 export function formatDateTime(value: Date | string): string {
-  return dateTimeFormatter.format(typeof value === "string" ? new Date(value) : value);
+  // Node y el navegador pueden usar espacios distintos (U+202F, U+00A0) según su versión de ICU:
+  // se normalizan para que el HTML del servidor coincida con el del cliente.
+  return dateTimeFormatter
+    .format(typeof value === "string" ? new Date(value) : value)
+    .replace(/[\u202f\u00a0]/g, " ");
 }
 
 export function initials(name: string): string {

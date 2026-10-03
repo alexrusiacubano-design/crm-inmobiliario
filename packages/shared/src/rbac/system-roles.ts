@@ -243,6 +243,9 @@ export const SYSTEM_ROLES: readonly SystemRoleDef[] = [
         "visit.manage",
         "calendar.read",
         "communication.read",
+        // Atiende la bandeja de consultas: las toma, deriva a un agente o convierte en lead.
+        "communication.send",
+        "lead.assign",
       ]),
       ...grant("own", ["task.read", "task.manage"]),
     ]),

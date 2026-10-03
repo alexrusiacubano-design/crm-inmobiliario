@@ -1,6 +1,7 @@
 import {
   geoNames,
   getLead,
+  hasPermission,
   leadMatches,
   listAssignees,
   listGeo,
@@ -28,6 +29,7 @@ import { ChannelIcon, LeadStatusBadge, channelHref } from "@/components/crm/badg
 import { LeadAssignControl, LeadStatusControl, LeadStepper } from "@/components/crm/lead-controls";
 import { EditSearchButton, type SearchFormValues } from "@/components/crm/search-profile-form";
 import { Timeline } from "@/components/crm/timeline";
+import { ComposerButton } from "@/components/communications/composer";
 import { MatchList } from "@/components/matching/match-list";
 import { toMatchItem } from "@/components/matching/serialize";
 import { Card } from "@/components/ui/misc";
@@ -207,6 +209,20 @@ export default async function LeadPage({ params }: { params: Promise<{ id: strin
                   <p>{data.assignedName ?? "Sin responsable"}</p>
                 )}
               </div>
+              {hasPermission(ctx, "communication.send") && (
+                <div className="flex flex-wrap gap-2">
+                  <ComposerButton
+                    channel="whatsapp"
+                    contact={{ id: c.id, label: c.displayName }}
+                    leadId={l.id}
+                  />
+                  <ComposerButton
+                    channel="email"
+                    contact={{ id: c.id, label: c.displayName }}
+                    leadId={l.id}
+                  />
+                </div>
+              )}
               {l.notes && (
                 <div>
                   <p className="text-xs text-muted-foreground">Consulta inicial</p>
