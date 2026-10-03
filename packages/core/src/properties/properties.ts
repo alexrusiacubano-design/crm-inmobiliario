@@ -47,7 +47,7 @@ import { contactRef, logActivity, resolveAssignment } from "../crm/helpers";
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError, parseInput } from "../errors";
 import { emitEvent } from "../events";
 import { nextCode } from "../sequences";
-import { propertyDisplayTitle, propertyRef, syncPropertySearch } from "./helpers";
+import { propertyDisplayTitle, propertyRef, syncPropertySearch, syncPublicationsWithStatus } from "./helpers";
 
 type PropertyInputParsed = ReturnType<typeof propertyInputSchema.parse>;
 
@@ -62,6 +62,7 @@ function propertyValues(input: PropertyInputParsed) {
     neighborhoodId: input.neighborhoodId,
     address: input.address,
     unit: input.unit,
+    padron: input.padron,
     latitude: input.latitude,
     longitude: input.longitude,
     bedrooms: input.bedrooms,
@@ -270,7 +271,7 @@ export async function updateProperty(db: Db, ctx: RequestContext, rawInput: unkn
   });
 }
 
-async function checklistFor(tx: DbOrTx, p: typeof property.$inferSelect) {
+export async function checklistFor(tx: DbOrTx, p: typeof property.$inferSelect) {
   // Secuencial: puede correr dentro de una transacción (un único cliente de conexión).
   const prices = await tx.select().from(propertyPrice).where(eq(propertyPrice.propertyId, p.id));
   const photos = await tx
@@ -335,6 +336,7 @@ export async function changePropertyStatus(db: Db, ctx: RequestContext, rawInput
         });
       }
     }
+    await syncPublicationsWithStatus(tx, before.id, input.status);
     await syncPropertySearch(tx, [before.id]);
     await writeAudit(tx, ctx, {
       action: "property.status_change",

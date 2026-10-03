@@ -7,7 +7,7 @@ import { getSessionCookie } from "better-auth/cookies";
  * cada página y server action; esto solo evita renders innecesarios.
  */
 // /api/inquiries se autentica con su propio secreto (webhook de consultas).
-const PUBLIC_PATHS = ["/login", "/api/auth", "/api/inquiries"];
+const PUBLIC_PATHS = ["/login", "/api/auth", "/api/inquiries", "/api/feeds"];
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;

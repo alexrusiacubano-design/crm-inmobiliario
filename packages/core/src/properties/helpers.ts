@@ -1,5 +1,13 @@
 import { and, asc, eq, inArray } from "drizzle-orm";
-import { locality, neighborhood, property, propertyPrice, searchDocument, type DbOrTx } from "@crm/db";
+import {
+  locality,
+  neighborhood,
+  property,
+  propertyPrice,
+  propertyPublication,
+  searchDocument,
+  type DbOrTx,
+} from "@crm/db";
 import {
   formatMoney,
   money,
@@ -91,4 +99,23 @@ export async function syncPropertySearch(tx: DbOrTx, propertyIds: readonly strin
         set: { ...values, updatedAt: new Date() },
       });
   }
+}
+
+/**
+ * Cuando la propiedad deja de ofrecerse sus avisos se bajan (vendida, alquilada, retirada) o se
+ * pausan (reservada, pausada) para no seguir recibiendo consultas.
+ */
+export async function syncPublicationsWithStatus(tx: DbOrTx, propertyId: string, status: string) {
+  const retire = ["sold", "rented", "withdrawn"].includes(status);
+  const pause = ["reserved", "paused", "draft"].includes(status);
+  if (!retire && !pause) return;
+  await tx
+    .update(propertyPublication)
+    .set({ status: retire ? "removed" : "paused", statusChangedAt: new Date() })
+    .where(
+      and(
+        eq(propertyPublication.propertyId, propertyId),
+        inArray(propertyPublication.status, retire ? ["published", "paused", "expired"] : ["published"]),
+      ),
+    );
 }

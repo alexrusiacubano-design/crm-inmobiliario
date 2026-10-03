@@ -4,6 +4,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
+import { MapPicker } from "@/components/properties/map-picker";
 import {
   PROPERTY_FEATURE_LABELS,
   PROPERTY_FEATURES,
@@ -52,6 +53,7 @@ export interface PropertyFormValues {
   neighborhoodId: string;
   address: string;
   unit: string;
+  padron: string;
   latitude: string;
   longitude: string;
   bedrooms: string;
@@ -286,7 +288,7 @@ export function PropertyForm({
             </Select>
           </Field>
         </div>
-        <div className="grid gap-4 sm:grid-cols-[2fr_1fr]">
+        <div className="grid gap-4 sm:grid-cols-[2fr_1fr_1fr]">
           <Field
             label="Dirección"
             htmlFor="p-addr"
@@ -298,24 +300,20 @@ export function PropertyForm({
           <Field label="Unidad / apto." htmlFor="p-unit" error={err("unit")}>
             <Input id="p-unit" value={v.unit} onChange={(e) => set("unit", e.target.value)} />
           </Field>
+          <Field label="Padrón" htmlFor="p-padron" error={err("padron")} hint="Número de padrón catastral.">
+            <Input id="p-padron" value={v.padron} onChange={(e) => set("padron", e.target.value)} />
+          </Field>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Latitud" htmlFor="p-lat" error={err("latitude")} hint="Opcional, ej.: -34,9058">
-            <Input
-              id="p-lat"
-              inputMode="decimal"
-              value={v.latitude}
-              onChange={(e) => set("latitude", e.target.value)}
-            />
-          </Field>
-          <Field label="Longitud" htmlFor="p-lng" error={err("longitude")} hint="Opcional, ej.: -56,1545">
-            <Input
-              id="p-lng"
-              inputMode="decimal"
-              value={v.longitude}
-              onChange={(e) => set("longitude", e.target.value)}
-            />
-          </Field>
+        <div className="grid gap-2">
+          <span className="text-sm font-medium">Ubicación en el mapa</span>
+          <MapPicker
+            latitude={v.latitude}
+            longitude={v.longitude}
+            onChange={(latitude, longitude) => setV((p) => ({ ...p, latitude, longitude }))}
+          />
+          {(err("latitude") || err("longitude")) && (
+            <p className="text-xs text-danger">{(err("latitude") ?? err("longitude"))?.[0]}</p>
+          )}
         </div>
       </Section>
 

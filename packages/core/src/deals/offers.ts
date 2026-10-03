@@ -273,7 +273,7 @@ export async function dealOffers(db: DbOrTx, ctx: RequestContext, dealId: string
 export async function listOffers(
   db: DbOrTx,
   ctx: RequestContext,
-  opts: { status?: "pending" | "all"; propertyId?: string } = {},
+  opts: { status?: "pending" | "all"; propertyId?: string; contactId?: string } = {},
 ) {
   requirePermission(ctx, "offer.read");
   const conditions: (SQL | undefined)[] = [
@@ -282,6 +282,7 @@ export async function listOffers(
     dealScope(ctx),
     opts.status === "pending" ? eq(dealOffer.status, "pending") : undefined,
     opts.propertyId ? eq(deal.propertyId, parseInput(uuidSchema, opts.propertyId)) : undefined,
+    opts.contactId ? eq(deal.clientContactId, parseInput(uuidSchema, opts.contactId)) : undefined,
   ];
   const rows = await db
     .select({

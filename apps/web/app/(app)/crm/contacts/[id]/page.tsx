@@ -4,7 +4,9 @@ import {
   listContactDates,
   listContactRelations,
   hasPermission,
+  leadMatches,
   listAssignees,
+  listOffers,
   listEntityDocuments,
   listOwnerProperties,
   listTimeline,
@@ -39,6 +41,9 @@ import { ContactDatesCard, RelationsCard } from "@/components/crm/contact-extras
 import { Button } from "@/components/ui/button";
 import { DEFAULT_TZ, ymdInTz } from "@/lib/tz";
 import { Timeline } from "@/components/crm/timeline";
+import { OffersTable } from "@/components/deals/offers-table";
+import { MatchList } from "@/components/matching/match-list";
+import { toMatchItem } from "@/components/matching/serialize";
 import { PropertyStatusBadge } from "@/components/properties/badges";
 import { DocumentsPanel } from "@/components/properties/documents-panel";
 import { Badge, Card, EmptyState } from "@/components/ui/misc";
@@ -47,14 +52,14 @@ import { cn, formatDateTime } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Contacto" };
 
-/** Pestañas de la ficha 360°. Las de fases futuras se muestran deshabilitadas con su fase. */
+/** Pestañas de la ficha 360°. */
 const TABS = [
   { key: "summary", label: "Resumen" },
   { key: "timeline", label: "Timeline" },
   { key: "owner", label: "Propietario" },
-  { key: "matches", label: "Propiedades compatibles", phase: 4 },
+  { key: "matches", label: "Propiedades compatibles" },
   { key: "agenda", label: "Agenda" },
-  { key: "offers", label: "Ofertas", phase: 6 },
+  { key: "offers", label: "Ofertas" },
   { key: "documents", label: "Documentos" },
 ] as const;
 
@@ -87,6 +92,16 @@ export default async function ContactPage({
     summary ? listTimeline(db, ctx, { contactId: c.id, limit: 5 }) : Promise.resolve(null),
     summary ? listContactDates(db, ctx, c.id, ymdInTz(new Date(), tz)) : Promise.resolve(null),
     summary ? listContactRelations(db, ctx, c.id) : Promise.resolve(null),
+  ]);
+  const today = ymdInTz(new Date(), tz);
+  const openLeads = leads.filter((l) => !["won", "lost"].includes(l.status));
+  const [leadMatchSets, offers] = await Promise.all([
+    tab === "matches"
+      ? Promise.all(openLeads.map(async (l) => ({ lead: l, m: await leadMatches(db, ctx, l.id) })))
+      : Promise.resolve(null),
+    tab === "offers" && hasPermission(ctx, "offer.read")
+      ? listOffers(db, ctx, { status: "all", contactId: c.id })
+      : Promise.resolve(null),
   ]);
   const canSchedule = hasPermission(ctx, "visit.manage") || hasPermission(ctx, "task.manage");
   const waChannel =
@@ -196,17 +211,8 @@ export default async function ContactPage({
 
       <nav aria-label="Secciones del contacto" className="mb-5 flex gap-1 overflow-x-auto border-b">
         {TABS.map((t) => {
-          const planned = "phase" in t;
           const active = tab === t.key;
-          return planned ? (
-            <span
-              key={t.key}
-              className="flex shrink-0 cursor-not-allowed items-center gap-1 px-3 py-2 text-sm text-muted-foreground/60"
-              title={`Disponible en la Fase ${t.phase}`}
-            >
-              {t.label} <span className="text-[10px]">F{t.phase}</span>
-            </span>
-          ) : (
+          return (
             <Link
               key={t.key}
               href={`?tab=${t.key}`}
@@ -224,7 +230,51 @@ export default async function ContactPage({
         })}
       </nav>
 
-      {tab === "agenda" ? (
+      {tab === "matches" && leadMatchSets ? (
+        leadMatchSets.length === 0 ? (
+          <Card>
+            <EmptyState
+              icon={FileSearch}
+              title="Sin búsquedas activas"
+              description="Las propiedades compatibles salen de la búsqueda de cada lead abierto del contacto."
+            />
+          </Card>
+        ) : (
+          <div className="grid gap-6">
+            {leadMatchSets.map(({ lead: l, m }) => (
+              <section key={l.id} className="grid gap-2">
+                <h2 className="text-sm font-semibold">
+                  <Link href={`/crm/leads/${l.id}`} className="hover:underline">
+                    <span className="font-mono">{l.code}</span> · {LEAD_OPERATION_LABELS[l.operation]}
+                  </Link>
+                </h2>
+                <MatchList
+                  items={m.items.map(toMatchItem)}
+                  canManage={m.canManage}
+                  phone={waChannel?.normalized ?? null}
+                  firstName={c.displayName.split(" ")[0] ?? ""}
+                  hasProfile={m.hasProfile}
+                  open={m.open}
+                />
+              </section>
+            ))}
+          </div>
+        )
+      ) : tab === "offers" ? (
+        <Card>
+          <div className="border-b px-4 py-3">
+            <h2 className="text-sm font-semibold">Ofertas del cliente</h2>
+            <p className="text-xs text-muted-foreground">Se responden desde cada operación.</p>
+          </div>
+          {offers && offers.length > 0 ? (
+            <OffersTable rows={offers} showProperty today={today} />
+          ) : (
+            <p className="px-4 py-6 text-sm text-muted-foreground">
+              {offers ? "Sin ofertas registradas." : "Tu rol no incluye ver ofertas."}
+            </p>
+          )}
+        </Card>
+      ) : tab === "agenda" ? (
         <EventsPanel
           db={db}
           ctx={ctx}

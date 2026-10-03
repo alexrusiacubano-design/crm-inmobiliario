@@ -23,3 +23,5 @@ export * from "./billing";
 export * from "./validation/billing";
 export * from "./communications";
 export * from "./validation/communications";
+export * from "./publications";
+export * from "./validation/publications";

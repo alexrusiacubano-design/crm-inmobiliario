@@ -52,7 +52,12 @@ import { hasPermission, requirePermission, type RequestContext } from "../contex
 import { contactRef, leadRef, logActivity, resolveAssignment, syncLeadSearch } from "../crm/helpers";
 import { ConflictError, NotFoundError, ValidationError, parseInput } from "../errors";
 import { emitEvent } from "../events";
-import { propertyDisplayTitle, propertyRef, syncPropertySearch } from "../properties/helpers";
+import {
+  propertyDisplayTitle,
+  propertyRef,
+  syncPropertySearch,
+  syncPublicationsWithStatus,
+} from "../properties/helpers";
 import { nextCode } from "../sequences";
 
 export type DealRow = typeof deal.$inferSelect;
@@ -91,6 +96,7 @@ export async function setPropertyStatus(
   const [p] = await tx.select().from(property).where(eq(property.id, propertyId));
   if (!p || p.status === status) return;
   await tx.update(property).set({ status, statusChangedAt: new Date() }).where(eq(property.id, propertyId));
+  await syncPublicationsWithStatus(tx, propertyId, status);
   await writeAudit(tx, ctx, {
     action: "property.status_change",
     entityType: "property",

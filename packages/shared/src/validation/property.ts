@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { PORTALS } from "../publications";
 import { PROPERTY_FEATURES, PROPERTY_TYPES } from "../crm";
 import { CURRENCIES, parseMoney, parsePercentToBasisPoints } from "../money";
 import {
@@ -117,6 +118,8 @@ export const propertyInputSchema = z
     neighborhoodId: optionalInt(1, 1_000_000),
     address: text(200),
     unit: text(40),
+    /** N.º de padrón (catastro) */
+    padron: text(30),
     latitude: optionalDecimal(-90, 90, 6),
     longitude: optionalDecimal(-180, 180, 6),
     bedrooms: optionalInt(0, 50),
@@ -272,8 +275,22 @@ export const acquisitionInputSchema = z
     propertyType: z.enum(PROPERTY_TYPES),
     operation: z.enum(PROPERTY_OPERATIONS),
     address: text(200),
+    padron: text(30),
     localityId: optionalInt(1, 1_000_000),
     neighborhoodId: optionalInt(1, 1_000_000),
+    latitude: optionalDecimal(-90, 90, 6),
+    longitude: optionalDecimal(-180, 180, 6),
+    /** De dónde salió la captación (portal donde estaba publicada) y su aviso. */
+    sourcePortal: z
+      .enum(PORTALS)
+      .optional()
+      .nullable()
+      .or(z.literal(""))
+      .transform((v) => (v ? v : null)),
+    portalUrl: z
+      .union([z.literal(""), z.null(), z.url("Enlace inválido").max(500)])
+      .optional()
+      .transform((v) => (v ? v : null)),
     captadorUserId: optionalUuid,
     exclusive: z.boolean().default(false),
     exclusiveFrom: isoDate,

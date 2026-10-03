@@ -7,6 +7,7 @@ import {
   listOffers,
   listPriceHistory,
   listPropertyHistory,
+  listPublications,
   listValuationsFor,
   NotFoundError,
   ValidationError,
@@ -38,6 +39,8 @@ import { EventsPanel } from "@/components/agenda/events-panel";
 import { NewDealButton } from "@/components/deals/new-deal-dialog";
 import { PropertyMatchesPanel } from "@/components/matching/property-matches-panel";
 import { OffersTable } from "@/components/deals/offers-table";
+import { PublishButton } from "@/components/publications/publication-controls";
+import { PublicationsTable } from "@/components/publications/publications-table";
 import { DEFAULT_TZ, ymdInTz } from "@/lib/tz";
 import { AcquisitionStageBadge, PropertyStatusBadge } from "@/components/properties/badges";
 import { DocumentsPanel } from "@/components/properties/documents-panel";
@@ -68,6 +71,7 @@ const TABS = [
   { key: "matches", label: "Clientes compatibles" },
   { key: "agenda", label: "Visitas" },
   { key: "offers", label: "Ofertas" },
+  { key: "publications", label: "Publicaciones" },
 ] as const;
 
 export default async function PropertyPage({
@@ -87,7 +91,8 @@ export default async function PropertyPage({
   });
   const { property: p, permissions: can } = data;
 
-  const [priceHistory, history, documents, valuations, deals, offers, contract] = await Promise.all([
+  const today = ymdInTz(new Date(), ctx.organization.timezone || DEFAULT_TZ);
+  const [priceHistory, history, documents, valuations, deals, offers, contract, pubs] = await Promise.all([
     tab === "prices" ? listPriceHistory(db, ctx, p.id) : Promise.resolve(null),
     tab === "history" ? listPropertyHistory(db, ctx, p.id) : Promise.resolve(null),
     tab === "documents" ? listEntityDocuments(db, ctx, "property", p.id) : Promise.resolve(null),
@@ -97,6 +102,9 @@ export default async function PropertyPage({
       ? listOffers(db, ctx, { status: "all", propertyId: p.id })
       : Promise.resolve(null),
     activeContractFor(db, ctx, p.id),
+    tab === "publications" && hasPermission(ctx, "publication.read")
+      ? listPublications(db, ctx, { status: "all", propertyId: p.id, today })
+      : Promise.resolve(null),
   ]);
   const openDeals = deals.filter((d) => d.stage !== "closed" && d.stage !== "fallen");
 
@@ -110,6 +118,7 @@ export default async function PropertyPage({
     ["Operaciones", p.operations.map((o) => PROPERTY_OPERATION_LABELS[o]).join(", ")],
     ["Ubicación", zone || "Sin ubicación"],
     ["Dirección", [p.address, p.unit].filter(Boolean).join(" — ") || "—"],
+    ["Padrón", p.padron || "—"],
     [
       "Ambientes",
       [
@@ -272,7 +281,41 @@ export default async function PropertyPage({
         ))}
       </nav>
 
-      {tab === "offers" ? (
+      {tab === "publications" ? (
+        <Card>
+          <div className="flex flex-wrap items-start justify-between gap-3 border-b px-4 py-3">
+            <div>
+              <h2 className="text-sm font-semibold">Publicaciones en portales</h2>
+              <p className="text-xs text-muted-foreground">
+                Si la propiedad se reserva, los avisos se pausan; si se vende o alquila, se dan de baja solos.
+              </p>
+            </div>
+            {pubs?.canManage && (
+              <PublishButton
+                propertyId={p.id}
+                portals={pubs.portals
+                  .filter(
+                    (x) =>
+                      x.enabled && !pubs.items.some((i) => i.portal === x.portal && i.status !== "removed"),
+                  )
+                  .map((x) => x.portal)}
+                missing={data.checklist}
+              />
+            )}
+          </div>
+          {pubs && pubs.items.length > 0 ? (
+            <PublicationsTable rows={pubs.items} canManage={pubs.canManage} showProperty={false} />
+          ) : (
+            <p className="px-4 py-6 text-sm text-muted-foreground">
+              {pubs
+                ? pubs.canManage
+                  ? "Todavía no está publicada en ningún portal."
+                  : "Todavía no está publicada. La publicación la hace gerencia."
+                : "Tu rol no incluye ver publicaciones."}
+            </p>
+          )}
+        </Card>
+      ) : tab === "offers" ? (
         <Card>
           <div className="border-b px-4 py-3">
             <h2 className="text-sm font-semibold">Ofertas recibidas</h2>
@@ -281,11 +324,7 @@ export default async function PropertyPage({
             </p>
           </div>
           {offers && offers.length > 0 ? (
-            <OffersTable
-              rows={offers}
-              showProperty={false}
-              today={ymdInTz(new Date(), ctx.organization.timezone || DEFAULT_TZ)}
-            />
+            <OffersTable rows={offers} showProperty={false} today={today} />
           ) : (
             <p className="px-4 py-6 text-sm text-muted-foreground">
               {offers ? "Sin ofertas registradas." : "Tu rol no incluye ver ofertas."}

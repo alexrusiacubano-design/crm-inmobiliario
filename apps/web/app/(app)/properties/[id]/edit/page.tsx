@@ -45,6 +45,7 @@ export default async function EditPropertyPage({ params }: { params: Promise<{ i
     neighborhoodId: str(p.neighborhoodId),
     address: str(p.address),
     unit: str(p.unit),
+    padron: str(p.padron),
     latitude: str(p.latitude),
     longitude: str(p.longitude),
     bedrooms: str(p.bedrooms),

@@ -35,3 +35,4 @@ export * from "./rentals/billing";
 export * from "./communications/inbox";
 export * from "./communications/chat";
 export * from "./communications/templates";
+export * from "./properties/publications";

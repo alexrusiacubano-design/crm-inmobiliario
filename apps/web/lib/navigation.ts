@@ -112,7 +112,7 @@ export const NAVIGATION: NavSection[] = [
         href: "/properties/publications",
         label: "nav.properties.publications",
         permission: "publication.read",
-        plannedPhase: 11,
+        plannedPhase: null,
         description: "Publicaciones en portales y su rendimiento.",
       },
     ],
@@ -337,7 +337,7 @@ export const NAVIGATION: NavSection[] = [
         href: "/admin/integrations",
         label: "nav.admin.integrations",
         permission: "integrations.manage",
-        plannedPhase: 11,
+        plannedPhase: null,
         description: "Portales, tipo de cambio, almacenamiento y facturación.",
       },
       {

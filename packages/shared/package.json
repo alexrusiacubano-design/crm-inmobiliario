@@ -30,7 +30,9 @@
     "./billing": "./src/billing.ts",
     "./validation/billing": "./src/validation/billing.ts",
     "./communications": "./src/communications.ts",
-    "./validation/communications": "./src/validation/communications.ts"
+    "./validation/communications": "./src/validation/communications.ts",
+    "./publications": "./src/publications.ts",
+    "./validation/publications": "./src/validation/publications.ts"
   },
   "scripts": {
     "lint": "eslint .",

@@ -6,9 +6,11 @@ import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { PROPERTY_TYPE_LABELS, PROPERTY_TYPES, type PropertyType } from "@crm/shared/crm";
 import { PROPERTY_OPERATION_LABELS, PROPERTY_OPERATIONS, type PropertyOperation } from "@crm/shared/property";
+import { PORTAL_LABELS, PORTALS } from "@crm/shared/publications";
 import { createAcquisitionAction, updateAcquisitionAction } from "@/app/(app)/properties/actions";
 import { ContactPicker } from "@/components/crm/lead-dialog";
 import type { Geo } from "@/components/crm/search-profile-form";
+import { MapPicker } from "@/components/properties/map-picker";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter } from "@/components/ui/dialog";
 import { Checkbox, Field, Input, Select, Textarea } from "@/components/ui/form";
@@ -21,6 +23,11 @@ export interface AcquisitionFormValues {
   localityId: string;
   neighborhoodId: string;
   address: string;
+  padron: string;
+  latitude: string;
+  longitude: string;
+  sourcePortal: string;
+  portalUrl: string;
   exclusive: boolean;
   exclusiveFrom: string;
   exclusiveUntil: string;
@@ -71,6 +78,7 @@ function AcquisitionForm({
         localityId: v.localityId || null,
         neighborhoodId: v.neighborhoodId || null,
         captadorUserId: v.captadorUserId || null,
+        sourcePortal: v.sourcePortal || null,
         exclusiveFrom: v.exclusive ? v.exclusiveFrom || null : null,
         exclusiveUntil: v.exclusive ? v.exclusiveUntil || null : null,
       };
@@ -181,9 +189,40 @@ function AcquisitionForm({
           </Select>
         </Field>
       </div>
-      <Field label="Dirección" htmlFor="a-addr">
-        <Input id="a-addr" value={v.address} onChange={(e) => set("address", e.target.value)} />
-      </Field>
+      <div className="grid gap-4 sm:grid-cols-[2fr_1fr]">
+        <Field label="Dirección" htmlFor="a-addr">
+          <Input id="a-addr" value={v.address} onChange={(e) => set("address", e.target.value)} />
+        </Field>
+        <Field label="Padrón" htmlFor="a-padron" error={errors.padron}>
+          <Input id="a-padron" value={v.padron} onChange={(e) => set("padron", e.target.value)} />
+        </Field>
+      </div>
+      <MapPicker
+        latitude={v.latitude}
+        longitude={v.longitude}
+        onChange={(latitude, longitude) => setV((p) => ({ ...p, latitude, longitude }))}
+      />
+      <div className="grid gap-4 sm:grid-cols-[1fr_2fr]">
+        <Field label="¿La viste publicada en un portal?" htmlFor="a-src">
+          <Select id="a-src" value={v.sourcePortal} onChange={(e) => set("sourcePortal", e.target.value)}>
+            <option value="">No / captación directa</option>
+            {PORTALS.filter((x) => x !== "website").map((x) => (
+              <option key={x} value={x}>
+                {PORTAL_LABELS[x]}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <Field label="Enlace del aviso" htmlFor="a-url" error={errors.portalUrl}>
+          <Input
+            id="a-url"
+            type="url"
+            placeholder="https://"
+            value={v.portalUrl}
+            onChange={(e) => set("portalUrl", e.target.value)}
+          />
+        </Field>
+      </div>
       <div className="grid gap-4 sm:grid-cols-4">
         <Field label="Moneda" htmlFor="a-cur">
           <Select

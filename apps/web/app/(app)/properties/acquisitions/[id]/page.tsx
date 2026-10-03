@@ -1,3 +1,4 @@
+import { PORTAL_LABELS, type Portal } from "@crm/shared/publications";
 import {
   getAcquisition,
   hasPermission,
@@ -52,6 +53,11 @@ export default async function AcquisitionPage({ params }: { params: Promise<{ id
         localityId: a.localityId ? String(a.localityId) : "",
         neighborhoodId: a.neighborhoodId ? String(a.neighborhoodId) : "",
         address: a.address ?? "",
+        padron: a.padron ?? "",
+        latitude: a.latitude ?? "",
+        longitude: a.longitude ?? "",
+        sourcePortal: a.sourcePortal ?? "",
+        portalUrl: a.portalUrl ?? "",
         exclusive: a.exclusive,
         exclusiveFrom: a.exclusiveFrom ?? "",
         exclusiveUntil: a.exclusiveUntil ?? "",
@@ -80,6 +86,13 @@ export default async function AcquisitionPage({ params }: { params: Promise<{ id
     ],
     ["Inmueble", `${PROPERTY_TYPE_LABELS[a.propertyType]} · ${PROPERTY_OPERATION_LABELS[a.operation]}`],
     ["Ubicación", [a.address, data.zone].filter(Boolean).join(" — ") || "—"],
+    ["Padrón", a.padron || "—"],
+    [
+      "Visto en",
+      a.sourcePortal
+        ? `${PORTAL_LABELS[a.sourcePortal as Portal] ?? a.sourcePortal}${a.portalUrl ? ` · ${a.portalUrl}` : ""}`
+        : a.portalUrl || "Captación directa",
+    ],
     ["Pide el propietario", price(a.askingMinor, a.currency)],
     ["Precio recomendado", price(a.recommendedMinor, a.currency)],
     ["Comisión", a.commissionBasisPoints !== null ? formatBasisPoints(a.commissionBasisPoints) : "—"],

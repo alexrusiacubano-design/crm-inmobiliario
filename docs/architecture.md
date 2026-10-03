@@ -205,3 +205,27 @@ Suspender o cambiar la contraseña de un usuario cierra sus sesiones.
   variables, abre `wa.me` o `mailto:` con el texto y registra lo enviado en el timeline (y marca
   el lead como contactado). El envío automático requiere WhatsApp Business Platform / un
   proveedor de email.
+
+## Publicaciones e integraciones (Fase 11)
+
+- **Cuentas de portal (`portal_account`)**: una por portal (InfoCasas, Mercado Libre Inmuebles,
+  Gallito, sitio web propio, otro) con activo/inactivo, código de cliente, cupos por nivel
+  (Básico, Plata, Oro, Premium; vacío = sin límite) y un token secreto de feed. El sitio web
+  arranca activo. Solo quien tiene `integrations.manage` ve y regenera el token.
+- **Avisos (`property_publication`)**: uno por propiedad y portal. Publicar requiere
+  `publication.manage` (dirección a nivel organización, gerencia a nivel sucursal; los agentes
+  no publican), checklist completo, propiedad disponible / publicada / en negociación, portal
+  activo y cupo libre en el nivel. Publicar deja la propiedad en "Publicada". Publicado ↔
+  pausado → vencido / dado de baja. Sincronización automática con el estado de la propiedad:
+  reservada / pausada / borrador → avisos pausados; vendida / alquilada / retirada → baja.
+  Alertas: vence en ≤ 7 días, vencido, propiedad no disponible, sin enlace.
+- **Feed XML** `GET /api/feeds/<token>` (sin sesión, autentica el token) con los avisos
+  publicados de ese portal: precios, ubicación aproximada (3 decimales), características y
+  fotos (`/api/feeds/<token>/media/<id>`, solo fotos de avisos publicados). Cada portal mapea el
+  feed a su formato; los conectores específicos por API quedan para cuando haya credenciales.
+- **Tipo de cambio (`exchange_rate`)**: dólar billete por fecha, manual o traído del web
+  service SOAP del BCU (código 2225, últimos 7 días). La cotización de fecha más reciente pasa a
+  `commission_settings.uyu_per_usd`, que usan el matching, las tasaciones y los reportes.
+- **Padrón y ubicación**: `property.padron`; las captaciones guardan padrón, coordenadas
+  (selector de mapa Leaflet/OSM), portal de origen y URL del aviso, y los heredan al crear la
+  propiedad.
