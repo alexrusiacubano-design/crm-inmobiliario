@@ -360,8 +360,8 @@ async function chargeRows(
       propertyTitle: property.title,
       propertyType: property.type,
       propertyAddress: property.address,
-      total: sql<string>`coalesce((select sum(case when l.kind = 'discount' then -l.amount_minor else l.amount_minor end) from rent_charge_line l where l.charge_id = ${rentCharge.id}), 0)`,
-      paid: sql<string>`coalesce((select sum(p.amount_minor) from rent_payment p where p.charge_id = ${rentCharge.id}), 0)`,
+      total: sql<string>`coalesce((select sum(case when l.kind = 'discount' then -l.amount_minor else l.amount_minor end) from rent_charge_line l where l.charge_id = "rent_charge"."id"), 0)`,
+      paid: sql<string>`coalesce((select sum(p.amount_minor) from rent_payment p where p.charge_id = "rent_charge"."id"), 0)`,
       settlementId: sql<
         string | null
       >`(select s.id from owner_settlement s where s.charge_id = ${rentCharge.id} and s.status <> 'voided' limit 1)`,

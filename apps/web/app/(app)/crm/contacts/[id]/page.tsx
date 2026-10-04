@@ -7,6 +7,8 @@ import {
   leadMatches,
   listAssignees,
   listOffers,
+  portalAccessFor,
+  contactEmail,
   listEntityDocuments,
   listOwnerProperties,
   listTimeline,
@@ -42,6 +44,7 @@ import { Button } from "@/components/ui/button";
 import { DEFAULT_TZ, ymdInTz } from "@/lib/tz";
 import { Timeline } from "@/components/crm/timeline";
 import { OffersTable } from "@/components/deals/offers-table";
+import { PortalAccessCard } from "@/components/crm/portal-access-card";
 import { MatchList } from "@/components/matching/match-list";
 import { toMatchItem } from "@/components/matching/serialize";
 import { PropertyStatusBadge } from "@/components/properties/badges";
@@ -95,6 +98,10 @@ export default async function ContactPage({
   ]);
   const today = ymdInTz(new Date(), tz);
   const openLeads = leads.filter((l) => !["won", "lost"].includes(l.status));
+  const [portalAccess, portalEmail] =
+    tab === "owner" && hasPermission(ctx, "owner.read")
+      ? await Promise.all([portalAccessFor(db, ctx, c.id), contactEmail(db, ctx, c.id)])
+      : [null, null];
   const [leadMatchSets, offers] = await Promise.all([
     tab === "matches"
       ? Promise.all(openLeads.map(async (l) => ({ lead: l, m: await leadMatches(db, ctx, l.id) })))
@@ -314,6 +321,33 @@ export default async function ContactPage({
         />
       ) : tab === "owner" ? (
         <div className="grid max-w-2xl gap-5">
+          {(owner || (ownedProperties?.length ?? 0) > 0) && (
+            <PortalAccessCard
+              contactId={c.id}
+              ownerFirstName={c.firstName ?? c.displayName}
+              access={
+                portalAccess
+                  ? {
+                      status: portalAccess.status,
+                      email: portalAccess.email,
+                      detail:
+                        portalAccess.status === "active"
+                          ? `activo desde ${formatDateTime(portalAccess.activatedAt ?? new Date())}${
+                              portalAccess.lastSeenAt
+                                ? ` · último ingreso ${formatDateTime(portalAccess.lastSeenAt)}`
+                                : ""
+                            }`
+                          : portalAccess.inviteExpiresAt
+                            ? `invitación vigente hasta ${formatDateTime(portalAccess.inviteExpiresAt)}`
+                            : "",
+                    }
+                  : null
+              }
+              suggestedEmail={portalEmail}
+              phone={waChannel?.normalized ?? null}
+              canManage={permissions.ownerUpdate}
+            />
+          )}
           <OwnerPanel
             contactId={c.id}
             owner={owner}

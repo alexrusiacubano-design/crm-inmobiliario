@@ -1,5 +1,6 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { sql } from "drizzle-orm";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { createDb } from "./index";
 
@@ -9,6 +10,15 @@ export async function runMigrations(connectionString: string): Promise<void> {
   const { db, pool } = createDb(connectionString, { max: 1 });
   try {
     await migrate(db, { migrationsFolder: MIGRATIONS_FOLDER });
+    // Toda tabla nueva queda también con RLS (sin políticas: la API pública de Supabase no la ve).
+    await db.execute(sql`DO $$
+      DECLARE t record;
+      BEGIN
+        FOR t IN SELECT c.relname AS name FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+          WHERE n.nspname = 'public' AND c.relkind = 'r' AND NOT c.relrowsecurity LOOP
+          EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY', t.name);
+        END LOOP;
+      END $$`);
   } finally {
     await pool.end();
   }

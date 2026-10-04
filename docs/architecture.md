@@ -280,3 +280,22 @@ Suspender o cambiar la contraseña de un usuario cierra sus sesiones.
   y propiedades con más de 90 días.
 - Exportación CSV (separador ";", BOM UTF-8, protección contra fórmulas) por tabla en
   `/api/reports/export`, con la sesión y el alcance de quien la pide.
+
+## Portal del propietario y RLS (Fase 14)
+
+- **Acceso (`owner_portal_access`)**: desde la ficha del contacto (pestaña Propietario) quien
+  tiene `owner.update` sobre ese contacto genera una invitación de 7 días. El token se muestra una
+  sola vez (se guarda su SHA-256) y se envía por WhatsApp o email. Al activarlo el propietario
+  elige su contraseña y se crea su usuario de Better Auth **sin membresía**: nunca entra al CRM
+  (cualquier ruta del CRM lo redirige a `/portal` y las server actions lo rechazan). Quitar el
+  acceso cierra sus sesiones.
+- **Portal (`/portal`)**: solo lectura de las propiedades donde figura como propietario —
+  precios, fotos, avisos (vistas y contactos), visitas con su devolución (sin datos del
+  visitante), ofertas recibidas, contrato vigente, cuotas del inquilino y sus liquidaciones
+  aprobadas o pagadas con **su parte** según el reparto. Puede escribirle a su agente: queda en el
+  timeline del contacto y le llega una notificación.
+- **RLS**: la migración 0018 activa Row Level Security en todas las tablas del esquema público y
+  revoca los permisos de los roles `anon` y `authenticated` de Supabase, así la API REST pública
+  de Supabase no expone datos aunque se filtre la clave pública. La aplicación usa el rol dueño
+  de las tablas (no sujeto a RLS) y aplica los permisos en el servidor; cada corrida de
+  migraciones vuelve a activar RLS en las tablas nuevas.

@@ -241,8 +241,8 @@ export async function loadSubject(
         propertyId: rentalContract.propertyId,
         propCode: property.code,
         propTitle: property.title,
-        total: sql<string>`coalesce((select sum(case when l.kind = 'discount' then -l.amount_minor else l.amount_minor end) from rent_charge_line l where l.charge_id = ${rentCharge.id}), 0)`,
-        paid: sql<string>`coalesce((select sum(p.amount_minor) from rent_payment p where p.charge_id = ${rentCharge.id}), 0)`,
+        total: sql<string>`coalesce((select sum(case when l.kind = 'discount' then -l.amount_minor else l.amount_minor end) from rent_charge_line l where l.charge_id = "rent_charge"."id"), 0)`,
+        paid: sql<string>`coalesce((select sum(p.amount_minor) from rent_payment p where p.charge_id = "rent_charge"."id"), 0)`,
       })
       .from(rentCharge)
       .innerJoin(rentalContract, eq(rentalContract.id, rentCharge.contractId))

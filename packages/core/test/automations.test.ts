@@ -207,6 +207,26 @@ describe("automatizaciones programadas", () => {
   });
 });
 
+describe("disparadores programados sin candidatos", () => {
+  it("las consultas de cada disparador programado son válidas", async () => {
+    const admin = await ctxFor(h.db, org, "admin");
+    for (const trigger of [
+      "schedule.charge_overdue",
+      "schedule.contract_ending",
+      "schedule.reservation_expiring",
+      "schedule.publication_expiring",
+    ])
+      await saveRule(h.db, admin, {
+        name: `Prueba ${trigger}`,
+        trigger,
+        days: 3,
+        actions: [{ type: "notify", to: "assignee", title: "x {{codigo}}" }],
+      });
+    const r = await runScheduledAutomations(h.db, { organizationId: org.organizationId });
+    expect(r.rules).toBeGreaterThanOrEqual(5);
+  });
+});
+
 describe("asistente virtual", () => {
   it("responde preguntas, deriva a la bandeja y dispara la regla de consultas", async () => {
     const admin = await ctxFor(h.db, org, "admin");

@@ -2,7 +2,13 @@ import "server-only";
 import { cache } from "react";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { UnauthenticatedError, loadContext, requirePermission, type RequestContext } from "@crm/core";
+import {
+  UnauthenticatedError,
+  loadContext,
+  loadPortalContext,
+  requirePermission,
+  type RequestContext,
+} from "@crm/core";
 import { getDb } from "@crm/db";
 import type { PermissionCode } from "@crm/shared/rbac";
 import { auth } from "./auth";
@@ -51,7 +57,7 @@ export const getSessionContext = cache(
 /** Para páginas: redirige al login si no hay sesión válida. */
 export async function requireSession() {
   const result = await getSessionContext();
-  if (!result) redirect("/login");
+  if (!result) redirect((await getPortalSession()) ? "/portal" : "/login");
   return result;
 }
 
@@ -64,4 +70,20 @@ export async function requirePagePermission(code: PermissionCode) {
     redirect("/forbidden");
   }
   return result;
+}
+
+/** Propietario con acceso al portal (usuario sin membresía en la organización). */
+export const getPortalSession = cache(async () => {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) return null;
+  const pctx = await loadPortalContext(getDb(), session.user.id);
+  return pctx
+    ? { pctx, user: { id: session.user.id, name: session.user.name, email: session.user.email } }
+    : null;
+});
+
+export async function requirePortalSession() {
+  const s = await getPortalSession();
+  if (!s) redirect("/login");
+  return s;
 }

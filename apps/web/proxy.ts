@@ -15,6 +15,7 @@ const PUBLIC_PATHS = [
   "/api/bot",
   "/api/cron",
   "/chat",
+  "/portal/activar",
 ];
 
 export function proxy(request: NextRequest) {

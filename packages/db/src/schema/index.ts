@@ -15,3 +15,4 @@ export * from "./billing";
 export * from "./communications";
 export * from "./publications";
 export * from "./automations";
+export * from "./portal";
