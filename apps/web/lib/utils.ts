@@ -40,3 +40,13 @@ export function whatsappLink(phone: string | null | undefined): string | null {
   if (digits.length < 10 || digits.length > 15) return null;
   return `https://wa.me/${digits}`;
 }
+
+/** "hace 5 min", "hace 3 h", "ayer" o la fecha (calcular en el servidor para evitar desajustes). */
+export function relativeLabel(value: Date, now = new Date()): string {
+  const min = Math.floor((now.getTime() - value.getTime()) / 60_000);
+  if (min < 1) return "recién";
+  if (min < 60) return `hace ${min} min`;
+  if (min < 24 * 60) return `hace ${Math.floor(min / 60)} h`;
+  if (min < 48 * 60) return "ayer";
+  return formatDateTime(value);
+}

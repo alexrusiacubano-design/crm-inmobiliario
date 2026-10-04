@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Proceso en segundo plano: entrega de eventos del outbox. Automatizaciones y jobs programados llegan en fases posteriores.",
+  "description": "Proceso en segundo plano: entrega eventos del outbox a las automatizaciones y corre las programadas cada hora.",
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "start": "tsx src/index.ts",

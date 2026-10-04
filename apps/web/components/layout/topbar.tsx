@@ -26,6 +26,7 @@ import { Badge } from "@/components/ui/misc";
 import { authClient } from "@/lib/auth-client";
 import { initials } from "@/lib/utils";
 import type { VisibleNavSection } from "./nav-types";
+import { NotificationBell } from "./notification-bell";
 import { SidebarNav } from "./sidebar";
 
 interface TopbarProps {
@@ -33,6 +34,7 @@ interface TopbarProps {
   isDemo: boolean;
   user: { name: string; email: string };
   sections: VisibleNavSection[];
+  unreadNotifications: number;
 }
 
 /**
@@ -276,7 +278,7 @@ function UserMenu({ user }: { user: TopbarProps["user"] }) {
   );
 }
 
-export function Topbar({ orgName, isDemo, user, sections }: TopbarProps) {
+export function Topbar({ orgName, isDemo, user, sections, unreadNotifications }: TopbarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b bg-surface/85 px-4 backdrop-blur lg:px-6">
@@ -305,6 +307,7 @@ export function Topbar({ orgName, isDemo, user, sections }: TopbarProps) {
             {"DEMO"}
           </Badge>
         )}
+        <NotificationBell initialCount={unreadNotifications} />
         <UserMenu user={user} />
       </div>
     </header>

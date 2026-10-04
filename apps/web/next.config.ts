@@ -14,7 +14,17 @@ const config: NextConfig = {
   poweredByHeader: false,
   typedRoutes: false,
   async headers() {
-    return [{ source: "/(.*)", headers: securityHeaders }];
+    return [
+      // Todo menos el chat público, que se inserta en el sitio web de la inmobiliaria.
+      { source: "/((?!chat/).*)", headers: securityHeaders },
+      {
+        source: "/chat/:path*",
+        headers: [
+          ...securityHeaders.filter((h) => h.key !== "X-Frame-Options"),
+          { key: "Content-Security-Policy", value: "frame-ancestors *" },
+        ],
+      },
+    ];
   },
 };
 

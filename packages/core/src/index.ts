@@ -36,3 +36,8 @@ export * from "./communications/inbox";
 export * from "./communications/chat";
 export * from "./communications/templates";
 export * from "./properties/publications";
+export * from "./automations/engine";
+export * from "./automations/rules";
+export * from "./automations/notifications";
+export type { Subject } from "./automations/facts";
+export * from "./communications/bot";

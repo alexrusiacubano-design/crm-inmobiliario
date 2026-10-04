@@ -47,6 +47,7 @@ const es = {
   "nav.communications.inbox": "Consultas",
   "nav.communications.chat": "Mensajes internos",
   "nav.communications.templates": "Plantillas",
+  "nav.communications.bot": "Asistente virtual",
   "nav.agenda": "Agenda",
   "nav.documents": "Documentos",
   "nav.finance": "Finanzas",

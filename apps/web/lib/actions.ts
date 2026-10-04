@@ -1,6 +1,7 @@
 import "server-only";
 import { isAppError, type RequestContext } from "@crm/core";
 import { getDb, type Db } from "@crm/db";
+import { scheduleAutomations } from "./automations";
 import { getSessionContext } from "./session";
 
 export type ActionResult<T = undefined> =
@@ -18,6 +19,7 @@ export async function runAction<T>(
   if (!session) return { ok: false, error: "Tu sesión expiró. Volvé a iniciar sesión." };
   try {
     const data = await fn(getDb(), session.ctx);
+    scheduleAutomations();
     return { ok: true, data };
   } catch (error) {
     if (isAppError(error)) {

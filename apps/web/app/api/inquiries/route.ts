@@ -3,6 +3,7 @@ import { ingestInquiry, isAppError } from "@crm/core";
 import { getDb, organization } from "@crm/db";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
+import { scheduleAutomations } from "@/lib/automations";
 
 /**
  * Entrada de consultas desde el sitio web, portales o el asistente virtual.
@@ -35,6 +36,7 @@ export async function POST(request: Request) {
   }
   try {
     const r = await ingestInquiry(db, org.id, body);
+    if (!r.duplicate) scheduleAutomations();
     return NextResponse.json(
       { id: r.inquiry.id, duplicate: r.duplicate },
       { status: r.duplicate ? 200 : 201 },

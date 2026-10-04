@@ -32,7 +32,11 @@
     "./communications": "./src/communications.ts",
     "./validation/communications": "./src/validation/communications.ts",
     "./publications": "./src/publications.ts",
-    "./validation/publications": "./src/validation/publications.ts"
+    "./validation/publications": "./src/validation/publications.ts",
+    "./automations": "./src/automations.ts",
+    "./validation/automations": "./src/validation/automations.ts",
+    "./bot": "./src/bot.ts",
+    "./validation/bot": "./src/validation/bot.ts"
   },
   "scripts": {
     "lint": "eslint .",

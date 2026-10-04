@@ -25,3 +25,7 @@ export * from "./communications";
 export * from "./validation/communications";
 export * from "./publications";
 export * from "./validation/publications";
+export * from "./automations";
+export * from "./validation/automations";
+export * from "./bot";
+export * from "./validation/bot";

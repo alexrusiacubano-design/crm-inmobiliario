@@ -15,13 +15,33 @@ export interface DomainEventInput {
  * entrega después. Así un evento nunca se pierde ni se emite para un cambio revertido.
  */
 export async function emitEvent(tx: DbOrTx, ctx: RequestContext, event: DomainEventInput): Promise<void> {
+  // Lo que hace una automatización se marca para que no dispare otras (sin cadenas ni bucles).
+  const automation = ctx.meta.requestId?.startsWith("automation:")
+    ? ctx.meta.requestId.slice("automation:".length)
+    : null;
   await tx.insert(domainEvent).values({
     organizationId: ctx.organizationId,
     type: event.type,
     aggregateType: event.aggregateType,
     aggregateId: event.aggregateId,
-    payload: toAuditJson(event.payload ?? {}),
+    payload: toAuditJson({ ...(event.payload ?? {}), ...(automation ? { _automation: automation } : {}) }),
     actorUserId: ctx.userId,
+  });
+}
+
+/** Evento sin usuario (webhooks públicos, asistente virtual). */
+export async function emitSystemEvent(
+  tx: DbOrTx,
+  organizationId: string,
+  event: DomainEventInput,
+): Promise<void> {
+  await tx.insert(domainEvent).values({
+    organizationId,
+    type: event.type,
+    aggregateType: event.aggregateType,
+    aggregateId: event.aggregateId,
+    payload: toAuditJson(event.payload ?? {}),
+    actorUserId: null,
   });
 }
 
@@ -33,6 +53,7 @@ export interface PendingEvent {
   aggregateId: string;
   payload: unknown;
   attempts: number;
+  occurredAt?: Date;
 }
 
 export type EventHandler = (event: PendingEvent, db: Db) => Promise<void>;

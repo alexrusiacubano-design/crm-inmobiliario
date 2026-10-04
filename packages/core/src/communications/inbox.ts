@@ -19,7 +19,7 @@ import { writeAudit } from "../audit";
 import { hasPermission, requirePermission, type RequestContext } from "../context";
 import { createLead } from "../crm/leads";
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError, parseInput } from "../errors";
-import { emitEvent } from "../events";
+import { emitEvent, emitSystemEvent } from "../events";
 import { propertyDisplayTitle } from "../properties/helpers";
 
 type InquiryRow = typeof inquiry.$inferSelect;
@@ -161,6 +161,12 @@ export async function ingestInquiry(db: Db, organizationId: string, rawInput: un
       })
       .returning();
     if (!row) throw new Error("No se pudo registrar la consulta");
+    await emitSystemEvent(tx, organizationId, {
+      type: "inquiry.created",
+      aggregateType: "inquiry",
+      aggregateId: row.id,
+      payload: { channel: input.channel },
+    });
     return { inquiry: row, duplicate: false };
   });
 }

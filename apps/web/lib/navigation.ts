@@ -242,6 +242,13 @@ export const NAVIGATION: NavSection[] = [
         plannedPhase: null,
         description: "Plantillas por canal con variables.",
       },
+      {
+        href: "/communications/bot",
+        label: "nav.communications.bot",
+        permission: "automation.manage",
+        plannedPhase: null,
+        description: "Chat del sitio web: preguntas frecuentes, búsqueda de propiedades y derivación.",
+      },
     ],
   },
   {
@@ -344,7 +351,7 @@ export const NAVIGATION: NavSection[] = [
         href: "/admin/automations",
         label: "nav.admin.automations",
         permission: "automation.manage",
-        plannedPhase: 12,
+        plannedPhase: null,
         description: "Reglas trigger → condiciones → acciones con historial.",
       },
       { href: "/admin/audit", label: "nav.admin.audit", permission: "audit.read", plannedPhase: null },

@@ -8,6 +8,7 @@ import { seedDemoCommunications } from "../src/communications/demo-seed";
 import { seedDemoBilling, seedDemoContracts, seedDemoGuarantees } from "../src/rentals/demo-seed";
 import { backfillDemoCoordinates, seedDemoProperties } from "../src/properties/demo-seed";
 import { seedDemoPublications } from "../src/properties/publications-demo";
+import { seedDemoAutomations } from "../src/automations/demo-seed";
 import { getStorage } from "../src/storage/provider";
 
 async function main() {
@@ -58,6 +59,8 @@ async function main() {
     console.info(m.skipped ? "Comunicaciones DEMO ya cargadas." : `Consultas DEMO: ${m.inquiries}.`);
     const pb = await seedDemoPublications(db);
     console.info(pb.skipped ? "Publicaciones DEMO ya cargadas." : `Avisos DEMO: ${pb.publications}.`);
+    const au = await seedDemoAutomations(db);
+    console.info(au.skipped ? "Automatizaciones DEMO ya cargadas." : `Automatizaciones DEMO: ${au.rules}.`);
   } finally {
     await pool.end();
   }

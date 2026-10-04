@@ -1,13 +1,17 @@
-import { hasPermission } from "@crm/core";
+import { hasPermission, unreadNotificationsCount } from "@crm/core";
+import { getDb } from "@crm/db";
 import type { VisibleNavSection } from "@/components/layout/nav-types";
 import { SidebarNav } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
+import { scheduleAutomations } from "@/lib/automations";
 import { t } from "@/lib/i18n";
 import { NAVIGATION } from "@/lib/navigation";
 import { requireSession } from "@/lib/session";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const { ctx, user } = await requireSession();
+  const unread = await unreadNotificationsCount(getDb(), ctx);
+  scheduleAutomations(ctx.organizationId);
 
   // El menú se filtra en el servidor: el cliente solo recibe lo que puede ver.
   const sections: VisibleNavSection[] = NAVIGATION.flatMap((section) => {
@@ -54,6 +58,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           isDemo={ctx.organization.isDemo}
           user={{ name: user.name, email: user.email }}
           sections={sections}
+          unreadNotifications={unread}
         />
         <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 lg:px-8 lg:py-8">{children}</main>
       </div>

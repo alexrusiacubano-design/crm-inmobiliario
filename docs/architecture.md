@@ -229,3 +229,34 @@ Suspender o cambiar la contraseña de un usuario cierra sus sesiones.
 - **Padrón y ubicación**: `property.padron`; las captaciones guardan padrón, coordenadas
   (selector de mapa Leaflet/OSM), portal de origen y URL del aviso, y los heredan al crear la
   propiedad.
+
+## Automatizaciones, notificaciones y asistente virtual (Fase 12)
+
+- **Reglas (`automation_rule`)**: disparador → condiciones (Y) → acciones. Disparadores por
+  evento del outbox (lead nuevo / asignado / cambia de estado, consulta, operación iniciada,
+  oferta, oferta aceptada, reserva, cierre, caída, contrato, cambio de estado de propiedad) y
+  programados (lead sin contacto, cuota vencida, contrato por vencer, reserva por vencer, aviso
+  por vencer, con N días). Condiciones sobre un catálogo de campos por entidad. Acciones:
+  notificación (al responsable, a un rol o a un usuario), tarea en la agenda, asignación en rueda
+  (leads), etiqueta al contacto y webhook HTTPS firmado (`X-CRM-Signature`, HMAC-SHA256; se
+  bloquean IPs privadas y localhost). Textos con variables `{{codigo}}`, `{{nombre}}`…
+- Las acciones se ejecutan con los permisos de quien guardó la regla por última vez. Lo que hace
+  una automatización marca sus eventos (`_automation`) y no dispara otras: sin cadenas ni bucles.
+  Una regla nueva no actúa sobre eventos anteriores a su creación; la migración 0017 da por
+  entregados los eventos acumulados.
+- **Historial (`automation_run`)** con `dedupe_key` único por regla (evento, o entidad + fecha
+  relevante en los programados): nada se ejecuta dos veces. Estado ejecutada / parcial / falló
+  con el detalle de cada acción.
+- **Ejecución**: en Vercel no hay worker permanente, así que los eventos se entregan con
+  `after()` al final de cada server action y los programados corren como mucho una vez por hora
+  por organización al navegar (`automation_schedule`, marca tomada con UPDATE condicional).
+  También: el worker (`apps/worker`, eventos continuos y programados cada hora) y
+  `GET /api/cron/automations` con `Authorization: Bearer <CRON_SECRET>` para un cron externo.
+- **Notificaciones (`notification`)**: campanita con contador (se actualiza cada minuto), últimas
+  ocho y página `/notifications`. Cada usuario ve y marca solo las suyas.
+- **Asistente virtual (`bot_settings`)**: chat público `/chat/<token>` insertable con
+  `<script src="/api/bot/<token>/widget">` (botón flotante + iframe; `/chat` admite
+  `frame-ancestors *`). Responde preguntas frecuentes por palabras clave (sin tildes, por
+  prefijo), reconoce códigos «PROP-12», busca entre las propiedades publicadas en el sitio web
+  propio (precio máximo con conversión por el tipo de cambio) y deriva a la bandeja como consulta
+  de canal «bot» con la conversación. Sin IA externa. Límite por IP en el endpoint.
