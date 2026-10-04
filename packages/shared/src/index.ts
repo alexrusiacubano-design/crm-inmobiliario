@@ -29,3 +29,4 @@ export * from "./automations";
 export * from "./validation/automations";
 export * from "./bot";
 export * from "./validation/bot";
+export * from "./reports";

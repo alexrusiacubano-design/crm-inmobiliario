@@ -260,3 +260,23 @@ Suspender o cambiar la contraseña de un usuario cierra sus sesiones.
   prefijo), reconoce códigos «PROP-12», busca entre las propiedades publicadas en el sitio web
   propio (precio máximo con conversión por el tipo de cambio) y deriva a la bandeja como consulta
   de canal «bot» con la conversación. Sin IA externa. Límite por IP en el endpoint.
+
+## Reportes (Fase 13)
+
+- `/finance/reports` con permiso `report.read`; cada consulta aplica el alcance del permiso
+  (equipo para supervisores, sucursal para gerencia, organización para dirección) y los filtros
+  opcionales de sucursal y agente. Períodos: semana, mes, trimestre, año o rango (máx. 2 años).
+- **Comercial**: leads del período, % contactados, mediana de primera respuesta, conversión,
+  embudo por la etapa más avanzada que alcanzó cada lead (según su historial de estados: un lead
+  perdido después de visitar cuenta en "Visita"), por origen, por agente, motivos de pérdida y
+  leads por mes (12 meses).
+- **Operaciones y honorarios**: cierres del período (ventas / alquileres), volumen por moneda,
+  honorarios pendientes y cobrados, mediana de días para cerrar y de días en el mercado, caídas
+  con motivo, ranking por agente en dólares (pesos al tipo de cambio de referencia) y cierres por
+  mes.
+- **Alquileres**: contratos vigentes, nuevos y por vencer, facturado y cobrado en el período (tasa
+  de cobranza por moneda), morosidad actual y liquidaciones pagadas.
+- **Inventario**: foto actual por estado y tipo, antigüedad promedio, bajas de precio del período
+  y propiedades con más de 90 días.
+- Exportación CSV (separador ";", BOM UTF-8, protección contra fórmulas) por tabla en
+  `/api/reports/export`, con la sesión y el alcance de quien la pide.

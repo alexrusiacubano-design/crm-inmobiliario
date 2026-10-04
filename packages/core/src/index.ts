@@ -41,3 +41,4 @@ export * from "./automations/rules";
 export * from "./automations/notifications";
 export type { Subject } from "./automations/facts";
 export * from "./communications/bot";
+export * from "./reports/reports";

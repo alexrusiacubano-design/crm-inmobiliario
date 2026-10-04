@@ -290,7 +290,7 @@ export const NAVIGATION: NavSection[] = [
         href: "/finance/reports",
         label: "nav.finance.reports",
         permission: "report.read",
-        plannedPhase: 13,
+        plannedPhase: null,
         description: "Conversión, tiempos de venta y rendimiento por agente.",
       },
     ],

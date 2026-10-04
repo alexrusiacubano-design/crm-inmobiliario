@@ -36,7 +36,8 @@
     "./automations": "./src/automations.ts",
     "./validation/automations": "./src/validation/automations.ts",
     "./bot": "./src/bot.ts",
-    "./validation/bot": "./src/validation/bot.ts"
+    "./validation/bot": "./src/validation/bot.ts",
+    "./reports": "./src/reports.ts"
   },
   "scripts": {
     "lint": "eslint .",
