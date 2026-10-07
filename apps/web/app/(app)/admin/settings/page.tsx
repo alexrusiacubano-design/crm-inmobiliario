@@ -17,7 +17,17 @@ export default async function SettingsPage() {
         description="Datos generales de la organización. Cada cambio queda en la auditoría."
       />
       <SettingsForm
-        initial={{ name: org.name, defaultCurrency: org.defaultCurrency, timezone: org.timezone }}
+        initial={{
+          name: org.name,
+          defaultCurrency: org.defaultCurrency,
+          timezone: org.timezone,
+          legalName: org.legalName ?? "",
+          taxId: org.taxId ?? "",
+          address: org.address ?? "",
+          phone: org.phone ?? "",
+          email: org.email ?? "",
+          website: org.website ?? "",
+        }}
       />
     </>
   );

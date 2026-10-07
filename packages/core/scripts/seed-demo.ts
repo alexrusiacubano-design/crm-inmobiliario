@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import { createDb } from "@crm/db";
 import { seedDemoAgenda } from "../src/agenda/demo-seed";
 import { seedDemoCrm } from "../src/crm/demo-seed";
@@ -62,6 +63,10 @@ async function main() {
     console.info(pb.skipped ? "Publicaciones DEMO ya cargadas." : `Avisos DEMO: ${pb.publications}.`);
     const au = await seedDemoAutomations(db);
     console.info(au.skipped ? "Automatizaciones DEMO ya cargadas." : `Automatizaciones DEMO: ${au.rules}.`);
+    // Datos de la inmobiliaria DEMO para los documentos impresos (solo si están vacíos).
+    await db.execute(sql`update organization set legal_name = 'Inmobiliaria Demo S.A.', tax_id = '219999990019',
+      address = 'Av. Brasil 2500, Montevideo', phone = '2700 0000', email = 'contacto@demo.example.com',
+      website = 'www.inmobiliaria-demo.example.com' where is_demo and legal_name is null`);
     const po = await seedDemoPortal(db, process.env.DEMO_PASSWORD);
     console.info(po.skipped ? "Portal DEMO ya configurado." : "Portal DEMO: propietario@demo.example.com.");
   } finally {

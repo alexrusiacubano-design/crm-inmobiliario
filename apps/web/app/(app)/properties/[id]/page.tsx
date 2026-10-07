@@ -31,7 +31,7 @@ import {
   type PropertyFeature,
   type PropertyStatus,
 } from "@crm/shared";
-import { CheckCircle2, CircleAlert, ImageOff, Lock, Pencil } from "lucide-react";
+import { CheckCircle2, CircleAlert, ImageOff, Lock, Pencil, Printer } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -228,6 +228,11 @@ export default async function PropertyPage({
               </Link>
             </Button>
           )}
+          <Button asChild variant="secondary" size="sm">
+            <a href={`/print/propiedad/${p.id}`} target="_blank" rel="noreferrer">
+              <Printer /> Ficha
+            </a>
+          </Button>
           {can.update && (
             <PropertyStatusControl
               propertyId={p.id}

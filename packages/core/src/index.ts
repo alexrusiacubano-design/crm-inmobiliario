@@ -43,3 +43,4 @@ export type { Subject } from "./automations/facts";
 export * from "./communications/bot";
 export * from "./reports/reports";
 export * from "./portal/portal";
+export * from "./email/mailer";

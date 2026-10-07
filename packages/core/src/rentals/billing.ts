@@ -618,7 +618,7 @@ export async function changeSettlementStatus(db: Db, ctx: RequestContext, rawInp
 export async function listSettlements(
   db: DbOrTx,
   ctx: RequestContext,
-  opts: { status?: "open" | "paid" | "all"; contractId?: string } = {},
+  opts: { status?: "open" | "paid" | "all"; contractId?: string; id?: string } = {},
 ) {
   requirePermission(ctx, "settlement.read");
   const rows = await db
@@ -651,6 +651,7 @@ export async function listSettlements(
             ? eq(ownerSettlement.status, "paid")
             : undefined,
         opts.contractId ? eq(ownerSettlement.contractId, opts.contractId) : undefined,
+        opts.id ? eq(ownerSettlement.id, parseInput(uuidSchema, opts.id)) : undefined,
       ),
     )
     .orderBy(
@@ -687,4 +688,12 @@ export async function listSettlements(
     },
     canManage: hasPermission(ctx, "settlement.manage"),
   };
+}
+
+/** Una liquidación (para imprimir). */
+export async function getSettlement(db: DbOrTx, ctx: RequestContext, id: string) {
+  const r = await listSettlements(db, ctx, { id });
+  const s = r.items[0];
+  if (!s) throw new NotFoundError("Liquidación");
+  return s;
 }

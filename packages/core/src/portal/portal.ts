@@ -603,3 +603,39 @@ export async function contactEmail(db: DbOrTx, ctx: RequestContext, contactId: s
     .limit(1);
   return r?.v ?? null;
 }
+
+/** Una liquidación del propietario (para imprimir), con su parte. */
+export async function portalSettlement(db: DbOrTx, p: PortalContext, code: string) {
+  if (!/^LIQ-\d{6}$/.test(code)) throw new NotFoundError("Liquidación");
+  const [r] = await db
+    .select({
+      s: ownerSettlement,
+      period: rentCharge.period,
+      propertyId: rentalContract.propertyId,
+      contractCode: rentalContract.code,
+      tenant: contact.displayName,
+      propertyCode: property.code,
+      propertyTitle: property.title,
+    })
+    .from(ownerSettlement)
+    .innerJoin(rentCharge, eq(rentCharge.id, ownerSettlement.chargeId))
+    .innerJoin(rentalContract, eq(rentalContract.id, ownerSettlement.contractId))
+    .innerJoin(contact, eq(contact.id, rentalContract.tenantContactId))
+    .innerJoin(property, eq(property.id, rentalContract.propertyId))
+    .where(
+      and(
+        eq(ownerSettlement.organizationId, p.organizationId),
+        eq(ownerSettlement.code, code),
+        inArray(ownerSettlement.status, ["approved", "paid"]),
+      ),
+    );
+  if (!r || !(await ownedPropertyIds(db, p)).has(r.propertyId)) throw new NotFoundError("Liquidación");
+  return {
+    ...r.s,
+    period: r.period,
+    contractCode: r.contractCode,
+    tenantName: r.tenant,
+    propertyLabel: r.propertyTitle ? `${r.propertyCode} · ${r.propertyTitle}` : r.propertyCode,
+    myShare: r.s.shares.find((x) => x.contactId === p.contactId) ?? null,
+  };
+}

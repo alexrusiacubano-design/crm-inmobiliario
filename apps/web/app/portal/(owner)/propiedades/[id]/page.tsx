@@ -262,7 +262,14 @@ export default async function PortalPropertyPage({ params }: { params: Promise<{
                       <TR key={s.code}>
                         <TD>
                           {s.period.slice(0, 7).split("-").reverse().join("/")}
-                          <span className="block font-mono text-[11px] text-muted-foreground">{s.code}</span>
+                          <a
+                            href={`/portal/imprimir/${s.code}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="block font-mono text-[11px] text-primary hover:underline"
+                          >
+                            {s.code} · ver PDF
+                          </a>
                         </TD>
                         <TD className="text-right tabular">{price(s.incomeMinor, s.currency)}</TD>
                         <TD className="text-right tabular">

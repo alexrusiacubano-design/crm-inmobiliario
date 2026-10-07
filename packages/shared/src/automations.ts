@@ -255,7 +255,7 @@ export function renderAutomationText(
   });
 }
 
-export const ACTION_TYPES = ["notify", "task", "assign", "tag", "webhook"] as const;
+export const ACTION_TYPES = ["notify", "task", "email", "assign", "tag", "webhook"] as const;
 export type ActionType = (typeof ACTION_TYPES)[number];
 export const ACTION_TYPE_LABELS: Record<ActionType, string> = {
   notify: "Enviar notificación",
@@ -263,6 +263,7 @@ export const ACTION_TYPE_LABELS: Record<ActionType, string> = {
   assign: "Asignar en rueda",
   tag: "Etiquetar al contacto",
   webhook: "Llamar a un webhook",
+  email: "Enviar email al cliente",
 };
 /** Acciones que necesitan un contacto o un lead en la entidad. */
 export const ACTION_ENTITIES: Record<ActionType, readonly AutomationEntity[] | "all"> = {
@@ -271,6 +272,7 @@ export const ACTION_ENTITIES: Record<ActionType, readonly AutomationEntity[] | "
   assign: ["lead"],
   tag: ["lead", "inquiry", "deal", "contract", "charge"],
   webhook: "all",
+  email: ["lead", "inquiry", "deal", "contract", "charge"],
 };
 export function actionAllowed(action: ActionType, entity: AutomationEntity): boolean {
   const e = ACTION_ENTITIES[action];
@@ -406,6 +408,22 @@ export const RULE_TEMPLATES: RuleTemplate[] = [
         dueInDays: 0,
       },
       { type: "tag", tag: "Moroso" },
+    ],
+  },
+  {
+    key: "charge-reminder-email",
+    name: "Recordatorio de pago por email",
+    description:
+      "Email al inquilino cuando la cuota lleva días vencida (requiere configurar el envío de emails).",
+    trigger: "schedule.charge_overdue",
+    days: 3,
+    conditions: [],
+    actions: [
+      {
+        type: "email",
+        subject: "Recordatorio: cuota de alquiler pendiente",
+        body: "Hola {{nombre}}:\n\nTe recordamos que la cuota de {{propiedad}} tiene un saldo pendiente de {{monto}} ({{dias}} días de atraso). Si ya la pagaste, ignorá este mensaje.\n\nGracias.",
+      },
     ],
   },
   {

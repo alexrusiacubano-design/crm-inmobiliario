@@ -62,6 +62,16 @@ export const automationActionSchema = z
     }),
     z.object({ type: z.literal("tag"), tag: line(40, "Escribí la etiqueta") }),
     z.object({
+      type: z.literal("email"),
+      subject: templated(200, "Escribí el asunto"),
+      body: z
+        .string()
+        .trim()
+        .min(2, "Escribí el mensaje")
+        .max(5000)
+        .refine((v) => unknownVars(v).length === 0, { message: "Variable desconocida" }),
+    }),
+    z.object({
       type: z.literal("webhook"),
       url: z
         .string()

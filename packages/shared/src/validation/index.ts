@@ -122,6 +122,47 @@ export const orgSettingsSchema = z.object({
   name: trimmed(2, 120, "Nombre"),
   defaultCurrency: z.enum(CURRENCIES),
   timezone: z.string().trim().min(3).max(64),
+  /** Datos que aparecen en recibos, liquidaciones y fichas impresas. */
+  legalName: z
+    .string()
+    .trim()
+    .max(160)
+    .optional()
+    .nullable()
+    .transform((v) => v || null),
+  taxId: z
+    .string()
+    .trim()
+    .max(20)
+    .optional()
+    .nullable()
+    .transform((v) => (v ? v.replace(/\s/g, "") : null))
+    .refine((v) => !v || /^\d{12}$/.test(v), { message: "El RUT tiene 12 dígitos" }),
+  address: z
+    .string()
+    .trim()
+    .max(200)
+    .optional()
+    .nullable()
+    .transform((v) => v || null),
+  phone: z
+    .string()
+    .trim()
+    .max(40)
+    .optional()
+    .nullable()
+    .transform((v) => v || null),
+  email: z
+    .union([z.literal(""), z.null(), z.email("Email inválido").max(200)])
+    .optional()
+    .transform((v) => (v ? v.toLowerCase() : null)),
+  website: z
+    .string()
+    .trim()
+    .max(200)
+    .optional()
+    .nullable()
+    .transform((v) => v || null),
 });
 
 export const auditQuerySchema = listQuerySchema.extend({

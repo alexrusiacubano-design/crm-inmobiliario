@@ -97,6 +97,16 @@ export default async function SettlementsPage({
                     >
                       {s.code}
                     </Link>
+                    {s.status !== "voided" && (
+                      <a
+                        href={`/print/liquidacion/${s.id}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="ml-2 text-xs text-muted-foreground hover:text-foreground hover:underline"
+                      >
+                        Imprimir
+                      </a>
+                    )}
                     <span className="block font-mono text-xs text-muted-foreground">{s.contractCode}</span>
                   </TD>
                   <TD>{periodLabel(s.period)}</TD>

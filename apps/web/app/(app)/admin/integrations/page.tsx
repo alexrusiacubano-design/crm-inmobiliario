@@ -1,4 +1,4 @@
-import { listExchangeRates, listPortalAccounts, listPublications } from "@crm/core";
+import { emailConfigured, listExchangeRates, listPortalAccounts, listPublications } from "@crm/core";
 import { EXCHANGE_SOURCE_LABELS } from "@crm/shared/publications";
 import { getDb } from "@crm/db";
 import type { Metadata } from "next";
@@ -67,9 +67,11 @@ export default async function IntegrationsPage() {
     },
     {
       name: "Email",
-      status: "Cliente de correo",
+      status: emailConfigured() ? "Envío automático (Resend)" : "Cliente de correo",
       ok: true,
-      note: "Se abre tu programa de correo con la plantilla; el envío automático se suma con un proveedor SMTP.",
+      note: emailConfigured()
+        ? `Los emails salen desde ${process.env.EMAIL_FROM}: compositor, invitaciones al portal y automatizaciones.`
+        : "Se abre tu programa de correo. Para enviar desde el CRM configurá RESEND_API_KEY y EMAIL_FROM en Vercel.",
     },
     {
       name: "Facturación electrónica (CFE / DGI)",

@@ -83,7 +83,11 @@ export function PortalAccessCard({
                 }
                 setErrors({});
                 setLink(`${window.location.origin}/portal/activar/${r.data.token}`);
-                toast.success("Invitación creada: mandale el enlace");
+                toast.success(
+                  r.data.emailed
+                    ? `Invitación enviada a ${email}. También podés mandarle el enlace por WhatsApp.`
+                    : "Invitación creada: mandale el enlace",
+                );
                 router.refresh();
               });
             }}

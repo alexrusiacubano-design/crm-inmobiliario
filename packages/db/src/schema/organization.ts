@@ -32,6 +32,13 @@ export const organization = pgTable("organization", {
   locale: text("locale").notNull().default("es-UY"),
   /** Datos de demostración: se muestran con un distintivo DEMO en la interfaz. */
   isDemo: boolean("is_demo").notNull().default(false),
+  /** Datos para documentos impresos (recibos, liquidaciones, fichas). */
+  legalName: text("legal_name"),
+  taxId: text("tax_id"),
+  address: text("address"),
+  phone: text("phone"),
+  email: text("email"),
+  website: text("website"),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 });

@@ -299,3 +299,18 @@ Suspender o cambiar la contraseña de un usuario cierra sus sesiones.
   de Supabase no expone datos aunque se filtre la clave pública. La aplicación usa el rol dueño
   de las tablas (no sujeto a RLS) y aplica los permisos en el servidor; cada corrida de
   migraciones vuelve a activar RLS en las tablas nuevas.
+
+## Documentos imprimibles y envío de emails (Fase 15)
+
+- **Documentos** (`/print/...`, hoja A4 que se imprime o guarda como PDF desde el navegador, sin
+  librerías ni servicios externos): liquidación al propietario, recibo / estado de cuenta de una
+  cuota con conceptos y pagos (los anulados no figuran), y ficha comercial de la propiedad para
+  clientes (sin dirección exacta, propietarios ni datos internos). El propietario descarga sus
+  liquidaciones desde el portal (`/portal/imprimir/<código>`, solo su parte). Configuración suma
+  razón social, RUT, dirección, teléfono, email y web, que encabezan los documentos. Ninguno es un
+  comprobante fiscal (CFE).
+- **Email** con Resend (API HTTP): se activa con `RESEND_API_KEY` y `EMAIL_FROM` (dominio
+  verificado). Habilita "Enviar desde el CRM" en el compositor (respuesta al email del agente,
+  queda en el timeline), el envío automático de la invitación al portal y la acción de
+  automatización "Enviar email al cliente" (por ejemplo, recordatorio de pago). Sin esas variables
+  todo sigue funcionando con el correo del usuario (`mailto:`).

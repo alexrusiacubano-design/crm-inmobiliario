@@ -1,3 +1,5 @@
+import { Printer } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { getCharge, hasPermission, listSettlements, NotFoundError, ValidationError } from "@crm/core";
 import { getDb } from "@crm/db";
 import {
@@ -81,6 +83,11 @@ export default async function ChargePage({ params }: { params: Promise<{ id: str
           )}
           {canLine && <ChargeLineDialog chargeId={c.id} />}
           {canSettle && <SettlementDialog chargeId={c.id} collectedLabel={price(c.paidMinor, c.currency)} />}
+          <Button asChild size="sm" variant="secondary">
+            <a href={`/print/cuota/${c.id}`} target="_blank" rel="noreferrer">
+              <Printer /> {c.balanceMinor <= 0n ? "Recibo" : "Estado de cuenta"}
+            </a>
+          </Button>
         </div>
       </div>
 

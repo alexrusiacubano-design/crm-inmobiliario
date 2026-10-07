@@ -4,7 +4,12 @@ import { Mail, MessageCircle, Send } from "lucide-react";
 import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { renderTemplate, type TemplateChannel } from "@crm/shared/communications";
-import { composeDataAction, logOutboundAction, type ComposeData } from "@/app/(app)/communications/actions";
+import {
+  composeDataAction,
+  logOutboundAction,
+  sendEmailAction,
+  type ComposeData,
+} from "@/app/(app)/communications/actions";
 import { Picker } from "@/components/deals/new-deal-dialog";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter } from "@/components/ui/dialog";
@@ -109,8 +114,31 @@ export function Composer({
           <Field label="Mensaje" htmlFor="cp-b" hint="Revisá los “…”: son datos que faltan completar.">
             <Textarea id="cp-b" rows={6} value={body} onChange={(e) => setBody(e.target.value)} />
           </Field>
-          <div className="flex justify-end">
+          <div className="flex flex-wrap justify-end gap-2">
+            {channel === "email" && data?.emailDirect && data.email && (
+              <Button
+                disabled={pending || !body.trim() || !subject.trim()}
+                loading={pending}
+                onClick={() => {
+                  if (!who) return;
+                  start(async () => {
+                    const r = await sendEmailAction({
+                      contactId: who.id,
+                      leadId: leadId ?? null,
+                      subject,
+                      body,
+                    });
+                    if (!r.ok) return void toast.error(r.error);
+                    toast.success(`Email enviado a ${r.data.to}`);
+                    onDone?.();
+                  });
+                }}
+              >
+                <Send /> Enviar desde el CRM
+              </Button>
+            )}
             <Button
+              variant={channel === "email" && data?.emailDirect ? "secondary" : undefined}
               asChild={Boolean(href)}
               disabled={!href || pending}
               onClick={() => {

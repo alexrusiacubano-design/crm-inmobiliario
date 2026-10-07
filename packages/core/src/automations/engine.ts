@@ -33,6 +33,8 @@ import { addDaysYmd } from "@crm/shared/rentals";
 import { loadContext, type RequestContext } from "../context";
 import { createEvent } from "../agenda/events";
 import { assignLead } from "../crm/leads";
+import { logInteraction } from "../crm/timeline";
+import { emailConfigured, primaryEmail, sendEmail } from "../email/mailer";
 import { dispatchPendingEvents, type EventHandler, type PendingEvent } from "../events";
 import { loadSubject, type Subject } from "./facts";
 
@@ -160,6 +162,21 @@ async function runAction(
     rule.state = { ...rule.state, lastAssignedUserId: next };
     await assignLead(db, actx, { leadId: subject.id, assignedUserId: next });
     return "Lead asignado en rueda";
+  }
+  if (action.type === "email") {
+    if (!emailConfigured()) throw new Error("El envío de emails no está configurado");
+    if (!subject.contactId) return "Sin contacto: no se envió el email";
+    const to = await primaryEmail(db, rule.organizationId, subject.contactId);
+    if (!to) return "El contacto no tiene email";
+    await sendEmail({ to, subject: text(action.subject), text: text(action.body) });
+    await logInteraction(db, actx, {
+      contactId: subject.contactId,
+      leadId: subject.leadId,
+      type: "email",
+      direction: "outbound",
+      body: `${text(action.subject)}\n\n${text(action.body)}\n\n(automatización «${rule.name}»)`,
+    });
+    return `Email a ${to}`;
   }
   if (action.type === "tag") {
     if (!subject.contactId) return "Sin contacto para etiquetar";

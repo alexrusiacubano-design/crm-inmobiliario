@@ -7,6 +7,8 @@ import {
   conversationMessages,
   convertInquiry,
   createInquiry,
+  emailConfigured,
+  sendEmailToContact,
   listTemplates,
   logOutbound,
   saveTemplate,
@@ -96,6 +98,8 @@ export interface ComposeData {
   email: string | null;
   values: Partial<Record<TemplateVariable, string>>;
   templates: { id: string; name: string; subject: string | null; body: string }[];
+  /** El CRM puede enviar el email directamente (Resend configurado). */
+  emailDirect: boolean;
 }
 export async function composeDataAction(input: {
   contactId: string;
@@ -110,9 +114,17 @@ export async function composeDataAction(input: {
     return {
       ...c,
       templates: templates.map((t) => ({ id: t.id, name: t.name, subject: t.subject, body: t.body })),
+      emailDirect: emailConfigured(),
     };
   });
 }
 export async function logOutboundAction(input: unknown): Promise<ActionResult<undefined>> {
   return done(await runAction(async (db, ctx) => void (await logOutbound(db, ctx, input))), "/crm");
+}
+
+export async function sendEmailAction(input: unknown): Promise<ActionResult<{ to: string }>> {
+  return done(
+    await runAction(async (db, ctx) => ({ to: (await sendEmailToContact(db, ctx, input)).to })),
+    "/crm",
+  );
 }

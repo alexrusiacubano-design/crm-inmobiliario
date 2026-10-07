@@ -50,6 +50,8 @@ function blankAction(type: ActionType): Record<string, unknown> {
       return { type, userIds: [] };
     case "tag":
       return { type, tag: "" };
+    case "email":
+      return { type, subject: "", body: "Hola {{nombre}}:\n\n" };
     case "webhook":
       return { type, url: "" };
   }
@@ -428,6 +430,37 @@ export function RuleEditor({
                         })}
                       </div>
                       {e("userIds") && <p className="text-xs text-danger">{e("userIds")}</p>}
+                    </div>
+                  )}
+                  {type === "email" && (
+                    <div className="grid gap-3">
+                      <p className="text-xs text-muted-foreground">
+                        Se envía al email principal del cliente y queda en su historial. Requiere configurar
+                        el envío (Administración → Integraciones).
+                      </p>
+                      <Field
+                        label="Asunto"
+                        htmlFor={`a${i}-subj`}
+                        error={e("subject") ? [e("subject") ?? ""] : undefined}
+                      >
+                        <Input
+                          id={`a${i}-subj`}
+                          value={str(a.subject)}
+                          onChange={(ev) => setAction(i, { subject: ev.target.value })}
+                        />
+                      </Field>
+                      <Field
+                        label="Mensaje"
+                        htmlFor={`a${i}-ebody`}
+                        error={e("body") ? [e("body") ?? ""] : undefined}
+                      >
+                        <Textarea
+                          id={`a${i}-ebody`}
+                          rows={5}
+                          value={str(a.body)}
+                          onChange={(ev) => setAction(i, { body: ev.target.value })}
+                        />
+                      </Field>
                     </div>
                   )}
                   {type === "tag" && (
