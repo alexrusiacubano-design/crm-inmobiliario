@@ -141,6 +141,13 @@
       "when": 1791394991584,
       "tag": "0019_organization_contact",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1791419714343,
+      "tag": "0020_invoicing",
+      "breakpoints": true
     }
   ]
 }

@@ -25,7 +25,7 @@ describe("navegación", () => {
     expect(findNavItem("/properties")?.item.plannedPhase).toBeNull();
     expect(findNavItem("/properties/publications")?.item.plannedPhase).toBeNull();
     expect(findNavItem("/finance/reports")?.item.plannedPhase).toBeNull();
-    expect(findNavItem("/finance/invoicing")?.item.plannedPhase).toBe(9);
+    expect(findNavItem("/finance/invoicing")?.item.plannedPhase).toBeNull();
     expect(findNavItem("/crm/leads")?.item.plannedPhase).toBeNull();
     expect(findNavItem("/admin/users")?.item.plannedPhase).toBeNull();
     expect(findNavItem("/no-existe")).toBeNull();

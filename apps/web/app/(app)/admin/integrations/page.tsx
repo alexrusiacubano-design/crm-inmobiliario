@@ -75,9 +75,9 @@ export default async function IntegrationsPage() {
     },
     {
       name: "Facturación electrónica (CFE / DGI)",
-      status: "No conectada",
-      ok: false,
-      note: "Se integra con un proveedor habilitado por DGI en una fase posterior.",
+      status: "Registro manual",
+      ok: true,
+      note: "Las facturas se arman en Finanzas → Facturación y el CFE se emite en DGI o tu proveedor; la emisión automática se conecta al elegir un proveedor habilitado.",
     },
   ];
 

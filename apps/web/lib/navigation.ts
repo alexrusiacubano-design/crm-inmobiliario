@@ -283,8 +283,8 @@ export const NAVIGATION: NavSection[] = [
         href: "/finance/invoicing",
         label: "nav.finance.invoicing",
         permission: "invoice.read",
-        plannedPhase: 9,
-        description: "Requiere un proveedor de facturación electrónica (CFE).",
+        plannedPhase: null,
+        description: "Honorarios por facturar, borradores y CFE emitidos.",
       },
       {
         href: "/finance/reports",

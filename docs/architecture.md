@@ -314,3 +314,20 @@ Suspender o cambiar la contraseña de un usuario cierra sus sesiones.
   queda en el timeline), el envío automático de la invitación al portal y la acción de
   automatización "Enviar email al cliente" (por ejemplo, recordatorio de pago). Sin esas variables
   todo sigue funcionando con el correo del usuario (`mailto:`).
+
+## Facturación de honorarios (Fase 16)
+
+- `/finance/invoicing` (`invoice.read` / `invoice.manage`: administración y contabilidad).
+- **Por facturar**: honorarios de operaciones firmadas o cobradas (`deal_commission`) y comisiones
+  de administración de liquidaciones aprobadas o pagadas (`owner_settlement.fee`) que todavía no
+  están en una factura vigente. Sugiere el receptor (comprador / inquilino o el propietario
+  principal) con su documento si el usuario puede ver identidades.
+- **Factura (`invoice` + `invoice_line`)**: numeración interna FAC-000001, receptor con RUT
+  (e-Factura, RUT validado con dígito verificador) o cédula (e-Ticket), IVA básico 22 % sumado o
+  incluido (cálculo en bigint, total = neto + IVA exacto, con CHECK en la base). Un concepto no se
+  factura dos veces (índice único sobre la fuente en líneas vigentes).
+- **Emisión**: el CFE se emite en el portal de DGI o el sistema actual y se carga serie, número y
+  fecha (único por tipo de CFE). Un trigger impide modificar una emitida; se anula con motivo (la
+  fuente vuelve a quedar para facturar; la nota de crédito se emite en DGI). Los borradores se
+  borran. Proforma / comprobante imprimible en `/print/factura/<id>`.
+- La emisión automática se suma conectando un proveedor habilitado por DGI cuando se elija.

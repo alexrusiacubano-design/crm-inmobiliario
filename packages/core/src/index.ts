@@ -44,3 +44,4 @@ export * from "./communications/bot";
 export * from "./reports/reports";
 export * from "./portal/portal";
 export * from "./email/mailer";
+export * from "./finance/invoices";

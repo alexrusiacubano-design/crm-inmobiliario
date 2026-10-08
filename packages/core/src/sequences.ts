@@ -2,7 +2,7 @@ import { sql } from "drizzle-orm";
 import { sequence, type DbOrTx } from "@crm/db";
 
 /** Prefijos de numeración conocidos. Se amplían en cada fase (PROP, OP, CTR, RES…). */
-export const SEQUENCE_PREFIXES = ["PROP", "LEAD", "CAP", "OP", "RES", "CTR", "LIQ"] as const;
+export const SEQUENCE_PREFIXES = ["PROP", "LEAD", "CAP", "OP", "RES", "CTR", "LIQ", "FAC"] as const;
 export type SequencePrefix = (typeof SEQUENCE_PREFIXES)[number];
 
 /**

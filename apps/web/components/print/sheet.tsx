@@ -20,6 +20,7 @@ export function PrintSheet({
   number,
   date,
   back,
+  footer,
   children,
 }: {
   org: OrgInfo;
@@ -27,6 +28,7 @@ export function PrintSheet({
   number?: string | null;
   date: string;
   back?: { href: string; label: string };
+  footer?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -63,7 +65,7 @@ export function PrintSheet({
         </header>
         {children}
         <footer className="mt-10 border-t border-neutral-300 pt-3 text-[10px] text-neutral-500">
-          Documento generado por {org.name}. No es un comprobante fiscal (CFE).
+          {footer ?? `Documento generado por ${org.name}. No es un comprobante fiscal (CFE).`}
         </footer>
       </article>
     </div>

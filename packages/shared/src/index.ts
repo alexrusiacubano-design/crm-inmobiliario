@@ -30,3 +30,5 @@ export * from "./validation/automations";
 export * from "./bot";
 export * from "./validation/bot";
 export * from "./reports";
+export * from "./invoicing";
+export * from "./validation/invoicing";
