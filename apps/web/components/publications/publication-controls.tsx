@@ -21,7 +21,12 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter } from "@/components/ui/dialog";
 import { Field, Input, Select, Textarea } from "@/components/ui/form";
 
-type Result = { ok: boolean; error?: string; fieldErrors?: Record<string, string[]> };
+type Result = {
+  ok: boolean;
+  error?: string;
+  fieldErrors?: Record<string, string[]>;
+  data?: { portalError?: string | null };
+};
 
 function useRun() {
   const router = useRouter();
@@ -36,6 +41,10 @@ function useRun() {
       }
       setErrors({});
       toast.success(ok);
+      if (r.data?.portalError)
+        toast.warning(`Se guardó en el CRM, pero el portal respondió con un error: ${r.data.portalError}`, {
+          duration: 12_000,
+        });
       after?.();
       router.refresh();
     });

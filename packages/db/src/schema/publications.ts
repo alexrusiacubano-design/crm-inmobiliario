@@ -43,6 +43,21 @@ export const portalAccount = pgTable(
     quotas: jsonb("quotas").$type<LevelQuotas>().notNull().default({}),
     /** Token del feed XML (secreto: quien lo tiene lee los avisos publicados). */
     feedToken: text("feed_token").notNull(),
+    /** Credenciales del portal (JSON cifrado con FIELD_ENCRYPTION_KEY). */
+    credentialsEncrypted: text("credentials_encrypted"),
+    /** Para mostrar sin descifrar: valores no secretos completos y secretos enmascarados. */
+    credentialHints: jsonb("credential_hints").$type<Record<string, string>>().notNull().default({}),
+    /** Tokens OAuth (Mercado Libre), cifrados. */
+    tokensEncrypted: text("tokens_encrypted"),
+    /** Cuenta conectada (id y nombre del usuario en el portal, vencimiento del token). */
+    connection: jsonb("connection").$type<{
+      userId?: string;
+      nickname?: string;
+      connectedAt?: string;
+      expiresAt?: string;
+    } | null>(),
+    lastSyncAt: timestamp("last_sync_at", { withTimezone: true }),
+    lastError: text("last_error"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -73,6 +88,9 @@ export const propertyPublication = pgTable(
     views: integer("views"),
     contacts: integer("contacts"),
     notes: text("notes"),
+    /** Sincronización con la API del portal (avisos publicados automáticamente). */
+    syncedAt: timestamp("synced_at", { withTimezone: true }),
+    syncError: text("sync_error"),
     statusChangedAt: timestamp("status_changed_at", { withTimezone: true }).notNull().defaultNow(),
     createdById: uuid("created_by_id").references(() => user.id),
     createdAt: createdAt(),

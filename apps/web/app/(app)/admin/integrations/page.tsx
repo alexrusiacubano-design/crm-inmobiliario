@@ -1,4 +1,11 @@
-import { emailConfigured, listExchangeRates, listPortalAccounts, listPublications } from "@crm/core";
+import {
+  emailConfigured,
+  encryptionConfigured,
+  listExchangeRates,
+  listPortalAccounts,
+  listPublications,
+  mlRedirectUri,
+} from "@crm/core";
 import { EXCHANGE_SOURCE_LABELS } from "@crm/shared/publications";
 import { getDb } from "@crm/db";
 import type { Metadata } from "next";
@@ -9,10 +16,11 @@ import {
   type PortalAccountView,
 } from "@/components/publications/integrations";
 import { Badge, Card, PageHeader } from "@/components/ui/misc";
+import { QueryToast } from "@/components/ui/query-toast";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { requirePagePermission } from "@/lib/session";
 import { DEFAULT_TZ, ymdInTz } from "@/lib/tz";
-import { formatDateTime } from "@/lib/utils";
+import { formatDateTime, relativeLabel } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Integraciones" };
 
@@ -21,7 +29,12 @@ function ymdLabel(d: string) {
   return `${day}/${m}/${y}`;
 }
 
-export default async function IntegrationsPage() {
+export default async function IntegrationsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ ml?: string; ml_error?: string }>;
+}) {
+  const sp = await searchParams;
   const { ctx } = await requirePagePermission("integrations.manage");
   const db = getDb();
   const tz = ctx.organization.timezone || DEFAULT_TZ;
@@ -43,6 +56,15 @@ export default async function IntegrationsPage() {
     quotas: a.quotas,
     feedUrl: a.feedToken ? `${origin}/api/feeds/${a.feedToken}` : null,
     used: pubs.portals.find((p) => p.portal === a.portal)?.used ?? {},
+    connection: {
+      portal: a.portal,
+      hints: a.credentialHints,
+      hasCredentials: a.hasCredentials,
+      connected: a.connected,
+      accountName: a.connection?.nickname ?? null,
+      lastError: a.lastError,
+      lastSyncLabel: a.lastSyncAt ? relativeLabel(a.lastSyncAt) : null,
+    },
   }));
 
   const storage = process.env.STORAGE_DRIVER === "s3" ? "S3 / compatible" : "Disco local";
@@ -83,6 +105,11 @@ export default async function IntegrationsPage() {
 
   return (
     <>
+      <QueryToast
+        path="/admin/integrations"
+        success={sp.ml ? `Mercado Libre conectado: ${sp.ml}` : null}
+        error={sp.ml_error ?? null}
+      />
       <PageHeader
         title="Integraciones"
         description="Portales inmobiliarios, cotización del dólar y estado de los servicios externos."
@@ -92,7 +119,12 @@ export default async function IntegrationsPage() {
         <h2 className="text-lg font-semibold">Portales</h2>
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {views.map((a) => (
-            <PortalAccountCard key={a.portal} a={a} />
+            <PortalAccountCard
+              key={a.portal}
+              a={a}
+              encryptionReady={encryptionConfigured()}
+              redirectUri={mlRedirectUri(origin)}
+            />
           ))}
         </div>
       </section>

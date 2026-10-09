@@ -71,7 +71,14 @@ export async function listPortalAccounts(db: Db, ctx: RequestContext) {
     .where(eq(portalAccount.organizationId, ctx.organizationId))
     .orderBy(asc(portalAccount.portal));
   const canSeeTokens = hasPermission(ctx, "integrations.manage");
-  return rows.map((r) => ({ ...r, feedToken: canSeeTokens ? r.feedToken : null }));
+  // Las credenciales cifradas nunca salen del servidor.
+  return rows.map(({ credentialsEncrypted, tokensEncrypted, ...r }) => ({
+    ...r,
+    feedToken: canSeeTokens ? r.feedToken : null,
+    credentialHints: canSeeTokens ? r.credentialHints : {},
+    hasCredentials: Boolean(credentialsEncrypted),
+    connected: Boolean(tokensEncrypted),
+  }));
 }
 
 export async function savePortalAccount(db: Db, ctx: RequestContext, rawInput: unknown) {

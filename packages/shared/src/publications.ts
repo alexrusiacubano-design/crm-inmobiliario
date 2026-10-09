@@ -152,3 +152,61 @@ export function normalizeRate(input: string): string | null {
   if (!(n > 0)) return null;
   return `${Number(i)}.${(d + "0000").slice(0, 4)}`;
 }
+
+// ─── Credenciales de portales ───────────────────────────────────────────────
+
+export interface CredentialField {
+  key: string;
+  label: string;
+  /** Secreto: se guarda cifrado y no se vuelve a mostrar completo. */
+  secret: boolean;
+  placeholder?: string;
+  hint?: string;
+}
+
+/**
+ * Datos de conexión que pide cada portal (se cargan desde Integraciones, nunca en el código).
+ * Mercado Libre usa OAuth: con App ID y clave secreta de tu aplicación se hace "Conectar".
+ */
+export const PORTAL_CREDENTIAL_FIELDS: Record<Portal, readonly CredentialField[]> = {
+  infocasas: [
+    { key: "agencyId", label: "Código de inmobiliaria", secret: false },
+    {
+      key: "apiKey",
+      label: "Clave de la API",
+      secret: true,
+      hint: "Se la pedís a tu comercial de InfoCasas.",
+    },
+  ],
+  gallito: [
+    { key: "agencyId", label: "Código de inmobiliaria", secret: false },
+    { key: "apiKey", label: "Clave de la API", secret: true, hint: "Se la pedís a tu comercial de Gallito." },
+  ],
+  mercadolibre: [
+    {
+      key: "appId",
+      label: "App ID",
+      secret: false,
+      hint: "De tu aplicación en developers.mercadolibre.com.uy.",
+    },
+    { key: "clientSecret", label: "Clave secreta (Secret Key)", secret: true },
+  ],
+  website: [],
+  other: [
+    { key: "apiUrl", label: "Dirección de la API", secret: false, placeholder: "https://" },
+    { key: "apiKey", label: "Clave de la API", secret: true },
+  ],
+};
+
+/** "abcd…wxyz" → "••••wxyz" para mostrar que hay un secreto guardado sin revelarlo. */
+export function maskSecret(v: string): string {
+  return v.length <= 4 ? "••••" : `••••${v.slice(-4)}`;
+}
+
+/** Nivel del aviso → tipo de publicación de Mercado Libre. */
+export const ML_LISTING_TYPES: Record<AdLevel, string> = {
+  basic: "silver",
+  silver: "silver",
+  gold: "gold",
+  premium: "gold_premium",
+};

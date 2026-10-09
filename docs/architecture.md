@@ -331,3 +331,25 @@ Suspender o cambiar la contraseña de un usuario cierra sus sesiones.
   fuente vuelve a quedar para facturar; la nota de crédito se emite en DGI). Los borradores se
   borran. Proforma / comprobante imprimible en `/print/factura/<id>`.
 - La emisión automática se suma conectando un proveedor habilitado por DGI cuando se elija.
+
+## Credenciales de portales y Mercado Libre (Fase 17)
+
+- Cada portal tiene su tarjeta en Integraciones con "Conexión automática": los datos que pide el
+  portal (`PORTAL_CREDENTIAL_FIELDS`) se cargan desde la pantalla y se guardan cifrados con
+  AES-256-GCM (`FIELD_ENCRYPTION_KEY`) en `portal_account.credentials_encrypted`. La pantalla solo
+  ve `credential_hints` (valores no secretos y secretos enmascarados "••••abcd"); un secreto vacío
+  conserva el guardado; la auditoría registra qué campos cambiaron, nunca los valores. Ningún
+  listado devuelve los campos cifrados.
+- **Mercado Libre**: App ID y Secret Key de la aplicación propia (developers.mercadolibre.com.uy,
+  con la URL de redirección `/api/integrations/mercadolibre/callback`) y botón "Conectar"
+  (OAuth 2 con PKCE; el `state` va cifrado y vence a los 15 minutos; solo lo completa quien lo
+  inició). Tokens cifrados en `tokens_encrypted`; se renuevan solos bloqueando la fila (el refresh
+  token de ML es de un solo uso).
+- **Publicación**: al publicar en Mercado Libre desde la ficha se crea el aviso por la API
+  (categoría sugerida por `domain_discovery`, tipo de publicación según el nivel, fotos desde el
+  feed del portal, atributos de inmueble, ubicación aproximada). Pausar, volver a publicar, dar de
+  baja o cambiar el precio se refleja allá; los cambios de estado de la propiedad (reservada,
+  vendida) se sincronizan en segundo plano y se traen las visitas. Un error del portal no rompe:
+  queda en la publicación (`sync_error`) y se muestra.
+- InfoCasas, Gallito y "otro" guardan sus credenciales; la publicación por API se conecta cuando
+  el portal entregue la documentación (mientras tanto, feed XML).

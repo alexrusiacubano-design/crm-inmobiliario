@@ -19,7 +19,7 @@ export async function runAction<T>(
   if (!session) return { ok: false, error: "Tu sesión expiró. Volvé a iniciar sesión." };
   try {
     const data = await fn(getDb(), session.ctx);
-    scheduleAutomations();
+    scheduleAutomations(session.ctx.organizationId);
     return { ok: true, data };
   } catch (error) {
     if (isAppError(error)) {

@@ -1,10 +1,18 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import {
   ConflictError,
   changePublicationStatus,
+  clearPortalCredentials,
+  disconnectPortal,
+  mercadoLibreAuthorizeUrl,
   publishProperty,
+  pushPublication,
+  savePortalCredentials,
+  syncPortalsNow,
+  testPortalConnection,
   rotateFeedToken,
   saveExchangeRate,
   savePortalAccount,
@@ -19,14 +27,64 @@ function done<T>(r: ActionResult<T>): ActionResult<T> {
   return r;
 }
 
-export async function publishPropertyAction(input: unknown): Promise<ActionResult<undefined>> {
-  return done(await runAction(async (db, ctx) => void (await publishProperty(db, ctx, input))));
+/** Si el portal está conectado (Mercado Libre), lleva el cambio al portal y devuelve el error, si hubo. */
+async function push(db: Parameters<typeof pushPublication>[0], orgId: string, id: string | undefined | null) {
+  return id ? pushPublication(db, orgId, id) : null;
 }
-export async function updatePublicationAction(input: unknown): Promise<ActionResult<undefined>> {
-  return done(await runAction(async (db, ctx) => void (await updatePublication(db, ctx, input))));
+
+export async function publishPropertyAction(
+  input: unknown,
+): Promise<ActionResult<{ portalError: string | null }>> {
+  return done(
+    await runAction(async (db, ctx) => {
+      const pub = await publishProperty(db, ctx, input);
+      return { portalError: await push(db, ctx.organizationId, pub?.id) };
+    }),
+  );
 }
-export async function changePublicationStatusAction(input: unknown): Promise<ActionResult<undefined>> {
-  return done(await runAction(async (db, ctx) => void (await changePublicationStatus(db, ctx, input))));
+export async function updatePublicationAction(
+  input: unknown,
+): Promise<ActionResult<{ portalError: string | null }>> {
+  return done(
+    await runAction(async (db, ctx) => {
+      const pub = await updatePublication(db, ctx, input);
+      return { portalError: await push(db, ctx.organizationId, pub?.id) };
+    }),
+  );
+}
+export async function changePublicationStatusAction(
+  input: unknown,
+): Promise<ActionResult<{ portalError: string | null }>> {
+  return done(
+    await runAction(async (db, ctx) => {
+      const pub = await changePublicationStatus(db, ctx, input);
+      return { portalError: await push(db, ctx.organizationId, pub?.id) };
+    }),
+  );
+}
+
+export async function savePortalCredentialsAction(input: unknown): Promise<ActionResult<undefined>> {
+  return done(await runAction(async (db, ctx) => void (await savePortalCredentials(db, ctx, input))));
+}
+export async function clearPortalCredentialsAction(portal: Portal): Promise<ActionResult<undefined>> {
+  return done(await runAction(async (db, ctx) => void (await clearPortalCredentials(db, ctx, portal))));
+}
+export async function testPortalAction(portal: Portal): Promise<ActionResult<{ message: string }>> {
+  return done(await runAction(async (db, ctx) => ({ message: await testPortalConnection(db, ctx, portal) })));
+}
+export async function connectMercadoLibreAction(): Promise<ActionResult<{ url: string }>> {
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
+  const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
+  return runAction(async (db, ctx) => ({
+    url: await mercadoLibreAuthorizeUrl(db, ctx, `${proto}://${host}`),
+  }));
+}
+export async function disconnectPortalAction(portal: Portal): Promise<ActionResult<undefined>> {
+  return done(await runAction(async (db, ctx) => void (await disconnectPortal(db, ctx, portal))));
+}
+export async function syncPortalsAction(): Promise<ActionResult<{ pushed: number }>> {
+  return done(await runAction(async (db, ctx) => syncPortalsNow(db, ctx)));
 }
 export async function savePortalAccountAction(input: unknown): Promise<ActionResult<undefined>> {
   return done(await runAction(async (db, ctx) => void (await savePortalAccount(db, ctx, input))));

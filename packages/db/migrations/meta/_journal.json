@@ -148,6 +148,13 @@
       "when": 1791419714343,
       "tag": "0020_invoicing",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1791561018861,
+      "tag": "0021_portal_credentials",
+      "breakpoints": true
     }
   ]
 }

@@ -1,6 +1,6 @@
 import "server-only";
 import { after } from "next/server";
-import { dispatchAutomations, maybeRunScheduledAutomations } from "@crm/core";
+import { dispatchAutomations, maybeRunScheduledAutomations, syncPortalPublications } from "@crm/core";
 import { getDb } from "@crm/db";
 
 /**
@@ -18,6 +18,11 @@ export function scheduleAutomations(organizationId?: string): void {
       } catch (error) {
         console.error("[automations] error", error);
       }
+      // Avisos de portales conectados (Mercado Libre): estado, precio y visitas.
+      if (organizationId)
+        await syncPortalPublications(db, organizationId).catch((error: unknown) =>
+          console.error("[portales] error", error),
+        );
     });
   } catch {
     // fuera de un pedido (scripts, pruebas): no hay "after"

@@ -20,6 +20,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Checkbox, Field, Input } from "@/components/ui/form";
 import { Badge, Card } from "@/components/ui/misc";
+import { PortalCredentials, type PortalConnectionView } from "./portal-credentials";
 
 export interface PortalAccountView {
   portal: Portal;
@@ -28,6 +29,7 @@ export interface PortalAccountView {
   quotas: Partial<Record<AdLevel, number>>;
   feedUrl: string | null;
   used: Partial<Record<AdLevel, number>>;
+  connection: PortalConnectionView;
 }
 
 type Result = { ok: boolean; error?: string; fieldErrors?: Record<string, string[]> };
@@ -51,7 +53,15 @@ function useRun() {
   return { pending, errors, run };
 }
 
-export function PortalAccountCard({ a }: { a: PortalAccountView }) {
+export function PortalAccountCard({
+  a,
+  encryptionReady,
+  redirectUri,
+}: {
+  a: PortalAccountView;
+  encryptionReady: boolean;
+  redirectUri: string;
+}) {
   const [enabled, setEnabled] = useState(a.enabled);
   const [accountRef, setAccountRef] = useState(a.accountRef ?? "");
   const [quotas, setQuotas] = useState<Record<string, string>>(
@@ -157,6 +167,7 @@ export function PortalAccountCard({ a }: { a: PortalAccountView }) {
           </div>
         </div>
       )}
+      <PortalCredentials c={a.connection} encryptionReady={encryptionReady} redirectUri={redirectUri} />
     </Card>
   );
 }

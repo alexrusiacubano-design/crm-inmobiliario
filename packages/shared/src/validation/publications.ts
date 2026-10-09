@@ -1,5 +1,11 @@
 import { z } from "zod";
-import { AD_LEVELS, PORTALS, PUBLICATION_STATUSES, normalizeRate } from "../publications";
+import {
+  AD_LEVELS,
+  PORTAL_CREDENTIAL_FIELDS,
+  PORTALS,
+  PUBLICATION_STATUSES,
+  normalizeRate,
+} from "../publications";
 import { uuidSchema } from "./index";
 
 const text = (max: number) =>
@@ -26,6 +32,22 @@ export const portalAccountSchema = z.object({
   accountRef: text(120),
   quotas: z.partialRecord(z.enum(AD_LEVELS), z.coerce.number().int().min(0).max(10_000)).default({}),
 });
+
+export const portalCredentialsSchema = z
+  .object({
+    portal: z.enum(PORTALS),
+    /** Valores nuevos. Un secreto vacío conserva el guardado. */
+    values: z.record(z.string(), z.string().trim().max(500)),
+  })
+  .superRefine((v, ctx) => {
+    const allowed = new Set(PORTAL_CREDENTIAL_FIELDS[v.portal].map((f) => f.key));
+    for (const k of Object.keys(v.values))
+      if (!allowed.has(k))
+        ctx.addIssue({ code: "custom", path: ["values", k], message: "Campo desconocido" });
+    const url = v.values.apiUrl;
+    if (url && !/^https:\/\//.test(url))
+      ctx.addIssue({ code: "custom", path: ["values", "apiUrl"], message: "Tiene que empezar con https://" });
+  });
 
 export const publishSchema = z.object({
   propertyId: uuidSchema,

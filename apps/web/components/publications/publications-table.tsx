@@ -31,6 +31,7 @@ export interface PublicationRow {
   propertyLabel: string;
   zone: string | null;
   alerts: PublicationAlert[];
+  syncError?: string | null;
 }
 
 const LEVEL_TONE: Record<AdLevel, "neutral" | "outline" | "warning" | "primary"> = {
@@ -91,6 +92,11 @@ export function PublicationsTable({
                 PORTAL_LABELS[r.portal]
               )}
               {r.externalId && <span className="block text-xs text-muted-foreground">#{r.externalId}</span>}
+              {r.syncError && (
+                <span className="block max-w-56 text-xs text-danger" title={r.syncError}>
+                  Error al sincronizar: {r.syncError.slice(0, 90)}
+                </span>
+              )}
             </TD>
             <TD>
               <Badge tone={LEVEL_TONE[r.level]}>{AD_LEVEL_LABELS[r.level]}</Badge>
