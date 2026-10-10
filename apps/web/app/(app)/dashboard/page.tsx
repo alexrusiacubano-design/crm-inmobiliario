@@ -258,24 +258,36 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-8">
       {/* Saludo */}
-      <section className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-primary-soft via-surface to-surface p-6 sm:p-8">
-        <span className="mb-4 block h-0.5 w-8 rounded bg-primary" aria-hidden />
-        <p className="text-xs font-semibold tracking-wider text-primary uppercase">{longDate(now, tz)}</p>
-        <h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">
-          {greeting(now, tz)},
-          <br />
-          <span className="text-primary">{firstName}</span>
-        </h1>
-        {heroStats.length > 0 && (
-          <dl className="mt-5 flex flex-wrap gap-x-8 gap-y-3">
-            {heroStats.map((s) => (
-              <div key={s.label}>
-                <dt className="sr-only">{s.label}</dt>
-                <dd className="text-2xl font-bold tabular">{s.value}</dd>
-                <dd className="text-xs text-muted-foreground">{s.label}</dd>
-              </div>
-            ))}
-          </dl>
+      <section className="relative flex items-center justify-between gap-6 overflow-hidden rounded-2xl border bg-gradient-to-br from-primary-soft via-surface to-surface p-6 sm:p-8">
+        <div className="min-w-0">
+          <span className="mb-4 block h-0.5 w-8 rounded bg-primary" aria-hidden />
+          <p className="text-xs font-semibold tracking-wider text-primary uppercase">{longDate(now, tz)}</p>
+          <h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">
+            {greeting(now, tz)},
+            <br />
+            <span className="text-primary">{firstName}</span>
+          </h1>
+          {heroStats.length > 0 && (
+            <dl className="mt-5 flex flex-wrap gap-x-8 gap-y-3">
+              {heroStats.map((s) => (
+                <div key={s.label}>
+                  <dt className="sr-only">{s.label}</dt>
+                  <dd className="text-2xl font-bold tabular">{s.value}</dd>
+                  <dd className="text-xs text-muted-foreground">{s.label}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+        </div>
+        {ctx.organization.logoUrl && (
+          <div className="flex size-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-neutral-950 p-2 shadow-lg ring-1 ring-black/10 sm:size-36 lg:size-44">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={ctx.organization.logoUrl}
+              alt={ctx.organization.name}
+              className="max-h-full max-w-full object-contain"
+            />
+          </div>
         )}
       </section>
 
