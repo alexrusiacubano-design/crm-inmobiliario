@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { createDb, type DbOrTx } from "../index";
 import { insertCredentialUser } from "../credentials";
 import { branch, membership, membershipRole, organization, user } from "../schema";
@@ -89,6 +89,34 @@ async function main(): Promise<void> {
   const { db, pool } = createDb(url, { max: 1 });
   try {
     await db.transaction(async (tx) => {
+      if (env.SETUP_WIPE_DEMO === "1") {
+        // Deja la base vacía solo si lo único que hay son datos de demostración.
+        const [real] = await tx
+          .select({ id: organization.id })
+          .from(organization)
+          .where(eq(organization.isDemo, false))
+          .limit(1);
+        if (real) {
+          console.warn("SETUP_WIPE_DEMO ignorado: ya hay una organización real.");
+        } else {
+          // audit_log y similares son de solo inserción: sus triggers se apagan solo durante el borrado.
+          await tx.execute(sql`DO $$ DECLARE t record; stmt text; BEGIN
+            FOR t IN SELECT c.relname FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+              WHERE n.nspname = 'public' AND c.relkind = 'r' LOOP
+              EXECUTE format('ALTER TABLE public.%I DISABLE TRIGGER USER', t.relname);
+            END LOOP;
+            SELECT 'TRUNCATE TABLE ' || string_agg(format('public.%I', c.relname), ', ') || ' RESTART IDENTITY CASCADE'
+              INTO stmt FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+              WHERE n.nspname = 'public' AND c.relkind = 'r';
+            IF stmt IS NOT NULL THEN EXECUTE stmt; END IF;
+            FOR t IN SELECT c.relname FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+              WHERE n.nspname = 'public' AND c.relkind = 'r' LOOP
+              EXECUTE format('ALTER TABLE public.%I ENABLE TRIGGER USER', t.relname);
+            END LOOP;
+          END $$`);
+          console.info("Datos de demostración borrados.");
+        }
+      }
       await syncPermissions(tx);
       await seedGeoUruguay(tx);
       const geo = await countGeo(tx);
