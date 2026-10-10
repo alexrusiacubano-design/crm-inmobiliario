@@ -366,3 +366,16 @@ Suspender o cambiar la contraseña de un usuario cierra sus sesiones.
 - Fotos públicas en `/api/sitio/foto/[id]` (solo si pertenecen a un aviso activo). Consultas en
   `POST /api/sitio/consulta` → `ingestInquiry` canal `web`, con límite por IP y campo trampa.
 - Incluye el asistente virtual si está activo. Tipografía Cormorant Garamond (OFL) servida localmente.
+
+## Tasaciones independientes
+
+- Sección **Tasaciones** (Nueva tasación, Comparador, Historial): tabla `appraisal` (código TAS),
+  sin necesidad de una propiedad del CRM (`propertyId`/`acquisitionId` quedan para vincular luego).
+- Método de comparables homogeneizados (`packages/shared/src/appraisal.ts`): valor por m² de cada
+  antecedente × factores de construcción y ubicación respecto del inmueble (1,15 · 1,07 · 1 · 0,93 ·
+  0,87) × descuento de negociación para ofertas (7 % por defecto). Valor = promedio × m² de cálculo
+  (edificados o, si no hay, totales), rango ± desvío con mínimo ±5 %, redondeo a 100 U$S / 1.000 $.
+  El servidor recalcula siempre; el tasador puede fijar un valor adoptado.
+- Comparador: US$/m² de propiedades publicadas (oferta) y operaciones cerradas (real) del CRM,
+  respetando el alcance de `property.read`; los casos marcados se pasan a una nueva tasación.
+- Informe imprimible en `/print/tasacion/[id]`.

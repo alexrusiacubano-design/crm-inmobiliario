@@ -48,3 +48,4 @@ export * from "./email/mailer";
 export * from "./finance/invoices";
 export * from "./properties/portal-connections";
 export * from "./catalog/catalog";
+export * from "./appraisals/appraisals";

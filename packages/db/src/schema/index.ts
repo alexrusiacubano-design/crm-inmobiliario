@@ -17,3 +17,4 @@ export * from "./publications";
 export * from "./automations";
 export * from "./portal";
 export * from "./invoicing";
+export * from "./appraisal";

@@ -3,6 +3,7 @@
 import {
   BarChart3,
   Briefcase,
+  Calculator,
   Building2,
   CalendarDays,
   ChevronDown,
@@ -34,6 +35,7 @@ export const ICONS: Record<IconName, LucideIcon> = {
   wallet: Wallet,
   settings: Settings2,
   chart: BarChart3,
+  calculator: Calculator,
 };
 
 function isActive(pathname: string, href: string): boolean {

@@ -17,7 +17,8 @@ export type IconName =
   | "file"
   | "wallet"
   | "settings"
-  | "chart";
+  | "chart"
+  | "calculator";
 
 export interface NavItem {
   href: string;
@@ -102,18 +103,39 @@ export const NAVIGATION: NavSection[] = [
         description: "Pipeline de captación y exclusividades.",
       },
       {
-        href: "/properties/valuations",
-        label: "nav.properties.valuations",
-        permission: "valuation.read",
-        plannedPhase: null,
-        description: "Tasaciones con comparables.",
-      },
-      {
         href: "/properties/publications",
         label: "nav.properties.publications",
         permission: "publication.read",
         plannedPhase: null,
         description: "Publicaciones en portales y su rendimiento.",
+      },
+    ],
+  },
+  {
+    key: "appraisals",
+    label: "nav.appraisals",
+    icon: "calculator",
+    items: [
+      {
+        href: "/appraisals/new",
+        label: "nav.appraisals.new",
+        permission: "valuation.manage",
+        plannedPhase: null,
+        description: "Tasación por comparables homogeneizados, sin publicar la propiedad.",
+      },
+      {
+        href: "/appraisals/comparator",
+        label: "nav.appraisals.comparator",
+        permission: "property.read",
+        plannedPhase: null,
+        description: "Valores por m² de la zona con propiedades y operaciones del CRM.",
+      },
+      {
+        href: "/appraisals/history",
+        label: "nav.appraisals.history",
+        permission: "valuation.read",
+        plannedPhase: null,
+        description: "Todas las tasaciones realizadas.",
       },
     ],
   },
