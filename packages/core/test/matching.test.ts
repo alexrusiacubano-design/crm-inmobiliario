@@ -212,3 +212,21 @@ describe("comparables", () => {
     expect(loose.items.length).toBeGreaterThanOrEqual(2);
   });
 });
+
+
+describe("clientes que ofrecen un inmueble", () => {
+  it("un lead que vende queda fuera del matching", async () => {
+    const a = await ctxFor(h.db, org, "agenteA");
+    const { lead: seller } = await createLead(h.db, a, {
+      operation: "sell",
+      source: "phone",
+      contact: { firstName: "Vende", lastName: "Casa" },
+      search: { operation: "sell", propertyTypes: ["house"] },
+    });
+    expect(seller.operation).toBe("sell");
+    const m = await leadMatches(h.db, a, seller.id);
+    expect(m.items).toHaveLength(0);
+    const o = await matchingOverview(h.db, a);
+    expect(o.items.some((i) => i.leadId === seller.id)).toBe(false);
+  });
+});

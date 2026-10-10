@@ -1,6 +1,6 @@
 import { matchableInventoryCount, matchingOverview } from "@crm/core";
 import { getDb } from "@crm/db";
-import { LEAD_OPERATION_LABELS, LEAD_OPERATIONS, type LeadOperation } from "@crm/shared";
+import { DEMAND_LEAD_OPERATIONS, LEAD_OPERATION_LABELS, type LeadOperation } from "@crm/shared";
 import { MATCH_STATUS_LABELS, MIN_MATCH_SCORE } from "@crm/shared/matching";
 import { Sparkles } from "lucide-react";
 import type { Metadata } from "next";
@@ -21,7 +21,7 @@ export default async function MatchingPage({
 }) {
   const { ctx } = await requirePagePermission("lead.read");
   const params = await searchParams;
-  const operation = LEAD_OPERATIONS.includes(params.op as LeadOperation)
+  const operation = (DEMAND_LEAD_OPERATIONS as readonly string[]).includes(params.op ?? "")
     ? (params.op as LeadOperation)
     : undefined;
   const mine = params.mine === "1";
@@ -78,7 +78,7 @@ export default async function MatchingPage({
         <Link href={href({ op: undefined })} className={chip(!operation)}>
           Todas
         </Link>
-        {LEAD_OPERATIONS.map((op) => (
+        {DEMAND_LEAD_OPERATIONS.map((op) => (
           <Link key={op} href={href({ op })} className={chip(operation === op)}>
             {LEAD_OPERATION_LABELS[op]}
           </Link>

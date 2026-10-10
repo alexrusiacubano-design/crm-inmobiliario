@@ -12,6 +12,8 @@ import {
 import { getDb } from "@crm/db";
 import {
   formatMoney,
+  isSupplyOperation,
+  LEAD_TO_PROPERTY_OPERATION,
   LEAD_LOST_REASON_LABELS,
   LEAD_OPERATION_LABELS,
   LEAD_SOURCE_LABELS,
@@ -32,6 +34,8 @@ import { Timeline } from "@/components/crm/timeline";
 import { ComposerButton } from "@/components/communications/composer";
 import { MatchList } from "@/components/matching/match-list";
 import { toMatchItem } from "@/components/matching/serialize";
+import { AcquisitionDialogButton } from "@/components/properties/acquisition-dialog";
+import { emptyAcquisition } from "@/components/properties/form-defaults";
 import { Card } from "@/components/ui/misc";
 import { requireSession } from "@/lib/session";
 import { formatDateTime } from "@/lib/utils";
@@ -82,6 +86,20 @@ export default async function LeadPage({ params }: { params: Promise<{ id: strin
     c.channels.find((ch) => ch.type === "phone")?.normalized ??
     null;
   const firstName = c.displayName.split(" ")[0] ?? "";
+  // El cliente ofrece un inmueble (vende o alquila el suyo): se trabaja como captación.
+  const supply = isSupplyOperation(l.operation);
+  const acquisitionInitial =
+    supply && geo && hasPermission(ctx, "acquisition.manage")
+      ? {
+          ...emptyAcquisition(s?.departmentIds[0] ? String(s.departmentIds[0]) : ""),
+          owner: { id: c.id, displayName: c.displayName },
+          propertyType: (s?.propertyTypes[0] as PropertyType | undefined) ?? "apartment",
+          operation: LEAD_TO_PROPERTY_OPERATION[l.operation],
+          localityId: s?.localityIds[0] ? String(s.localityIds[0]) : "",
+          neighborhoodId: s?.neighborhoodIds[0] ? String(s.neighborhoodIds[0]) : "",
+          notes: `Desde el lead ${l.code}`,
+        }
+      : null;
 
   const searchInitial: SearchFormValues | null = s && {
     operation: s.operation,
@@ -234,7 +252,7 @@ export default async function LeadPage({ params }: { params: Promise<{ id: strin
 
           <Card>
             <div className="flex items-center justify-between border-b px-4 py-2">
-              <h2 className="text-sm font-semibold">Qué busca</h2>
+              <h2 className="text-sm font-semibold">{supply ? "Inmueble que ofrece" : "Qué busca"}</h2>
               {permissions.update && searchInitial && geo && (
                 <EditSearchButton leadId={l.id} initial={searchInitial} geo={geo} />
               )}
@@ -251,25 +269,40 @@ export default async function LeadPage({ params }: { params: Promise<{ id: strin
         </div>
 
         <div className="grid content-start gap-5">
-          <section aria-labelledby="matches-title">
-            <div className="mb-2 flex items-center justify-between">
-              <h2 id="matches-title" className="text-sm font-semibold">
-                Propiedades sugeridas{" "}
-                <span className="font-normal text-muted-foreground">{activeMatches}</span>
-              </h2>
-              <Link href="/commercial/matching" className="text-xs text-primary hover:underline">
-                Ver todo el matching
-              </Link>
-            </div>
-            <MatchList
-              items={matchItems}
-              canManage={matches.canManage}
-              phone={phone}
-              firstName={firstName}
-              hasProfile={matches.hasProfile}
-              open={matches.open}
-            />
-          </section>
+          {supply ? (
+            <Card className="grid gap-2 p-4">
+              <h2 className="text-sm font-semibold">Posible captación</h2>
+              <p className="text-sm text-muted-foreground">
+                Este cliente quiere {LEAD_OPERATION_LABELS[l.operation].toLowerCase()} su inmueble. Creá la
+                captación para seguir la tasación, la autorización y la publicación.
+              </p>
+              {acquisitionInitial && geo ? (
+                <div>
+                  <AcquisitionDialogButton initial={acquisitionInitial} geo={geo} />
+                </div>
+              ) : null}
+            </Card>
+          ) : (
+            <section aria-labelledby="matches-title">
+              <div className="mb-2 flex items-center justify-between">
+                <h2 id="matches-title" className="text-sm font-semibold">
+                  Propiedades sugeridas{" "}
+                  <span className="font-normal text-muted-foreground">{activeMatches}</span>
+                </h2>
+                <Link href="/commercial/matching" className="text-xs text-primary hover:underline">
+                  Ver todo el matching
+                </Link>
+              </div>
+              <MatchList
+                items={matchItems}
+                canManage={matches.canManage}
+                phone={phone}
+                firstName={firstName}
+                hasProfile={matches.hasProfile}
+                open={matches.open}
+              />
+            </section>
+          )}
           <div>
             <h2 className="mb-2 text-sm font-semibold">Timeline</h2>
             <Timeline

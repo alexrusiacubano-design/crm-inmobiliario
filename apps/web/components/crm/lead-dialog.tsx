@@ -5,12 +5,16 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 import {
+  DEMAND_LEAD_OPERATIONS,
   LEAD_OPERATION_LABELS,
-  LEAD_OPERATIONS,
   LEAD_SOURCE_LABELS,
   LEAD_SOURCES,
+  PROPERTY_TYPE_LABELS,
+  PROPERTY_TYPES,
+  SUPPLY_LEAD_OPERATIONS,
   type LeadOperation,
   type LeadSource,
+  type PropertyType,
 } from "@crm/shared/crm";
 import { createLeadAction, findContactsAction } from "@/app/(app)/crm/actions";
 import { Button } from "@/components/ui/button";
@@ -95,6 +99,7 @@ function LeadForm({
   const [picked, setPicked] = useState<{ id: string; displayName: string } | null>(preset ?? null);
   const [contact, setContact] = useState(emptyContact);
   const [operation, setOperation] = useState<LeadOperation>("buy");
+  const [propertyType, setPropertyType] = useState<PropertyType | "">("");
   const [source, setSource] = useState<LeadSource>("portal");
   const [assignedUserId, setAssignedUserId] = useState("");
   const [notes, setNotes] = useState("");
@@ -111,7 +116,7 @@ function LeadForm({
         source,
         assignedUserId: assignedUserId || null,
         notes,
-        search: { operation },
+        search: { operation, propertyTypes: propertyType ? [propertyType] : [] },
       });
       if (!r.ok) {
         setErrors(r.fieldErrors ?? {});
@@ -180,11 +185,34 @@ function LeadForm({
       )}
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Busca" htmlFor="l-op">
+        <Field label="Qué quiere hacer" htmlFor="l-op">
           <Select id="l-op" value={operation} onChange={(e) => setOperation(e.target.value as LeadOperation)}>
-            {LEAD_OPERATIONS.map((o) => (
-              <option key={o} value={o}>
-                {LEAD_OPERATION_LABELS[o]}
+            <optgroup label="Busca un inmueble">
+              {DEMAND_LEAD_OPERATIONS.map((o) => (
+                <option key={o} value={o}>
+                  {LEAD_OPERATION_LABELS[o]}
+                </option>
+              ))}
+            </optgroup>
+            <optgroup label="Ofrece un inmueble">
+              {SUPPLY_LEAD_OPERATIONS.map((o) => (
+                <option key={o} value={o}>
+                  {LEAD_OPERATION_LABELS[o]}
+                </option>
+              ))}
+            </optgroup>
+          </Select>
+        </Field>
+        <Field label="Tipo de inmueble" htmlFor="l-type">
+          <Select
+            id="l-type"
+            value={propertyType}
+            onChange={(e) => setPropertyType(e.target.value as PropertyType | "")}
+          >
+            <option value="">Cualquiera / sin definir</option>
+            {PROPERTY_TYPES.map((t) => (
+              <option key={t} value={t}>
+                {PROPERTY_TYPE_LABELS[t]}
               </option>
             ))}
           </Select>

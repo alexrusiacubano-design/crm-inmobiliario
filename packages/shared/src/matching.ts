@@ -21,6 +21,9 @@ export const LEAD_TO_PROPERTY_OPERATION: Record<LeadOperation, PropertyOperation
   buy: "sale",
   rent: "rent",
   temporary_rent: "temporary_rent",
+  sell: "sale",
+  rent_out: "rent",
+  temporary_rent_out: "temporary_rent",
 };
 
 /** Estados en los que una propiedad se puede ofrecer. Reservadas y cerradas quedan afuera. */

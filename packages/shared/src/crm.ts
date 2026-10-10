@@ -25,13 +25,34 @@ export const CHANNEL_TYPE_LABELS: Record<ChannelType, string> = {
   email: "Email",
 };
 
-export const LEAD_OPERATIONS = ["buy", "rent", "temporary_rent"] as const;
+export const LEAD_OPERATIONS = [
+  "buy",
+  "rent",
+  "temporary_rent",
+  "sell",
+  "rent_out",
+  "temporary_rent_out",
+] as const;
 export type LeadOperation = (typeof LEAD_OPERATIONS)[number];
 export const LEAD_OPERATION_LABELS: Record<LeadOperation, string> = {
-  buy: "Compra",
-  rent: "Alquiler",
-  temporary_rent: "Alquiler temporal",
+  buy: "Comprar",
+  rent: "Alquilar",
+  temporary_rent: "Alquilar temporal",
+  sell: "Vender",
+  rent_out: "Dar en alquiler",
+  temporary_rent_out: "Dar en alquiler temporal",
 };
+/** El cliente busca un inmueble (comprador o inquilino): participa del matching. */
+export const DEMAND_LEAD_OPERATIONS = ["buy", "rent", "temporary_rent"] as const satisfies readonly LeadOperation[];
+/** El cliente ofrece un inmueble (vende o lo da en alquiler): es una posible captación. */
+export const SUPPLY_LEAD_OPERATIONS = [
+  "sell",
+  "rent_out",
+  "temporary_rent_out",
+] as const satisfies readonly LeadOperation[];
+export function isSupplyOperation(op: LeadOperation): boolean {
+  return (SUPPLY_LEAD_OPERATIONS as readonly string[]).includes(op);
+}
 
 export const LEAD_SOURCES = [
   "portal",

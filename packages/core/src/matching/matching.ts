@@ -20,6 +20,8 @@ import {
 import {
   comparableConfidence,
   convertMinor,
+  DEMAND_LEAD_OPERATIONS,
+  isSupplyOperation,
   LEAD_TO_PROPERTY_OPERATION,
   MATCHABLE_PROPERTY_STATUSES,
   medianPricePerM2,
@@ -148,6 +150,8 @@ async function refreshFor(
   profiles: readonly ProfileRow[],
   onlyPropertyIds?: readonly string[],
 ): Promise<void> {
+  // Solo quienes buscan (compran o alquilan); los que ofrecen un inmueble no se cruzan con el stock.
+  profiles = profiles.filter((p) => !isSupplyOperation(p.operation));
   if (!profiles.length) return;
   const rate = await orgRate(db, organizationId);
   const byOp = new Map<LeadOperation, ProfileRow[]>();
@@ -334,7 +338,7 @@ export async function propertyMatches(db: Db, ctx: RequestContext, propertyId: s
   if (!hasPermission(ctx, "lead.read")) return { items: [], matchable: false };
 
   const leadOps = (Object.entries(LEAD_TO_PROPERTY_OPERATION) as [LeadOperation, PropertyOperation][])
-    .filter(([, po]) => p.operations.includes(po))
+    .filter(([lo, po]) => !isSupplyOperation(lo) && p.operations.includes(po))
     .map(([lo]) => lo);
   const matchable = (MATCHABLE_PROPERTY_STATUSES as readonly string[]).includes(p.status);
   if (leadOps.length && matchable) {
@@ -413,6 +417,7 @@ export async function matchingOverview(
   const extra: SQL[] = [];
   if (options.operation) extra.push(eq(lead.operation, options.operation));
   if (options.mine) extra.push(eq(lead.assignedUserId, ctx.userId));
+  extra.push(inArray(lead.operation, [...DEMAND_LEAD_OPERATIONS]));
   const where = openLeadsInScope(ctx, extra);
 
   const profiles = await db
