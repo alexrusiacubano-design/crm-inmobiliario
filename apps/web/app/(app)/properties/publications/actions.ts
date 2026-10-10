@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
+import { publicOrigin } from "@/lib/public-origin";
 import {
   ConflictError,
   changePublicationStatus,
@@ -73,11 +73,9 @@ export async function testPortalAction(portal: Portal): Promise<ActionResult<{ m
   return done(await runAction(async (db, ctx) => ({ message: await testPortalConnection(db, ctx, portal) })));
 }
 export async function connectMercadoLibreAction(): Promise<ActionResult<{ url: string }>> {
-  const h = await headers();
-  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
-  const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
+  const origin = await publicOrigin();
   return runAction(async (db, ctx) => ({
-    url: await mercadoLibreAuthorizeUrl(db, ctx, `${proto}://${host}`),
+    url: await mercadoLibreAuthorizeUrl(db, ctx, origin),
   }));
 }
 export async function disconnectPortalAction(portal: Portal): Promise<ActionResult<undefined>> {

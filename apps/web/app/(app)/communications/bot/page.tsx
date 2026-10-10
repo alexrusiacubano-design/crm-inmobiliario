@@ -1,7 +1,7 @@
 import { getBotSettings, hasPermission, listPublications } from "@crm/core";
 import { getDb } from "@crm/db";
 import type { Metadata } from "next";
-import { headers } from "next/headers";
+import { publicOrigin } from "@/lib/public-origin";
 import { BotSettingsForm } from "@/components/automations/bot-settings-form";
 import { PageHeader } from "@/components/ui/misc";
 import { requirePagePermission } from "@/lib/session";
@@ -12,10 +12,7 @@ export const metadata: Metadata = { title: "Asistente virtual" };
 export default async function BotPage() {
   const { ctx } = await requirePagePermission("automation.manage");
   const db = getDb();
-  const h = await headers();
-  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
-  const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
-  const origin = `${proto}://${host}`;
+  const origin = await publicOrigin();
   const today = ymdInTz(new Date(), ctx.organization.timezone || DEFAULT_TZ);
   const [s, pubs] = await Promise.all([
     getBotSettings(db, ctx),

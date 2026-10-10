@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
+import { publicOrigin } from "@/lib/public-origin";
 import { emailConfigured, inviteOwnerToPortal, revokePortalAccess, sendEmail } from "@crm/core";
 import { runAction, type ActionResult } from "@/lib/actions";
 
@@ -9,14 +9,12 @@ export async function invitePortalAction(input: {
   contactId: string;
   email: string;
 }): Promise<ActionResult<{ token: string; emailed: boolean }>> {
-  const h = await headers();
-  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
-  const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
+  const origin = await publicOrigin();
   const r = await runAction(async (db, ctx) => {
     const inv = await inviteOwnerToPortal(db, ctx, input);
     let emailed = false;
     if (emailConfigured()) {
-      const link = `${proto}://${host}/portal/activar/${inv.token}`;
+      const link = `${origin}/portal/activar/${inv.token}`;
       // Si el envío falla, la invitación sigue válida y se puede mandar el enlace a mano.
       emailed = await sendEmail({
         to: input.email,
