@@ -11,5 +11,5 @@ export default async function PublicChatPage({ params }: { params: Promise<{ tok
   const { token } = await params;
   const info = await botPublicInfo(getDb(), token);
   if (!info) notFound();
-  return <ChatWidget token={token} orgName={info.orgName} />;
+  return <ChatWidget token={token} orgName={info.orgName} logoUrl={info.logoUrl} />;
 }

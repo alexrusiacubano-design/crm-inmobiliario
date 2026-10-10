@@ -34,11 +34,23 @@ export interface RequestContext {
   readonly userId: string;
   readonly membershipId: string;
   readonly organizationId: string;
-  readonly organization: { readonly name: string; readonly isDemo: boolean; readonly timezone: string };
+  readonly organization: {
+    readonly name: string;
+    readonly isDemo: boolean;
+    readonly timezone: string;
+    /** URL del logo de la organización (ruta pública de la app) o null. */
+    readonly logoUrl: string | null;
+  };
   readonly subject: Subject;
   readonly grants: readonly ResolvedGrant[];
   readonly roleKeys: readonly string[];
   readonly meta: RequestMeta;
+}
+
+/** Ruta pública del logo, versionada para que el navegador no muestre uno viejo. */
+export function orgLogoUrl(organizationId: string, logoKey: string | null, updatedAt: Date | null): string | null {
+  if (!logoKey) return null;
+  return `/api/logo/${organizationId}?v=${updatedAt ? updatedAt.getTime().toString(36) : "1"}`;
 }
 
 export async function loadContext(
@@ -53,6 +65,8 @@ export async function loadContext(
       orgName: organization.name,
       isDemo: organization.isDemo,
       timezone: organization.timezone,
+      logoKey: organization.logoKey,
+      logoUpdatedAt: organization.logoUpdatedAt,
     })
     .from(membership)
     .innerJoin(organization, eq(organization.id, membership.organizationId))
@@ -115,7 +129,12 @@ export async function loadContext(
     userId: input.userId,
     membershipId: m.id,
     organizationId: m.organizationId,
-    organization: { name: m.orgName, isDemo: m.isDemo, timezone: m.timezone },
+    organization: {
+      name: m.orgName,
+      isDemo: m.isDemo,
+      timezone: m.timezone,
+      logoUrl: orgLogoUrl(m.organizationId, m.logoKey, m.logoUpdatedAt),
+    },
     subject: {
       userId: input.userId,
       organizationId: m.organizationId,

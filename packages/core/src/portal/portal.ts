@@ -32,7 +32,7 @@ import { chargeStatus } from "@crm/shared/billing";
 import { uuidSchema } from "@crm/shared/validation";
 import { writeAudit } from "../audit";
 import { contactRef } from "../crm/helpers";
-import { requirePermission, type RequestContext } from "../context";
+import { orgLogoUrl, requirePermission, type RequestContext } from "../context";
 import { ConflictError, NotFoundError, ValidationError, parseInput } from "../errors";
 
 const INVITE_DAYS = 7;
@@ -181,13 +181,24 @@ export async function revokePortalAccess(db: Db, ctx: RequestContext, contactId:
 export async function portalInviteInfo(db: DbOrTx, token: string) {
   if (!/^[0-9a-f]{64}$/.test(token)) return null;
   const [r] = await db
-    .select({ a: ownerPortalAccess, name: contact.displayName, org: organization.name })
+    .select({
+      a: ownerPortalAccess,
+      name: contact.displayName,
+      org: organization.name,
+      logoKey: organization.logoKey,
+      logoAt: organization.logoUpdatedAt,
+    })
     .from(ownerPortalAccess)
     .innerJoin(contact, eq(contact.id, ownerPortalAccess.contactId))
     .innerJoin(organization, eq(organization.id, ownerPortalAccess.organizationId))
     .where(eq(ownerPortalAccess.inviteTokenHash, hashToken(token)));
   if (!r || r.a.status !== "invited" || !r.a.inviteExpiresAt || r.a.inviteExpiresAt < new Date()) return null;
-  return { ownerName: r.name, orgName: r.org, email: r.a.email };
+  return {
+    ownerName: r.name,
+    orgName: r.org,
+    email: r.a.email,
+    logoUrl: orgLogoUrl(r.a.organizationId, r.logoKey, r.logoAt),
+  };
 }
 
 /** Activa la invitación: crea el usuario con la contraseña elegida. */
@@ -227,6 +238,7 @@ export interface PortalContext {
   ownerName: string;
   orgName: string;
   timezone: string;
+  logoUrl: string | null;
 }
 
 /** Contexto del portal para un usuario (null si no es un propietario con acceso activo). */
@@ -237,6 +249,8 @@ export async function loadPortalContext(db: DbOrTx, userId: string): Promise<Por
       name: contact.displayName,
       org: organization.name,
       tz: organization.timezone,
+      logoKey: organization.logoKey,
+      logoAt: organization.logoUpdatedAt,
     })
     .from(ownerPortalAccess)
     .innerJoin(contact, eq(contact.id, ownerPortalAccess.contactId))
@@ -255,6 +269,7 @@ export async function loadPortalContext(db: DbOrTx, userId: string): Promise<Por
     ownerName: r.name,
     orgName: r.org,
     timezone: r.tz || "America/Montevideo",
+    logoUrl: orgLogoUrl(r.a.organizationId, r.logoKey, r.logoAt),
   };
 }
 

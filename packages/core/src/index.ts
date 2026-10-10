@@ -9,6 +9,7 @@ export * from "./organization/branches";
 export * from "./organization/teams";
 export * from "./organization/roles";
 export * from "./organization/settings";
+export * from "./organization/logo";
 export { SUPER_ADMIN_KEY } from "./organization/guards";
 export * from "./crypto";
 export * from "./crm/helpers";

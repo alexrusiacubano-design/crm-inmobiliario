@@ -1,3 +1,4 @@
+import { orgLogoUrl } from "@crm/core";
 import { PrintButton } from "./print-button";
 
 export interface OrgInfo {
@@ -8,6 +9,9 @@ export interface OrgInfo {
   phone: string | null;
   email: string | null;
   website: string | null;
+  id?: string;
+  logoKey?: string | null;
+  logoUpdatedAt?: Date | null;
 }
 
 /**
@@ -48,7 +52,16 @@ export function PrintSheet({
       </div>
       <article className="mx-auto max-w-[210mm] bg-white p-[14mm] text-[13px] leading-relaxed text-neutral-900 shadow-lg print:max-w-none print:p-0 print:shadow-none">
         <header className="mb-6 flex items-start justify-between gap-6 border-b border-neutral-300 pb-4">
-          <div>
+          <div className="flex items-start gap-3">
+            {org.id && org.logoKey ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={orgLogoUrl(org.id, org.logoKey, org.logoUpdatedAt ?? null) ?? ""}
+                alt=""
+                className="size-14 shrink-0 rounded-md object-contain"
+              />
+            ) : null}
+            <div>
             <p className="text-lg font-semibold">{org.name}</p>
             <p className="text-[11px] text-neutral-600">
               {[org.legalName, org.taxId ? `RUT ${org.taxId}` : null].filter(Boolean).join(" · ")}
@@ -56,6 +69,7 @@ export function PrintSheet({
             <p className="text-[11px] text-neutral-600">
               {[org.address, org.phone, org.email, org.website].filter(Boolean).join(" · ")}
             </p>
+            </div>
           </div>
           <div className="text-right">
             <p className="text-base font-semibold uppercase tracking-wide">{title}</p>

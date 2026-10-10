@@ -15,6 +15,10 @@ export default async function ActivatePage({ params }: { params: Promise<{ token
       <div className="w-full max-w-sm rounded-xl border bg-surface p-6 shadow-sm">
         {info ? (
           <>
+            {info.logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={info.logoUrl} alt="" className="mb-3 size-16 rounded-lg bg-neutral-950 object-contain p-1" />
+          ) : null}
             <p className="text-xs text-muted-foreground">{info.orgName}</p>
             <h1 className="mt-1 text-xl font-semibold">Hola, {info.ownerName}</h1>
             <p className="mt-1 mb-5 text-sm text-muted-foreground">

@@ -3,6 +3,7 @@ import { getDb } from "@crm/db";
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/ui/misc";
 import { requirePagePermission } from "@/lib/session";
+import { LogoCard } from "./logo-card";
 import { SettingsForm } from "./settings-form";
 
 export const metadata: Metadata = { title: "Configuración" };
@@ -16,6 +17,7 @@ export default async function SettingsPage() {
         title="Configuración"
         description="Datos generales de la organización. Cada cambio queda en la auditoría."
       />
+      <LogoCard logoUrl={ctx.organization.logoUrl} orgName={org.name} />
       <SettingsForm
         initial={{
           name: org.name,

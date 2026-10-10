@@ -39,6 +39,9 @@ export const organization = pgTable("organization", {
   phone: text("phone"),
   email: text("email"),
   website: text("website"),
+  /** Logo (PNG normalizado en el almacenamiento); la fecha sirve para invalidar la caché. */
+  logoKey: text("logo_key"),
+  logoUpdatedAt: timestamp("logo_updated_at", { withTimezone: true }),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 });

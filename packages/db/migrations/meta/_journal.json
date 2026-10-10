@@ -155,6 +155,13 @@
       "when": 1791561018861,
       "tag": "0021_portal_credentials",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1791648370005,
+      "tag": "0022_organization_logo",
+      "breakpoints": true
     }
   ]
 }

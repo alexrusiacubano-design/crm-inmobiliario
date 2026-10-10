@@ -24,7 +24,15 @@ interface Reply {
 type Entry = { from: "bot" | "me"; text?: string; cards?: Card[] };
 
 /** Chat público del asistente virtual (se usa dentro de un iframe en el sitio web). */
-export function ChatWidget({ token, orgName }: { token: string; orgName: string }) {
+export function ChatWidget({
+  token,
+  orgName,
+  logoUrl = null,
+}: {
+  token: string;
+  orgName: string;
+  logoUrl?: string | null;
+}) {
   const [log, setLog] = useState<Entry[]>([]);
   const [quick, setQuick] = useState<Quick[]>([]);
   const [text, setText] = useState("");
@@ -84,9 +92,14 @@ export function ChatWidget({ token, orgName }: { token: string; orgName: string 
   return (
     <div className="flex h-dvh flex-col bg-surface">
       <header className="flex items-center gap-3 bg-primary px-4 py-3 text-primary-foreground">
-        <div className="flex size-9 items-center justify-center rounded-full bg-white/20 text-sm font-semibold">
-          {orgName.slice(0, 1).toUpperCase()}
-        </div>
+        {logoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={logoUrl} alt="" className="size-9 rounded-full bg-neutral-950 object-contain p-0.5" />
+        ) : (
+          <div className="flex size-9 items-center justify-center rounded-full bg-white/20 text-sm font-semibold">
+            {orgName.slice(0, 1).toUpperCase()}
+          </div>
+        )}
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold">{orgName}</p>
           <p className="text-xs opacity-80">Asistente virtual</p>

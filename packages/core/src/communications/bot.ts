@@ -12,7 +12,7 @@ import { PROPERTY_TYPE_LABELS, type PropertyType } from "@crm/shared/crm";
 import { formatMoney } from "@crm/shared/money";
 import { botActionSchema, botSettingsSchema } from "@crm/shared/validation/bot";
 import { writeAudit } from "../audit";
-import { requirePermission, type RequestContext } from "../context";
+import { orgLogoUrl, requirePermission, type RequestContext } from "../context";
 import { parseInput } from "../errors";
 import { feedListings, readFeedMedia } from "../properties/publications";
 import type { StorageProvider } from "../storage/provider";
@@ -267,8 +267,11 @@ export async function botPublicInfo(db: DbOrTx, token: string) {
   const bot = await loadBot(db, token);
   if (!bot) return null;
   const [org] = await db
-    .select({ name: organization.name })
+    .select({ name: organization.name, logoKey: organization.logoKey, logoAt: organization.logoUpdatedAt })
     .from(organization)
     .where(eq(organization.id, bot.organizationId));
-  return { orgName: org?.name ?? "Inmobiliaria" };
+  return {
+    orgName: org?.name ?? "Inmobiliaria",
+    logoUrl: org ? orgLogoUrl(bot.organizationId, org.logoKey, org.logoAt) : null,
+  };
 }

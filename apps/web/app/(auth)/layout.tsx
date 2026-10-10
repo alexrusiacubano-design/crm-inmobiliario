@@ -1,8 +1,23 @@
-export default function AuthLayout({ children }: { children: React.ReactNode }) {
+import { publicBrand } from "@crm/core";
+import { getDb } from "@crm/db";
+
+export const dynamic = "force-dynamic";
+
+export default async function AuthLayout({ children }: { children: React.ReactNode }) {
+  const brand = await publicBrand(getDb()).catch(() => null);
   return (
     <main className="grid min-h-dvh lg:grid-cols-[1fr_1.1fr]">
       <section className="flex items-center justify-center px-6 py-12">
-        <div className="w-full max-w-sm">{children}</div>
+        <div className="w-full max-w-sm">
+          {brand?.logoUrl ? (
+            <div className="mb-8 flex items-center gap-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={brand.logoUrl} alt="" className="size-14 rounded-xl bg-neutral-950 object-contain p-1" />
+              <p className="text-lg font-semibold">{brand.name}</p>
+            </div>
+          ) : null}
+          {children}
+        </div>
       </section>
       <aside className="relative hidden overflow-hidden bg-[oklch(0.3_0.05_200)] lg:block" aria-hidden>
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,oklch(0.45_0.08_195/.7),transparent_60%)]" />
@@ -17,7 +32,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           />
         </svg>
         <div className="relative flex h-full flex-col justify-between p-12 text-[oklch(0.96_0.01_195)]">
-          <p className="text-sm font-medium tracking-wide opacity-80">Inmobiliaria CRM</p>
+          <p className="text-sm font-medium tracking-wide opacity-80">{brand?.name ?? "Inmobiliaria CRM"}</p>
           <div className="max-w-md pb-40">
             <p className="text-3xl font-semibold leading-tight tracking-tight">
               De la captación a la liquidación, en un solo lugar.
