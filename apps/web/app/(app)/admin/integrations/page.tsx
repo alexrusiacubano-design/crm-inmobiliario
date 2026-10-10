@@ -73,6 +73,12 @@ export default async function IntegrationsPage({
       note: "Fotos y documentos. En producción conviene S3 (o Supabase Storage / R2 por API S3).",
     },
     {
+      name: "Sitio web público (catálogo)",
+      status: "Activo",
+      ok: true,
+      note: `${origin}/propiedades — muestra lo publicado en «Sitio web propio», con formulario de consulta y el asistente.`,
+    },
+    {
       name: "Formulario web y portales → Bandeja",
       status: process.env.INQUIRY_WEBHOOK_SECRET ? "Configurado" : "Sin clave",
       ok: Boolean(process.env.INQUIRY_WEBHOOK_SECRET),

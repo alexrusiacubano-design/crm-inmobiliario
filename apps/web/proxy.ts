@@ -16,11 +16,15 @@ const PUBLIC_PATHS = [
   "/api/cron",
   "/chat",
   "/portal/activar",
+  "/propiedades",
+  "/api/sitio",
+  "/api/logo",
 ];
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  if (PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) return NextResponse.next();
+  if (pathname === "/" || PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`)))
+    return NextResponse.next();
 
   const cookie = getSessionCookie(request, { cookiePrefix: "crm" });
   if (!cookie) {

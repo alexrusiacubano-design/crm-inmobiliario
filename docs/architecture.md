@@ -353,3 +353,16 @@ Suspender o cambiar la contraseña de un usuario cierra sus sesiones.
   queda en la publicación (`sync_error`) y se muestra.
 - InfoCasas, Gallito y "otro" guardan sus credenciales; la publicación por API se conecta cuando
   el portal entregue la documentación (mientras tanto, feed XML).
+
+## Sitio web público (catálogo)
+
+- `/propiedades` (listado con filtros por operación, tipo, zona, dormitorios y precio) y
+  `/propiedades/[codigo]` (ficha con galería, detalles, ubicación aproximada, formulario y WhatsApp).
+  `/` lleva al catálogo si no hay sesión y al dashboard si la hay.
+- Solo muestra lo publicado en el portal **Sitio web propio** (`packages/core/src/catalog/catalog.ts`,
+  sobre `feedListings`). Nunca expone dirección, unidad, padrón ni datos internos; la ubicación se
+  redondea a ~200 m.
+- Inmobiliaria del sitio: `SITE_ORG_SLUG` o, si no está, la única organización real.
+- Fotos públicas en `/api/sitio/foto/[id]` (solo si pertenecen a un aviso activo). Consultas en
+  `POST /api/sitio/consulta` → `ingestInquiry` canal `web`, con límite por IP y campo trampa.
+- Incluye el asistente virtual si está activo. Tipografía Cormorant Garamond (OFL) servida localmente.

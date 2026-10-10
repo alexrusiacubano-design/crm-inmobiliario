@@ -47,3 +47,4 @@ export * from "./portal/portal";
 export * from "./email/mailer";
 export * from "./finance/invoices";
 export * from "./properties/portal-connections";
+export * from "./catalog/catalog";

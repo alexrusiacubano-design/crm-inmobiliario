@@ -275,3 +275,12 @@ export async function botPublicInfo(db: DbOrTx, token: string) {
     logoUrl: org ? orgLogoUrl(bot.organizationId, org.logoKey, org.logoAt) : null,
   };
 }
+
+/** Token del asistente si está activo (para insertarlo en el sitio web propio). */
+export async function activeBotToken(db: DbOrTx, organizationId: string): Promise<string | null> {
+  const [s] = await db
+    .select({ token: botSettings.token, enabled: botSettings.enabled })
+    .from(botSettings)
+    .where(eq(botSettings.organizationId, organizationId));
+  return s?.enabled ? s.token : null;
+}
