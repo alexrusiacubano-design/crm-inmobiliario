@@ -80,7 +80,11 @@ export function ChatWidget({
     void send({ type: "start" });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  useEffect(() => endRef.current?.scrollIntoView({ behavior: "smooth" }), [log, form]);
+  // Con llaves: en Chrome reciente scrollIntoView devuelve una promesa y React la tomaría por la
+  // función de limpieza del efecto («i is not a function»).
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [log, form]);
 
   const transcript = () =>
     log
