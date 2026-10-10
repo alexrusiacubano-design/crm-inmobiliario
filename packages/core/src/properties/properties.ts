@@ -40,6 +40,7 @@ import {
   updatePropertySchema,
 } from "@crm/shared/validation/property";
 import { uuidSchema } from "@crm/shared/validation";
+import { z } from "zod";
 import { scopeCondition } from "../access-filter";
 import { writeAudit } from "../audit";
 import { hasPermission, requirePermission, type RequestContext } from "../context";
@@ -289,6 +290,37 @@ export async function checklistFor(tx: DbOrTx, p: typeof property.$inferSelect) 
     hasCover: (photos[0]?.covers ?? 0) > 0,
     ownerCount: owners.length,
     ownerShareTotal: owners.reduce((acc, o) => acc + o.shareBasisPoints, 0),
+  });
+}
+
+const exclusivitySchema = z.object({
+  propertyId: uuidSchema,
+  exclusive: z.boolean(),
+  exclusiveUntil: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida")
+    .optional()
+    .nullable()
+    .or(z.literal(""))
+    .transform((v) => (v ? v : null)),
+});
+
+/** Marca si la inmobiliaria tiene la exclusividad de la propiedad (y hasta cuándo). */
+export async function setPropertyExclusivity(db: Db, ctx: RequestContext, rawInput: unknown) {
+  const input = parseInput(exclusivitySchema, rawInput);
+  return db.transaction(async (tx) => {
+    const before = await loadForWrite(tx, ctx, input.propertyId);
+    requirePermission(ctx, "property.update", propertyRef(before));
+    const values = { exclusive: input.exclusive, exclusiveUntil: input.exclusive ? input.exclusiveUntil : null };
+    await tx.update(property).set(values).where(eq(property.id, before.id));
+    await writeAudit(tx, ctx, {
+      action: "property.exclusivity",
+      entityType: "property",
+      entityId: before.id,
+      before: { exclusive: before.exclusive, exclusiveUntil: before.exclusiveUntil },
+      after: values,
+    });
+    return values;
   });
 }
 

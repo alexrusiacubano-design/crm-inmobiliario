@@ -90,6 +90,9 @@ export const property = pgTable(
       .default(sql`'{}'`),
     petsAllowed: boolean("pets_allowed").notNull().default(false),
     furnished: boolean("furnished").notNull().default(false),
+    /** La inmobiliaria tiene la exclusividad de la propiedad (y hasta cuándo, si se pactó). */
+    exclusive: boolean("exclusive").notNull().default(false),
+    exclusiveUntil: date("exclusive_until"),
     /** Comisión acordada en basis points (300 = 3 %). */
     commissionBasisPoints: integer("commission_basis_points"),
     internalNotes: text("internal_notes"),

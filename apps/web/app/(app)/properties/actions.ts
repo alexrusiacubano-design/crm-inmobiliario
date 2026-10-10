@@ -15,6 +15,7 @@ import {
   reorderPropertyMedia,
   setPrices,
   setPropertyCover,
+  setPropertyExclusivity,
   setPropertyOwners,
   updateAcquisition,
   updateDocumentMeta,
@@ -37,6 +38,14 @@ export async function createPropertyAction(input: unknown): Promise<ActionResult
 
 export async function updatePropertyAction(input: unknown): Promise<ActionResult<{ id: string }>> {
   const r = await runAction(async (db, ctx) => ({ id: (await updateProperty(db, ctx, input))?.id ?? "" }));
+  return done(r, "/properties");
+}
+
+export async function setExclusivityAction(input: unknown): Promise<ActionResult<undefined>> {
+  const r = await runAction(async (db, ctx) => {
+    await setPropertyExclusivity(db, ctx, input);
+    return undefined;
+  });
   return done(r, "/properties");
 }
 

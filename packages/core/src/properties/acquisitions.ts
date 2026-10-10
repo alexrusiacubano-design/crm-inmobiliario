@@ -281,7 +281,11 @@ export async function changeAcquisitionStage(db: Db, ctx: RequestContext, rawInp
         propertyId = created.id;
         await tx
           .update(property)
-          .set({ commissionBasisPoints: before.commissionBasisPoints })
+          .set({
+            commissionBasisPoints: before.commissionBasisPoints,
+            exclusive: before.exclusive,
+            exclusiveUntil: before.exclusive ? before.exclusiveUntil : null,
+          })
           .where(eq(property.id, created.id));
         await tx.insert(propertyOwner).values({
           propertyId,
