@@ -36,6 +36,7 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   "property.price_change": "Cambio de precio",
   "property.owner_change": "Cambio de propietarios",
   "property.exclusivity": "Cambio de exclusividad",
+  "reservation.update": "Edición de reserva",
   "appraisal.create": "Alta de tasación",
   "appraisal.update": "Edición de tasación",
   "appraisal.delete": "Baja de tasación",

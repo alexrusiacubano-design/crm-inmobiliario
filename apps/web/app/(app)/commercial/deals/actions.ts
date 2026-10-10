@@ -6,6 +6,7 @@ import {
   createOffer,
   createReservation,
   extendReservation,
+  updateReservation,
   respondOffer,
   changeDealStage,
   collectCommission,
@@ -93,6 +94,9 @@ export async function respondOfferAction(input: unknown): Promise<ActionResult<u
 }
 export async function createReservationAction(input: unknown): Promise<ActionResult<undefined>> {
   return done(await unit(async (db, ctx) => void (await createReservation(db, ctx, input))));
+}
+export async function updateReservationAction(input: unknown): Promise<ActionResult<undefined>> {
+  return done(await unit(async (db, ctx) => void (await updateReservation(db, ctx, input))));
 }
 export async function extendReservationAction(input: unknown): Promise<ActionResult<undefined>> {
   return done(await unit(async (db, ctx) => void (await extendReservation(db, ctx, input))));

@@ -151,6 +151,13 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
               notes: r.notes,
               cancelReason: r.cancelReason,
               refundedAt: r.refundedAt,
+              signingDate: r.signingDate,
+              boletoSignedAt: r.boletoSignedAt,
+              boletoExpiresAt: r.boletoExpiresAt,
+              shared: r.shared,
+              sharedWith: r.sharedWith,
+              buyerNotary: r.buyerNotary,
+              sellerNotary: r.sellerNotary,
             }))}
           />
         )}

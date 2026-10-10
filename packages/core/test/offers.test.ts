@@ -12,6 +12,7 @@ import {
   createOffer,
   createProperty,
   createReservation,
+  updateReservation,
   dealOffers,
   expiringReservations,
   extendReservation,
@@ -254,5 +255,54 @@ describe("reservas", () => {
     expect(dr?.stage).toBe("negotiation");
     // Se puede volver a ofertar.
     await createOffer(h.db, a, { dealId: d.id, currency: "USD", amount: "190000" });
+  });
+});
+
+describe("reservas sin seña y edición", () => {
+  it("se puede reservar sin seña y después completar firma, boleto y escribanos", async () => {
+    const { a, d, propertyId } = await newDeal();
+    const r = await createReservation(h.db, a, {
+      dealId: d.id,
+      currency: "USD",
+      deposit: "",
+      receivedAt: today,
+      expiresAt: plusDays(7),
+    });
+    expect(r.depositMinor).toBe(0n);
+    const [pr] = await h.db.select().from(property).where(eq(property.id, propertyId));
+    expect(pr?.status).toBe("reserved");
+
+    const updated = await updateReservation(h.db, a, {
+      reservationId: r.id,
+      currency: "USD",
+      deposit: "2.000",
+      receivedAt: today,
+      expiresAt: plusDays(20),
+      holder: "notary",
+      signingDate: plusDays(15),
+      boletoSignedAt: today,
+      boletoExpiresAt: plusDays(60),
+      shared: true,
+      sharedWith: "Inmobiliaria Colega",
+      notes: "Pago contado",
+      buyerNotary: { name: "Esc. Ana Ruiz", phone: "099 111 222", email: "" },
+      sellerNotary: { name: "", phone: "", email: "" },
+    });
+    expect(updated?.depositMinor).toBe(200000n);
+    expect(updated?.buyerNotary).toEqual({ name: "Esc. Ana Ruiz", phone: "099 111 222", email: null });
+    expect(updated?.sellerNotary).toBeNull();
+    expect(updated?.sharedWith).toBe("Inmobiliaria Colega");
+    expect(
+      await catchErr(
+        updateReservation(h.db, a, {
+          reservationId: r.id,
+          currency: "USD",
+          receivedAt: today,
+          expiresAt: plusDays(1),
+          boletoSignedAt: plusDays(10),
+          boletoExpiresAt: plusDays(5),
+        }),
+      ),
+    ).toBeInstanceOf(ValidationError);
   });
 });

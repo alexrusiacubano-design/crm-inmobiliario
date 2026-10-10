@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRightLeft, CalendarPlus, Check, HandCoins, Plus, Undo2, X } from "lucide-react";
+import { ArrowRightLeft, CalendarPlus, Check, HandCoins, Pencil, Plus, Undo2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -17,6 +17,7 @@ import {
   type OfferParty,
   type OfferStatus,
   type ReservationStatus,
+  type ReservationNotary,
 } from "@crm/shared/offers";
 import {
   cancelReservationAction,
@@ -24,6 +25,7 @@ import {
   createReservationAction,
   extendReservationAction,
   respondOfferAction,
+  updateReservationAction,
 } from "@/app/(app)/commercial/deals/actions";
 import { formatDay, price } from "@/components/properties/format";
 import { Button } from "@/components/ui/button";
@@ -60,6 +62,13 @@ export interface ReservationView {
   notes: string | null;
   cancelReason: string | null;
   refundedAt: string | null;
+  signingDate: string | null;
+  boletoSignedAt: string | null;
+  boletoExpiresAt: string | null;
+  shared: boolean;
+  sharedWith: string | null;
+  buyerNotary: ReservationNotary | null;
+  sellerNotary: ReservationNotary | null;
 }
 
 const OFFER_TONE: Record<OfferStatus, "warning" | "primary" | "success" | "danger" | "neutral"> = {
@@ -237,111 +246,306 @@ function OfferDialog({
   );
 }
 
+const minorText = (v: string) => {
+  const n = BigInt(v || "0");
+  if (n === 0n) return "";
+  const c = n % 100n;
+  return c === 0n ? (n / 100n).toString() : `${n / 100n},${c.toString().padStart(2, "0")}`;
+};
+
+function NotaryFields({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: ReservationNotary;
+  onChange: (v: ReservationNotary) => void;
+}) {
+  return (
+    <fieldset className="grid gap-2 rounded-md border p-3">
+      <legend className="px-1 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+        {label}
+      </legend>
+      <Input
+        placeholder="Nombre y apellido"
+        aria-label={`${label}: nombre`}
+        value={value.name}
+        onChange={(e) => onChange({ ...value, name: e.target.value })}
+      />
+      <div className="grid gap-2 sm:grid-cols-2">
+        <Input
+          placeholder="Teléfono"
+          inputMode="tel"
+          aria-label={`${label}: teléfono`}
+          value={value.phone ?? ""}
+          onChange={(e) => onChange({ ...value, phone: e.target.value })}
+        />
+        <Input
+          placeholder="Email"
+          type="email"
+          aria-label={`${label}: email`}
+          value={value.email ?? ""}
+          onChange={(e) => onChange({ ...value, email: e.target.value })}
+        />
+      </div>
+    </fieldset>
+  );
+}
+
 function ReservationDialog({
   dealId,
   defaultCurrency,
   today,
+  existing,
 }: {
   dealId: string;
   defaultCurrency: Currency;
   today: string;
+  /** Si viene, se edita esa reserva. */
+  existing?: ReservationView;
 }) {
+  const blank = (): ReservationNotary => ({ name: "", phone: "", email: "" });
+  const init = () => ({
+    currency: existing?.currency ?? defaultCurrency,
+    withDeposit: existing ? BigInt(existing.depositMinor) > 0n : true,
+    deposit: existing ? minorText(existing.depositMinor) : "",
+    receivedAt: existing?.receivedAt ?? today,
+    expiresAt: existing?.expiresAt ?? addDays(today, 15),
+    holder: existing?.holder ?? ("agency" as DepositHolder),
+    receipt: existing?.receiptNumber ?? "",
+    notes: existing?.notes ?? "",
+    signingDate: existing?.signingDate ?? "",
+    boletoSignedAt: existing?.boletoSignedAt ?? "",
+    boletoExpiresAt: existing?.boletoExpiresAt ?? "",
+    shared: existing?.shared ?? false,
+    sharedWith: existing?.sharedWith ?? "",
+    buyerNotary: existing?.buyerNotary ?? blank(),
+    sellerNotary: existing?.sellerNotary ?? blank(),
+  });
   const [open, setOpen] = useState(false);
-  const [currency, setCurrency] = useState<Currency>(defaultCurrency);
-  const [deposit, setDeposit] = useState("");
-  const [receivedAt, setReceivedAt] = useState(today);
-  const [expiresAt, setExpiresAt] = useState(addDays(today, 15));
-  const [holder, setHolder] = useState<DepositHolder>("agency");
-  const [receipt, setReceipt] = useState("");
-  const [notes, setNotes] = useState("");
-  const { pending, errors, run } = useRun();
+  const [v, setV] = useState(init);
+  const set = <K extends keyof ReturnType<typeof init>>(k: K, value: ReturnType<typeof init>[K]) =>
+    setV((p) => ({ ...p, [k]: value }));
+  const { pending, errors, run, setErrors } = useRun();
+  const editing = Boolean(existing);
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <Button size="sm" onClick={() => setOpen(true)}>
-        <HandCoins /> Registrar reserva
-      </Button>
+    <Dialog
+      open={open}
+      onOpenChange={(o) => {
+        if (o) {
+          setV(init());
+          setErrors({});
+        }
+        setOpen(o);
+      }}
+    >
+      {editing ? (
+        <Button size="sm" variant="secondary" onClick={() => setOpen(true)}>
+          <Pencil /> Editar reserva
+        </Button>
+      ) : (
+        <Button size="sm" onClick={() => setOpen(true)}>
+          <HandCoins /> Registrar reserva
+        </Button>
+      )}
       <DialogContent
-        title="Registrar reserva"
-        description="La operación y la propiedad pasan a Reservada. La seña queda registrada con quién la tiene y hasta cuándo vale."
+        title={editing ? "Editar la reserva" : "Registrar reserva"}
+        description={
+          editing
+            ? "Queda registrado qué cambiaste."
+            : "La operación y la propiedad pasan a Reservada. Se puede reservar con o sin seña."
+        }
+        className="max-w-2xl"
       >
         <form
-          className="grid gap-4"
+          className="grid max-h-[70vh] gap-4 overflow-y-auto pr-1"
           noValidate
           onSubmit={(e) => {
             e.preventDefault();
+            const payload = {
+              currency: v.currency,
+              deposit: v.withDeposit ? v.deposit : "",
+              receivedAt: v.receivedAt,
+              expiresAt: v.expiresAt,
+              holder: v.holder,
+              receiptNumber: v.withDeposit ? v.receipt : "",
+              notes: v.notes,
+              signingDate: v.signingDate,
+              boletoSignedAt: v.boletoSignedAt,
+              boletoExpiresAt: v.boletoExpiresAt,
+              shared: v.shared,
+              sharedWith: v.sharedWith,
+              buyerNotary: v.buyerNotary,
+              sellerNotary: v.sellerNotary,
+            };
             run(
               () =>
-                createReservationAction({
-                  dealId,
-                  currency,
-                  deposit,
-                  receivedAt,
-                  expiresAt,
-                  holder,
-                  receiptNumber: receipt,
-                  notes,
-                }),
-              "Reserva registrada",
+                existing
+                  ? updateReservationAction({ reservationId: existing.id, ...payload })
+                  : createReservationAction({ dealId, ...payload }),
+              editing ? "Reserva actualizada" : "Reserva registrada",
               () => setOpen(false),
             );
           }}
         >
-          <div className="grid gap-4 sm:grid-cols-3">
-            <Field label="Moneda" htmlFor="rs-c">
-              <Select id="rs-c" value={currency} onChange={(e) => setCurrency(e.target.value as Currency)}>
-                <option value="USD">U$S</option>
-                <option value="UYU">$ (UYU)</option>
-              </Select>
-            </Field>
-            <Field label="Seña" htmlFor="rs-d" error={errors.deposit}>
-              <Input
-                id="rs-d"
-                inputMode="decimal"
-                value={deposit}
-                onChange={(e) => setDeposit(e.target.value)}
-                autoFocus
+          <section className="grid gap-3">
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="text-sm font-semibold">Seña</h3>
+              <label className="flex items-center gap-2 text-sm">
+                <Checkbox checked={!v.withDeposit} onChange={(e) => set("withDeposit", !e.target.checked)} />
+                Reserva sin seña
+              </label>
+            </div>
+            {v.withDeposit ? (
+              <div className="grid gap-3 sm:grid-cols-4">
+                <Field label="Moneda" htmlFor="rs-c">
+                  <Select
+                    id="rs-c"
+                    value={v.currency}
+                    onChange={(e) => set("currency", e.target.value as Currency)}
+                  >
+                    <option value="USD">U$S</option>
+                    <option value="UYU">$ (UYU)</option>
+                  </Select>
+                </Field>
+                <Field label="Monto" htmlFor="rs-d" error={errors.deposit}>
+                  <Input
+                    id="rs-d"
+                    inputMode="decimal"
+                    value={v.deposit}
+                    onChange={(e) => set("deposit", e.target.value)}
+                  />
+                </Field>
+                <Field label="La tiene" htmlFor="rs-h">
+                  <Select
+                    id="rs-h"
+                    value={v.holder}
+                    onChange={(e) => set("holder", e.target.value as DepositHolder)}
+                  >
+                    {DEPOSIT_HOLDERS.map((h) => (
+                      <option key={h} value={h}>
+                        {DEPOSIT_HOLDER_LABELS[h]}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+                <Field label="N.º de recibo" htmlFor="rs-n">
+                  <Input id="rs-n" value={v.receipt} onChange={(e) => set("receipt", e.target.value)} />
+                </Field>
+              </div>
+            ) : (
+              <p className="rounded-md bg-surface-muted px-3 py-2 text-sm text-muted-foreground">
+                La propiedad queda reservada para el cliente sin cobrar seña.
+              </p>
+            )}
+          </section>
+
+          <section className="grid gap-3 border-t pt-4">
+            <h3 className="text-sm font-semibold">Plazos y firma</h3>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field
+                label={v.withDeposit ? "Seña cobrada el" : "Reservada el"}
+                htmlFor="rs-r"
+                error={errors.receivedAt}
+              >
+                <Input
+                  id="rs-r"
+                  type="date"
+                  value={v.receivedAt}
+                  onChange={(e) => set("receivedAt", e.target.value)}
+                />
+              </Field>
+              <Field
+                label="La reserva vence el"
+                htmlFor="rs-e"
+                error={errors.expiresAt}
+                hint="Plazo para firmar boleto o contrato"
+              >
+                <Input
+                  id="rs-e"
+                  type="date"
+                  value={v.expiresAt}
+                  onChange={(e) => set("expiresAt", e.target.value)}
+                />
+              </Field>
+              <Field label="Firma pactada" htmlFor="rs-sign" hint="Cuándo se firma (y se cobra)">
+                <Input
+                  id="rs-sign"
+                  type="date"
+                  value={v.signingDate}
+                  onChange={(e) => set("signingDate", e.target.value)}
+                />
+              </Field>
+              <div />
+              <Field label="Boleto firmado el" htmlFor="rs-bs" hint="Vacío si todavía es solo una reserva">
+                <Input
+                  id="rs-bs"
+                  type="date"
+                  value={v.boletoSignedAt}
+                  onChange={(e) => set("boletoSignedAt", e.target.value)}
+                />
+              </Field>
+              <Field label="Boleto vence el" htmlFor="rs-be" error={errors.boletoExpiresAt}>
+                <Input
+                  id="rs-be"
+                  type="date"
+                  value={v.boletoExpiresAt}
+                  onChange={(e) => set("boletoExpiresAt", e.target.value)}
+                />
+              </Field>
+            </div>
+          </section>
+
+          <section className="grid gap-3 border-t pt-4">
+            <label className="flex items-center gap-2 text-sm font-semibold">
+              <Checkbox checked={v.shared} onChange={(e) => set("shared", e.target.checked)} />
+              Operación compartida
+            </label>
+            {v.shared && (
+              <Field
+                label="Compartida con"
+                htmlFor="rs-sw"
+                hint="Inmobiliaria o colega con quien se comparten honorarios"
+              >
+                <Input id="rs-sw" value={v.sharedWith} onChange={(e) => set("sharedWith", e.target.value)} />
+              </Field>
+            )}
+            <Field label="Comentarios / condiciones del negocio" htmlFor="rs-notes">
+              <Textarea
+                id="rs-notes"
+                rows={3}
+                value={v.notes}
+                onChange={(e) => set("notes", e.target.value)}
               />
             </Field>
-            <Field label="La tiene" htmlFor="rs-h">
-              <Select id="rs-h" value={holder} onChange={(e) => setHolder(e.target.value as DepositHolder)}>
-                {DEPOSIT_HOLDERS.map((h) => (
-                  <option key={h} value={h}>
-                    {DEPOSIT_HOLDER_LABELS[h]}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-3">
-            <Field label="Cobrada el" htmlFor="rs-r" error={errors.receivedAt}>
-              <Input
-                id="rs-r"
-                type="date"
-                value={receivedAt}
-                onChange={(e) => setReceivedAt(e.target.value)}
+          </section>
+
+          <section className="grid gap-3 border-t pt-4">
+            <h3 className="text-sm font-semibold">Escribanos</h3>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <NotaryFields
+                label="Escribano comprador"
+                value={v.buyerNotary}
+                onChange={(n) => set("buyerNotary", n)}
               />
-            </Field>
-            <Field
-              label="Vence el"
-              htmlFor="rs-e"
-              error={errors.expiresAt}
-              hint="Plazo para firmar boleto o contrato"
-            >
-              <Input id="rs-e" type="date" value={expiresAt} onChange={(e) => setExpiresAt(e.target.value)} />
-            </Field>
-            <Field label="N.º de recibo" htmlFor="rs-n">
-              <Input id="rs-n" value={receipt} onChange={(e) => setReceipt(e.target.value)} />
-            </Field>
-          </div>
-          <Field label="Notas" htmlFor="rs-notes">
-            <Textarea id="rs-notes" rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
-          </Field>
+              <NotaryFields
+                label="Escribano vendedor"
+                value={v.sellerNotary}
+                onChange={(n) => set("sellerNotary", n)}
+              />
+            </div>
+          </section>
+
+          <p className="text-xs text-muted-foreground">
+            Los honorarios del vendedor y del comprador se cargan en la sección Honorarios de la operación.
+          </p>
           <DialogFooter>
             <Button type="button" variant="secondary" onClick={() => setOpen(false)} disabled={pending}>
               Cancelar
             </Button>
             <Button type="submit" loading={pending}>
-              Registrar reserva
+              {editing ? "Guardar cambios" : "Registrar reserva"}
             </Button>
           </DialogFooter>
         </form>
@@ -417,7 +621,11 @@ function CancelDialog({
       </Button>
       <DialogContent
         title="Cancelar reserva"
-        description={`Seña de ${price(r.depositMinor, r.currency)}. Indicá qué pasa con la seña y con la operación.`}
+        description={
+          BigInt(r.depositMinor) > 0n
+            ? `Seña de ${price(r.depositMinor, r.currency)}. Indicá qué pasa con la seña y con la operación.`
+            : "Reserva sin seña. Indicá el motivo y qué pasa con la operación."
+        }
       >
         <form
           className="grid gap-4"
@@ -583,23 +791,68 @@ export function OffersCard({
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <p className="text-sm font-semibold">
-                Reserva vigente · seña {price(active.depositMinor, active.currency)}
+                Reserva vigente ·{" "}
+                {BigInt(active.depositMinor) > 0n
+                  ? `seña ${price(active.depositMinor, active.currency)}`
+                  : "sin seña"}
               </p>
               <p className="text-xs text-muted-foreground">
-                Cobrada el {formatDay(active.receivedAt)} · la tiene{" "}
-                {DEPOSIT_HOLDER_LABELS[active.holder].toLowerCase()}
-                {active.receiptNumber ? ` · recibo ${active.receiptNumber}` : ""} · vence el{" "}
-                {formatDay(active.expiresAt)}{" "}
+                {BigInt(active.depositMinor) > 0n ? (
+                  <>
+                    Cobrada el {formatDay(active.receivedAt)} · la tiene{" "}
+                    {DEPOSIT_HOLDER_LABELS[active.holder].toLowerCase()}
+                    {active.receiptNumber ? ` · recibo ${active.receiptNumber}` : ""}
+                  </>
+                ) : (
+                  <>Reservada el {formatDay(active.receivedAt)}</>
+                )}{" "}
+                · vence el {formatDay(active.expiresAt)}{" "}
                 <strong>
                   {active.expiresAt < today
                     ? "(vencida)"
                     : `(${daysBetween(today, active.expiresAt) === 0 ? "hoy" : `en ${daysBetween(today, active.expiresAt)} días`})`}
                 </strong>
               </p>
+              {(active.signingDate || active.boletoSignedAt || active.boletoExpiresAt) && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {[
+                    active.signingDate ? `Firma pactada ${formatDay(active.signingDate)}` : null,
+                    active.boletoSignedAt ? `Boleto firmado ${formatDay(active.boletoSignedAt)}` : null,
+                    active.boletoExpiresAt ? `boleto vence ${formatDay(active.boletoExpiresAt)}` : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </p>
+              )}
+              {active.shared && (
+                <p className="mt-1 text-xs">
+                  Compartida{active.sharedWith ? ` con ${active.sharedWith}` : ""}
+                </p>
+              )}
+              {(active.buyerNotary || active.sellerNotary) && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {[
+                    active.buyerNotary
+                      ? `Esc. comprador: ${[active.buyerNotary.name, active.buyerNotary.phone].filter(Boolean).join(" · ")}`
+                      : null,
+                    active.sellerNotary
+                      ? `Esc. vendedor: ${[active.sellerNotary.name, active.sellerNotary.phone].filter(Boolean).join(" · ")}`
+                      : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" — ")}
+                </p>
+              )}
               {active.notes && <p className="mt-1 text-xs">{active.notes}</p>}
             </div>
             {canManageReservations && (
               <div className="flex flex-wrap gap-2">
+                <ReservationDialog
+                  dealId={dealId}
+                  defaultCurrency={defaultCurrency}
+                  today={today}
+                  existing={active}
+                />
                 <ExtendDialog r={active} today={today} />
                 <CancelDialog r={active} today={today} canNegotiate={canManageDeal} />
               </div>
@@ -671,7 +924,8 @@ export function OffersCard({
           <ul className="grid gap-1 text-sm">
             {past.map((r) => (
               <li key={r.id}>
-                Seña {price(r.depositMinor, r.currency)} del {formatDay(r.receivedAt)} ·{" "}
+                {BigInt(r.depositMinor) > 0n ? `Seña ${price(r.depositMinor, r.currency)}` : "Sin seña"} del{" "}
+                {formatDay(r.receivedAt)} ·{" "}
                 <span className="text-muted-foreground">{RESERVATION_STATUS_LABELS[r.status]}</span>
                 {r.cancelReason ? ` · ${r.cancelReason}` : ""}
                 {r.refundedAt ? ` · devuelta el ${formatDay(r.refundedAt)}` : ""}

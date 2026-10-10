@@ -147,7 +147,7 @@ export function DealStageControls({
           )}
           {activeReservation ? (
             <span className="self-center text-xs text-muted-foreground">
-              Con seña vigente, volver atrás o dar de baja se hace cancelando la reserva.
+              Con reserva vigente, volver atrás o dar de baja se hace cancelando la reserva.
             </span>
           ) : (
             <Button size="sm" variant="ghost" className="text-danger" onClick={() => setDialog("fall")}>

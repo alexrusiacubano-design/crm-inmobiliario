@@ -1,8 +1,10 @@
 import { sql } from "drizzle-orm";
 import {
   bigint,
+  boolean,
   date,
   index,
+  jsonb,
   pgEnum,
   pgTable,
   text,
@@ -10,7 +12,13 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
-import { DEPOSIT_HOLDERS, OFFER_PARTIES, OFFER_STATUSES, RESERVATION_STATUSES } from "@crm/shared/offers";
+import {
+  DEPOSIT_HOLDERS,
+  OFFER_PARTIES,
+  OFFER_STATUSES,
+  RESERVATION_STATUSES,
+  type ReservationNotary,
+} from "@crm/shared/offers";
 import { createdAt, id, updatedAt } from "./_helpers";
 import { user } from "./auth";
 import { deal } from "./deals";
@@ -77,6 +85,15 @@ export const dealReservation = pgTable(
     receiptNumber: text("receipt_number"),
     status: reservationStatusEnum("status").notNull().default("active"),
     notes: text("notes"),
+    /** Firma pactada del boleto o contrato (cuándo se cobra). */
+    signingDate: date("signing_date"),
+    boletoSignedAt: date("boleto_signed_at"),
+    boletoExpiresAt: date("boleto_expires_at"),
+    /** Operación compartida con otra inmobiliaria o colega. */
+    shared: boolean("shared").notNull().default(false),
+    sharedWith: text("shared_with"),
+    buyerNotary: jsonb("buyer_notary").$type<ReservationNotary | null>(),
+    sellerNotary: jsonb("seller_notary").$type<ReservationNotary | null>(),
     cancelReason: text("cancel_reason"),
     refundedAt: date("refunded_at"),
     closedAt: timestamp("closed_at", { withTimezone: true }),

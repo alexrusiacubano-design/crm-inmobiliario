@@ -27,6 +27,7 @@ import {
   createOfferSchema,
   createReservationSchema,
   extendReservationSchema,
+  updateReservationSchema,
   respondOfferSchema,
 } from "@crm/shared/validation/offers";
 import { uuidSchema } from "@crm/shared/validation";
@@ -350,11 +351,21 @@ export async function createReservation(db: Db, ctx: RequestContext, rawInput: u
         holder: input.holder,
         receiptNumber: input.receiptNumber,
         notes: input.notes,
+        signingDate: input.signingDate,
+        boletoSignedAt: input.boletoSignedAt,
+        boletoExpiresAt: input.boletoExpiresAt,
+        shared: input.shared,
+        sharedWith: input.sharedWith,
+        buyerNotary: input.buyerNotary,
+        sellerNotary: input.sellerNotary,
         createdById: ctx.userId,
       })
       .returning();
     if (!row) throw new Error("No se pudo registrar la reserva");
-    const note = `Seña ${fmt(input.depositMinor, input.currency)} hasta ${fmtDate(input.expiresAt)}`;
+    const note =
+      input.depositMinor > 0n
+        ? `Seña ${fmt(input.depositMinor, input.currency)} hasta ${fmtDate(input.expiresAt)}`
+        : `Reserva sin seña hasta ${fmtDate(input.expiresAt)}`;
     if (d.stage === "negotiation") await applyDealStage(tx, ctx, d, { stage: "reserved", note });
     else
       await logActivity(tx, ctx, {
@@ -391,6 +402,43 @@ async function loadReservationForWrite(tx: DbOrTx, ctx: RequestContext, id: stri
   requirePermission(ctx, "reservation.manage", dealRef(d));
   if (r.status !== "active") throw new ConflictError("La reserva ya no está vigente");
   return { r, d };
+}
+
+/** Corrige los datos de una reserva vigente (seña, plazos, firma, escribanos, condiciones). */
+export async function updateReservation(db: Db, ctx: RequestContext, rawInput: unknown) {
+  const input = parseInput(updateReservationSchema, rawInput);
+  return db.transaction(async (tx) => {
+    const { r, d } = await loadReservationForWrite(tx, ctx, input.reservationId);
+    const [after] = await tx
+      .update(dealReservation)
+      .set({
+        currency: input.currency,
+        depositMinor: input.depositMinor,
+        receivedAt: input.receivedAt,
+        expiresAt: input.expiresAt,
+        holder: input.holder,
+        receiptNumber: input.receiptNumber,
+        notes: input.notes,
+        signingDate: input.signingDate,
+        boletoSignedAt: input.boletoSignedAt,
+        boletoExpiresAt: input.boletoExpiresAt,
+        shared: input.shared,
+        sharedWith: input.sharedWith,
+        buyerNotary: input.buyerNotary,
+        sellerNotary: input.sellerNotary,
+        updatedAt: new Date(),
+      })
+      .where(eq(dealReservation.id, r.id))
+      .returning();
+    await writeAudit(tx, ctx, {
+      action: "reservation.update",
+      entityType: "deal",
+      entityId: d.id,
+      before: r,
+      after,
+    });
+    return after;
+  });
 }
 
 export async function extendReservation(db: Db, ctx: RequestContext, rawInput: unknown) {

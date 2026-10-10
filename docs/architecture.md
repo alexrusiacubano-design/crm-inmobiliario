@@ -379,3 +379,13 @@ Suspender o cambiar la contraseña de un usuario cierra sus sesiones.
 - Comparador: US$/m² de propiedades publicadas (oferta) y operaciones cerradas (real) del CRM,
   respetando el alcance de `property.read`; los casos marcados se pasan a una nueva tasación.
 - Informe imprimible en `/print/tasacion/[id]`.
+
+## Clientes que ofrecen, ficha de propiedad y reservas
+
+- Operaciones del lead: buscan (`buy`, `rent`, `temporary_rent`, participan del matching) u ofrecen
+  (`sell`, `rent_out`, `temporary_rent_out`, posible captación con botón para crearla prefijada).
+- Ficha de propiedad: galería y panel lateral con todos los datos, edición en el mismo panel (usa
+  `updateProperty`), exclusividad `property.exclusive`/`exclusive_until` (`setPropertyExclusivity`;
+  se hereda de la captación al crear la propiedad), mapa, video y portales.
+- Reservas: la seña es opcional (monto 0 = sin seña; CHECK `deposit_minor >= 0`); además firma
+  pactada, fechas de boleto, operación compartida, escribanos de cada parte y `updateReservation`.

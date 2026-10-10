@@ -160,7 +160,11 @@ export default async function ReservationsPage({
                     </TD>
                     <TD>{x.clientName}</TD>
                     <TD className="text-right font-semibold tabular whitespace-nowrap">
-                      {price(x.depositMinor, x.currency)}
+                      {x.depositMinor > 0n ? (
+                        price(x.depositMinor, x.currency)
+                      ) : (
+                        <span className="font-normal text-muted-foreground">Sin seña</span>
+                      )}
                       {x.receiptNumber && (
                         <span className="block text-xs font-normal text-muted-foreground">
                           Recibo {x.receiptNumber}

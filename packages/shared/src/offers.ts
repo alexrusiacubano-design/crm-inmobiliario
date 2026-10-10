@@ -65,3 +65,10 @@ export function isOfferExpired(
 export function otherParty(p: OfferParty): OfferParty {
   return p === "client" ? "owner" : "client";
 }
+
+/** Escribano de una de las partes (datos de contacto para coordinar la firma). */
+export interface ReservationNotary {
+  name: string;
+  phone: string | null;
+  email: string | null;
+}

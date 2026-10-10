@@ -183,6 +183,13 @@
       "when": 1791672527046,
       "tag": "0025_property_exclusive",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1791673001692,
+      "tag": "0026_reservation_details",
+      "breakpoints": true
     }
   ]
 }
