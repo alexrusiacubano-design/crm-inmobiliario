@@ -28,20 +28,28 @@ export default async function ReservationsPage({
   const params = await searchParams;
   const status = params.status === "closed" ? "closed" : params.status === "all" ? "all" : "active";
   const today = ymdInTz(new Date(), ctx.organization.timezone || DEFAULT_TZ);
+  const moneda = params.moneda === "USD" || params.moneda === "UYU" ? params.moneda : null;
   const r = await listReservations(getDb(), ctx, { status, today });
+  const items = moneda ? r.items.filter((x) => x.currency === moneda) : r.items;
+  const qs = (next: { status?: string; moneda?: string | null }) => {
+    const q = new URLSearchParams();
+    q.set("status", next.status ?? status);
+    const m = next.moneda === undefined ? moneda : next.moneda;
+    if (m) q.set("moneda", m);
+    return `?${q.toString()}`;
+  };
   const chip = (active: boolean) =>
     cn(
       "rounded-full border px-3 py-1 text-xs",
       active ? "border-primary bg-primary-soft text-primary" : "text-muted-foreground hover:text-foreground",
     );
-  const heldText = (h: (typeof DEPOSIT_HOLDERS)[number]) => {
-    const v = r.held[h];
-    if (!v) return "—";
-    return (
-      [v.USD ? price(v.USD, "USD") : null, v.UYU ? price(v.UYU, "UYU") : null].filter(Boolean).join(" + ") ||
-      "—"
-    );
-  };
+  // Cada moneda se suma por separado: nunca se mezclan dólares con pesos.
+  const currencies = [
+    { code: "USD" as const, title: "Señas en dólares (U$S)" },
+    { code: "UYU" as const, title: "Señas en pesos ($)" },
+  ];
+  const totalFor = (c: "USD" | "UYU") => DEPOSIT_HOLDERS.reduce((sum, h) => sum + (r.held[h]?.[c] ?? 0n), 0n);
+  const countFor = (c: "USD" | "UYU") => r.activeByCurrency[c];
 
   return (
     <>
@@ -49,35 +57,66 @@ export default async function ReservationsPage({
         title="Reservas"
         description="Señas cobradas, quién las tiene y hasta cuándo valen. Se registran desde la ficha de la operación."
       />
-      <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mb-5 grid gap-3 md:grid-cols-[minmax(0,0.8fr)_1fr_1fr]">
         <Card className={cn("p-4", r.expiringCount > 0 && "border-warning/60 bg-warning-soft/40")}>
           <p className="text-xs text-muted-foreground">Vigentes</p>
           <p className="mt-1 text-2xl font-semibold tabular">{r.activeCount}</p>
           <p className="text-xs text-muted-foreground">{r.expiringCount} vencen en 7 días o ya vencieron</p>
         </Card>
-        {DEPOSIT_HOLDERS.map((h) => (
-          <Card key={h} className="p-4">
-            <p className="text-xs text-muted-foreground">Señas en {DEPOSIT_HOLDER_LABELS[h].toLowerCase()}</p>
-            <p className="mt-1 text-lg font-semibold tabular">{heldText(h)}</p>
-          </Card>
-        ))}
+        {currencies.map((c) => {
+          const total = totalFor(c.code);
+          return (
+            <Card key={c.code} className="p-4">
+              <div className="flex items-baseline justify-between gap-2">
+                <p className="text-xs text-muted-foreground">{c.title}</p>
+                <span className="text-xs text-muted-foreground">
+                  {countFor(c.code)} {countFor(c.code) === 1 ? "reserva" : "reservas"}
+                </span>
+              </div>
+              <p className="mt-1 text-2xl font-semibold tabular">{total > 0n ? price(total, c.code) : "—"}</p>
+              <dl className="mt-3 space-y-1 border-t pt-2 text-sm">
+                {DEPOSIT_HOLDERS.map((h) => {
+                  const v = r.held[h]?.[c.code] ?? 0n;
+                  return (
+                    <div key={h} className="flex justify-between gap-2">
+                      <dt className="text-muted-foreground">En {DEPOSIT_HOLDER_LABELS[h].toLowerCase()}</dt>
+                      <dd className="font-medium tabular">{v > 0n ? price(v, c.code) : "—"}</dd>
+                    </div>
+                  );
+                })}
+              </dl>
+            </Card>
+          );
+        })}
       </div>
-      <div className="mb-3 flex gap-2">
-        <Link href="?status=active" className={chip(status === "active")}>
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <Link href={qs({ status: "active" })} className={chip(status === "active")}>
           Vigentes
         </Link>
-        <Link href="?status=closed" className={chip(status === "closed")}>
+        <Link href={qs({ status: "closed" })} className={chip(status === "closed")}>
           Cerradas
         </Link>
-        <Link href="?status=all" className={chip(status === "all")}>
+        <Link href={qs({ status: "all" })} className={chip(status === "all")}>
           Todas
+        </Link>
+        <span className="mx-1 h-4 w-px bg-border" aria-hidden />
+        <Link href={qs({ moneda: null })} className={chip(!moneda)}>
+          Ambas monedas
+        </Link>
+        <Link href={qs({ moneda: "USD" })} className={chip(moneda === "USD")}>
+          Dólares
+        </Link>
+        <Link href={qs({ moneda: "UYU" })} className={chip(moneda === "UYU")}>
+          Pesos
         </Link>
       </div>
       <Card>
-        {r.items.length === 0 ? (
+        {items.length === 0 ? (
           <EmptyState
             icon={Lock}
-            title="No hay reservas"
+            title={
+              moneda ? `No hay reservas en ${moneda === "USD" ? "dólares" : "pesos"}` : "No hay reservas"
+            }
             description="Cuando se acepte una oferta, registrá la reserva desde la operación."
           />
         ) : (
@@ -95,7 +134,7 @@ export default async function ReservationsPage({
               </TR>
             </THead>
             <TBody>
-              {r.items.map((x) => {
+              {items.map((x) => {
                 const days = daysBetween(today, x.expiresAt);
                 const active = x.status === "active";
                 return (

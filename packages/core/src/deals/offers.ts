@@ -521,7 +521,9 @@ export async function listReservations(
     .from(dealReservation)
     .innerJoin(deal, eq(deal.id, dealReservation.dealId))
     .where(and(base, eq(dealReservation.status, "active")));
+  const activeByCurrency: Record<Currency, number> = { USD: 0, UYU: 0 };
   for (const a of active) {
+    activeByCurrency[a.currency] += 1;
     held[a.holder] ??= { USD: 0n, UYU: 0n };
     (held[a.holder] as Record<Currency, bigint>)[a.currency] += a.amount;
   }
@@ -551,6 +553,7 @@ export async function listReservations(
       holderLabel: DEPOSIT_HOLDER_LABELS[x.r.holder],
     })),
     held,
+    activeByCurrency,
     activeCount: active.length,
     expiringCount: expiring?.n ?? 0,
   };
