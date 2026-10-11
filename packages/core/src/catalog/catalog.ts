@@ -1,7 +1,12 @@
-import { and, asc, eq } from "drizzle-orm";
-import { commissionSettings, organization, portalAccount, type Db, type DbOrTx } from "@crm/db";
+import { and, asc, count, eq, inArray } from "drizzle-orm";
+import { branch, commissionSettings, deal, organization, portalAccount, type Db, type DbOrTx } from "@crm/db";
 import { PROPERTY_FEATURE_LABELS, PROPERTY_TYPE_LABELS, type PropertyType } from "@crm/shared/crm";
-import { ORIENTATION_LABELS, PROPERTY_CONDITION_LABELS, type Orientation, type PropertyCondition } from "@crm/shared";
+import {
+  ORIENTATION_LABELS,
+  PROPERTY_CONDITION_LABELS,
+  type Orientation,
+  type PropertyCondition,
+} from "@crm/shared";
 import { formatMoney } from "@crm/shared/money";
 import { z } from "zod";
 import { ingestInquiry } from "../communications/inbox";
@@ -48,6 +53,28 @@ export async function siteOrganization(db: DbOrTx): Promise<SiteOrganization | n
     address: o.address,
     website: o.website,
   };
+}
+
+export interface SiteHighlights {
+  /** Operaciones firmadas o cerradas. */
+  closedDeals: number;
+  offices: { name: string; address: string | null; phone: string | null }[];
+}
+
+/** Datos para la portada del sitio: operaciones cerradas y oficinas activas. */
+export async function siteHighlights(db: DbOrTx, organizationId: string): Promise<SiteHighlights> {
+  const [[closed], offices] = await Promise.all([
+    db
+      .select({ n: count() })
+      .from(deal)
+      .where(and(eq(deal.organizationId, organizationId), inArray(deal.stage, ["signed", "closed"]))),
+    db
+      .select({ name: branch.name, address: branch.address, phone: branch.phone })
+      .from(branch)
+      .where(and(eq(branch.organizationId, organizationId), eq(branch.isActive, true)))
+      .orderBy(asc(branch.name)),
+  ]);
+  return { closedDeals: Number(closed?.n ?? 0), offices };
 }
 
 async function websiteFeed(db: DbOrTx, organizationId: string) {
@@ -161,7 +188,10 @@ export async function listCatalog(db: DbOrTx, organizationId: string, rawFilters
   else if (f.orden === "precio-desc") items = items.sort((a, b) => sortValue(b) - sortValue(a));
   else items = items.sort((a, b) => (b.publishedAt?.getTime() ?? 0) - (a.publishedAt?.getTime() ?? 0));
 
-  const types = [...new Set(all.map((i) => i.type))].map((t) => ({ value: t, label: PROPERTY_TYPE_LABELS[t] }));
+  const types = [...new Set(all.map((i) => i.type))].map((t) => ({
+    value: t,
+    label: PROPERTY_TYPE_LABELS[t],
+  }));
   const zones = [...new Set(all.flatMap((i) => [i.neighborhoodName, i.localityName]).filter(Boolean))]
     .map(String)
     .sort((a, b) => a.localeCompare(b, "es"));

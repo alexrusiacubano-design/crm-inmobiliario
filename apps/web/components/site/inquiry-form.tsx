@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 const inputCls =
-  "h-11 w-full rounded-lg border border-[#ddd6cb] bg-white px-3 text-sm text-[#1c1b19] outline-none placeholder:text-[#a39d93] focus:border-[#1c1b19]";
+  "h-11 w-full rounded-lg border border-white/10 bg-[#141414] px-3 text-sm text-[#f2efe9] outline-none placeholder:text-[#6f6a62] focus:border-[#d8bf82]";
 
 /** «Me interesa»: los datos llegan al CRM como consulta del canal web. */
 export function InquiryForm({
@@ -18,11 +18,9 @@ export function InquiryForm({
 
   if (state === "sent")
     return (
-      <div className="rounded-xl bg-[#f3efe8] p-5 text-center">
-        <p className="font-[family-name:var(--font-serif)] text-xl font-semibold">
-          ¡Gracias por tu consulta!
-        </p>
-        <p className="mt-1 text-sm text-[#6b665e]">Un asesor se va a comunicar con vos a la brevedad.</p>
+      <div className="rounded-xl bg-[#1c1c1c] p-5 text-center">
+        <p className="font-bold tracking-tight text-xl font-semibold">¡Gracias por tu consulta!</p>
+        <p className="mt-1 text-sm text-[#a8a29a]">Un asesor se va a comunicar con vos a la brevedad.</p>
       </div>
     );
 
@@ -76,11 +74,11 @@ export function InquiryForm({
       <button
         type="submit"
         disabled={state === "sending"}
-        className="h-11 w-full rounded-lg bg-[#1c1b19] text-sm font-medium tracking-wide text-white transition hover:bg-black disabled:opacity-60"
+        className="h-11 w-full rounded-lg bg-gradient-to-r from-[#e3cd96] to-[#b99a5b] text-sm font-medium tracking-wide text-black transition hover:brightness-110 disabled:opacity-60"
       >
         {state === "sending" ? "Enviando…" : "Quiero que me contacten"}
       </button>
-      <p className="text-center text-[11px] text-[#8a847a]">
+      <p className="text-center text-[11px] text-[#8c867c]">
         Usamos tus datos solo para responder tu consulta.
       </p>
     </form>
