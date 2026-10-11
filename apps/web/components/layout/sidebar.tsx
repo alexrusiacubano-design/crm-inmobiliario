@@ -62,41 +62,64 @@ export function SidebarNav({
   onNavigate?: () => void;
 }) {
   const pathname = usePathname();
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  // Abiertas: las que el usuario abrió, y la que contiene la página actual.
+  const [toggled, setToggled] = useState<Record<string, boolean>>({});
 
   return (
     <nav aria-label="Navegación principal" className="flex flex-col gap-0.5 px-3 py-3 text-sm">
-      {sections.map((section) => {
+      {sections.map((section, idx) => {
         const Icon = ICONS[section.icon];
+        const groupLabel =
+          section.group && section.group !== sections[idx - 1]?.group ? (
+            <p
+              key={`g-${section.group}`}
+              className="mt-4 mb-1 px-2 text-[10.5px] font-semibold tracking-[0.12em] text-muted-foreground/70 uppercase first:mt-1"
+            >
+              {section.group}
+            </p>
+          ) : null;
         if (section.href) {
           const active = isActive(pathname, section.href);
           return (
-            <Link
-              key={section.key}
-              href={section.href}
-              onClick={onNavigate}
-              aria-current={active ? "page" : undefined}
-              className={cn(
-                "flex h-8 items-center gap-2.5 rounded-md px-2 font-medium text-foreground/85 hover:bg-surface-muted",
-                active && "bg-sidebar-active text-foreground",
-              )}
-            >
-              <Icon className="size-4 text-muted-foreground" aria-hidden />
-              {section.label}
-              <PhaseTag phase={section.plannedPhase} />
-            </Link>
+            <div key={section.key} className="contents">
+              {groupLabel}
+              <Link
+                href={section.href}
+                onClick={onNavigate}
+                aria-current={active ? "page" : undefined}
+                className={cn(
+                  "flex h-9 items-center gap-2.5 rounded-lg px-2.5 font-medium text-foreground/80 transition-colors hover:bg-surface-muted hover:text-foreground",
+                  active && "bg-sidebar-active text-foreground",
+                )}
+              >
+                <Icon
+                  className={cn("size-4", active ? "text-primary" : "text-muted-foreground")}
+                  aria-hidden
+                />
+                {section.label}
+                <PhaseTag phase={section.plannedPhase} />
+              </Link>
+            </div>
           );
         }
-        const open = !collapsed[section.key];
+        const containsActive = section.items.some((i) => isActive(pathname, i.href));
+        const open = toggled[section.key] ?? containsActive;
         return (
-          <div key={section.key} className="mt-2">
+          <div key={section.key}>
+            {groupLabel}
             <button
               type="button"
-              onClick={() => setCollapsed((c) => ({ ...c, [section.key]: open }))}
+              onClick={() => setToggled((c) => ({ ...c, [section.key]: !open }))}
               aria-expanded={open}
-              className="flex h-8 w-full items-center gap-2.5 rounded-md px-2 font-medium text-foreground/85 hover:bg-surface-muted"
+              className={cn(
+                "flex h-9 w-full items-center gap-2.5 rounded-lg px-2.5 font-medium text-foreground/80 transition-colors hover:bg-surface-muted hover:text-foreground",
+                containsActive && "text-foreground",
+              )}
             >
-              <Icon className="size-4 text-muted-foreground" aria-hidden />
+              <Icon
+                className={cn("size-4", containsActive ? "text-primary" : "text-muted-foreground")}
+                aria-hidden
+              />
               {section.label}
               <ChevronDown
                 className={cn(
@@ -107,7 +130,7 @@ export function SidebarNav({
               />
             </button>
             {open && (
-              <ul className="mt-0.5 ml-4 border-l pl-2">
+              <ul className="mt-0.5 mb-1 ml-[1.1rem] border-l pl-2">
                 {section.items.map((item) => {
                   const active = isActive(pathname, item.href);
                   return (
@@ -117,7 +140,7 @@ export function SidebarNav({
                         onClick={onNavigate}
                         aria-current={active ? "page" : undefined}
                         className={cn(
-                          "flex h-7 items-center rounded-md px-2 text-muted-foreground hover:bg-surface-muted hover:text-foreground",
+                          "flex h-8 items-center rounded-lg px-2.5 text-muted-foreground transition-colors hover:bg-surface-muted hover:text-foreground",
                           active && "bg-sidebar-active font-medium text-foreground",
                         )}
                       >

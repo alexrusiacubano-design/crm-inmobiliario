@@ -17,6 +17,8 @@ const config: NextConfig = {
     return [
       // Todo menos el chat público, que se inserta en el sitio web de la inmobiliaria.
       { source: "/((?!chat/).*)", headers: securityHeaders },
+      // La portada se muestra dentro del editor «Mi sitio web» (mismo origen).
+      { source: "/", headers: [{ key: "X-Frame-Options", value: "SAMEORIGIN" }] },
       {
         source: "/chat/:path*",
         headers: [

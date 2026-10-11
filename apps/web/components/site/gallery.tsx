@@ -23,14 +23,14 @@ export function Gallery({ photos, title }: { photos: { thumb: string; full: stri
 
   if (n === 0)
     return (
-      <div className="flex aspect-[16/10] items-center justify-center rounded-2xl bg-[#1c1c1c] text-[#8c867c]">
+      <div className="flex aspect-[16/10] items-center justify-center rounded-2xl bg-[var(--site-surface2)] text-[var(--site-muted2)]">
         Sin fotos
       </div>
     );
   const current = photos[i] ?? photos[0];
   return (
     <div>
-      <div className="relative overflow-hidden rounded-2xl bg-[#1c1c1c]">
+      <div className="relative overflow-hidden rounded-2xl bg-[var(--site-surface2)]">
         <button
           type="button"
           className="block w-full"
@@ -76,7 +76,7 @@ export function Gallery({ photos, title }: { photos: { thumb: string; full: stri
               type="button"
               onClick={() => setI(idx)}
               aria-label={`Ver foto ${idx + 1}`}
-              className={`shrink-0 overflow-hidden rounded-lg border-2 transition ${idx === i ? "border-[#d8bf82]" : "border-transparent opacity-70 hover:opacity-100"}`}
+              className={`shrink-0 overflow-hidden rounded-lg border-2 transition ${idx === i ? "border-[var(--site-accent)]" : "border-transparent opacity-70 hover:opacity-100"}`}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={p.thumb} alt="" loading="lazy" className="h-16 w-24 object-cover" />

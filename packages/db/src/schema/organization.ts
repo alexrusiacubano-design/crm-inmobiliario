@@ -273,3 +273,16 @@ export const sequence = pgTable(
   },
   (t) => [primaryKey({ columns: [t.organizationId, t.prefix] })],
 );
+
+/** «Mi sitio web»: contenido editable del sitio público (borrador y versión publicada). */
+export const siteSettings = pgTable("site_settings", {
+  organizationId: uuid("organization_id")
+    .primaryKey()
+    .references(() => organization.id),
+  draft: jsonb("draft").$type<Record<string, unknown>>().notNull().default({}),
+  /** null = nunca se publicó (el sitio usa los valores por defecto). */
+  published: jsonb("published").$type<Record<string, unknown>>(),
+  publishedAt: timestamp("published_at", { withTimezone: true }),
+  publishedById: uuid("published_by_id").references(() => user.id),
+  updatedAt: updatedAt(),
+});

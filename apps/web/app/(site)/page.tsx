@@ -1,6 +1,7 @@
-import { listCatalog, siteHighlights } from "@crm/core";
+import { hasPermission, listCatalog, siteContent, siteHighlights } from "@crm/core";
 import { getDb } from "@crm/db";
 import { PROPERTY_TYPE_LABELS, PROPERTY_TYPES } from "@crm/shared/crm";
+import { siteThemeCss } from "@crm/shared/site";
 import { ArrowRight, BadgeCheck, Calculator, Handshake, MessageCircle, Search, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -8,10 +9,10 @@ import { PropertyCard } from "@/components/site/property-card";
 import { ValuationForm } from "@/components/site/valuation-form";
 import { WelcomeModal } from "@/components/site/welcome-modal";
 import { getSessionContext } from "@/lib/session";
-import { getSite, photoUrl, whatsappLink } from "@/lib/site";
+import { getSite, heroImageUrl, photoUrl, whatsappLink } from "@/lib/site";
 
 const selectCls =
-  "h-12 w-full appearance-none rounded-xl border border-white/10 bg-[#0a0a0a]/80 px-4 text-sm text-[#f2efe9] outline-none focus:border-[#d8bf82]";
+  "h-12 w-full appearance-none rounded-xl border border-[var(--site-border)] bg-[var(--site-bg)]/80 px-4 text-sm text-[var(--site-text)] outline-none focus:border-[var(--site-accent)]";
 
 const FEATURES = [
   {
@@ -36,19 +37,34 @@ const FEATURES = [
   },
 ];
 
-/** Portada pública. Con sesión iniciada, va directo al CRM. */
-export default async function Home() {
+/**
+ * Portada pública. Con sesión iniciada va directo al CRM, salvo la vista previa del borrador
+ * (?vista=borrador) que usa el editor de «Mi sitio web».
+ */
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | undefined>>;
+}) {
+  const sp = await searchParams;
   const session = await getSessionContext().catch(() => null);
-  if (session) redirect("/dashboard");
+  const preview = sp.vista === "borrador" && session && hasPermission(session.ctx, "settings.manage");
+  if (session && !preview) redirect("/dashboard");
   const site = await getSite();
   if (!site) redirect("/login");
   const db = getDb();
-  const [catalog, highlights] = await Promise.all([
+  const [catalog, highlights, content] = await Promise.all([
     listCatalog(db, site.id, {}),
     siteHighlights(db, site.id).catch(() => ({ closedDeals: 0, offices: [] })),
+    siteContent(db, site.id, preview ? "draft" : "published"),
   ]);
   const featured = catalog.items.slice(0, 6);
-  const heroPhoto = catalog.items.find((i) => i.photoIds.length)?.photoIds[0];
+  const fallbackPhoto = catalog.items.find((i) => i.photoIds.length)?.photoIds[0];
+  const heroSrc = content.heroImageKey
+    ? heroImageUrl(site.id, content.heroImageKey)
+    : fallbackPhoto
+      ? photoUrl(fallbackPhoto)
+      : null;
   const wa = whatsappLink(site.phone, `Hola ${site.name}, quisiera hacer una consulta.`);
   const stats = [
     { value: catalog.total, label: "Propiedades activas" },
@@ -59,39 +75,44 @@ export default async function Home() {
 
   return (
     <>
-      <WelcomeModal logoUrl={site.logoUrl} name={site.name} />
+      {/* En la vista previa, el tema del borrador pisa al publicado (también en encabezado y pie). */}
+      {preview && <style>{`.site.site{${siteThemeCss(content.theme)}}`}</style>}
+      {content.showWelcome && !preview && <WelcomeModal logoUrl={site.logoUrl} name={site.name} />}
 
       {/* ── Hero ───────────────────────────────────────────────── */}
       <section className="relative overflow-hidden">
-        {heroPhoto && (
+        {heroSrc && (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={photoUrl(heroPhoto)}
+            src={heroSrc}
             alt=""
-            className="absolute inset-0 size-full object-cover opacity-30 grayscale-[40%]"
+            className={
+              content.heroImageKey
+                ? "absolute inset-0 size-full object-cover opacity-45"
+                : "absolute inset-0 size-full object-cover opacity-30 grayscale-[40%]"
+            }
           />
         )}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0a]/60 via-[#0a0a0a]/80 to-[#0a0a0a]" />
-        <div className="absolute -top-40 left-1/2 h-[480px] w-[900px] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,rgba(216,191,130,0.16),transparent)]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[var(--site-bg)]/60 via-[var(--site-bg)]/80 to-[var(--site-bg)]" />
+        <div className="absolute -top-40 left-1/2 h-[480px] w-[900px] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,color-mix(in_oklab,var(--site-accent)_16%,transparent),transparent)]" />
         <div className="relative mx-auto max-w-7xl px-4 pt-16 pb-14 sm:px-6 sm:pt-28 sm:pb-20">
           <h1 className="max-w-4xl text-4xl leading-[1.05] font-extrabold tracking-tight sm:text-6xl lg:text-7xl">
-            Encontrá la propiedad{" "}
-            <span className="bg-gradient-to-r from-[#ecd9a6] to-[#c3a465] bg-clip-text text-transparent">
-              que estás buscando
+            {content.heroTitle}{" "}
+            <span className="bg-gradient-to-r from-[var(--site-accent-from)] to-[var(--site-accent-to)] bg-clip-text text-transparent">
+              {content.heroHighlight}
             </span>
           </h1>
-          <p className="mt-6 max-w-2xl text-lg leading-relaxed text-[#a8a29a]">
-            Casas, apartamentos, oficinas y terrenos seleccionados uno por uno. Con un equipo que te asesora
-            en cada paso, hasta la firma.
+          <p className="mt-6 max-w-2xl text-lg leading-relaxed text-[var(--site-muted)]">
+            {content.heroSubtitle}
           </p>
 
           <form
             action="/propiedades"
             method="get"
-            className="mt-10 grid max-w-4xl gap-3 rounded-2xl border border-white/10 bg-black/50 p-4 backdrop-blur-md sm:grid-cols-2 sm:p-5 lg:grid-cols-[1.4fr_1fr_1fr_auto]"
+            className="mt-10 grid max-w-4xl gap-3 rounded-2xl border border-[var(--site-border)] bg-[var(--site-surface)]/70 p-4 backdrop-blur-md sm:grid-cols-2 sm:p-5 lg:grid-cols-[1.4fr_1fr_1fr_auto]"
           >
             <label className="relative sm:col-span-2 lg:col-span-1">
-              <Search className="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-[#d8bf82]" />
+              <Search className="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-[var(--site-accent)]" />
               <select name="zona" defaultValue="" aria-label="Zona o barrio" className={`${selectCls} pl-11`}>
                 <option value="">Zona o barrio</option>
                 {catalog.options.zones.map((z) => (
@@ -116,7 +137,7 @@ export default async function Home() {
             </select>
             <button
               type="submit"
-              className="h-12 rounded-xl bg-gradient-to-r from-[#e3cd96] to-[#b99a5b] px-8 font-semibold text-black transition hover:brightness-110 sm:col-span-2 lg:col-span-1"
+              className="h-12 rounded-xl bg-gradient-to-r from-[var(--site-accent-from)] to-[var(--site-accent-to)] px-8 font-semibold text-[var(--site-on-accent)] transition hover:brightness-110 sm:col-span-2 lg:col-span-1"
             >
               Buscar
             </button>
@@ -127,11 +148,11 @@ export default async function Home() {
               {stats.map((s) => (
                 <div key={s.label}>
                   <dt className="sr-only">{s.label}</dt>
-                  <dd className="text-4xl font-extrabold text-[#d8bf82] tabular-nums">
+                  <dd className="text-4xl font-extrabold text-[var(--site-accent)] tabular-nums">
                     {s.value.toLocaleString("es-UY")}
                     {s.value >= 10 ? "+" : ""}
                   </dd>
-                  <p className="mt-1 text-sm text-[#a8a29a]">{s.label}</p>
+                  <p className="mt-1 text-sm text-[var(--site-muted)]">{s.label}</p>
                 </div>
               ))}
             </dl>
@@ -143,14 +164,16 @@ export default async function Home() {
       <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20">
         <div className="mb-8 flex items-end justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold tracking-[0.3em] text-[#d8bf82] uppercase">Selección</p>
+            <p className="text-xs font-semibold tracking-[0.3em] text-[var(--site-accent)] uppercase">
+              Selección
+            </p>
             <h2 className="mt-2 text-3xl font-extrabold tracking-tight sm:text-4xl">
               Propiedades destacadas
             </h2>
           </div>
           <Link
             href="/propiedades"
-            className="flex shrink-0 items-center gap-1.5 text-sm font-medium text-[#d8bf82] hover:underline"
+            className="flex shrink-0 items-center gap-1.5 text-sm font-medium text-[var(--site-accent)] hover:underline"
           >
             Ver todas <ArrowRight className="size-4" />
           </Link>
@@ -162,47 +185,49 @@ export default async function Home() {
             ))}
           </div>
         ) : (
-          <p className="rounded-2xl border border-white/10 bg-[#141414] p-10 text-center text-[#a8a29a]">
+          <p className="rounded-2xl border border-[var(--site-border)] bg-[var(--site-surface)] p-10 text-center text-[var(--site-muted)]">
             Muy pronto vas a ver nuestras propiedades acá.
           </p>
         )}
       </section>
 
       {/* ── Tasación ───────────────────────────────────────────── */}
-      <section id="tasar" className="scroll-mt-20 border-y border-white/10 bg-[#0e0e0e]">
-        <div className="mx-auto grid max-w-7xl gap-10 px-4 py-16 sm:px-6 sm:py-20 lg:grid-cols-[1fr_1.1fr] lg:items-center">
-          <div>
-            <p className="text-xs font-semibold tracking-[0.3em] text-[#d8bf82] uppercase">
-              Tasación gratuita
-            </p>
-            <h2 className="mt-2 text-3xl font-extrabold tracking-tight sm:text-5xl">
-              ¿Cuánto vale tu propiedad?
-            </h2>
-            <p className="mt-4 max-w-lg text-[#a8a29a]">
-              Completá el formulario en un minuto. Un tasador profesional analiza los datos y comparables de
-              la zona y te contacta con un rango de valor fundamentado.
-            </p>
-            <ol className="mt-8 grid gap-4 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
-              {[
-                ["1 minuto", "Completás el formulario"],
-                ["Análisis", "Comparamos con el mercado"],
-                ["Contacto", "Te llamamos con el valor"],
-              ].map(([t, d], i) => (
-                <li key={t} className="flex items-start gap-3">
-                  <span className="flex size-9 shrink-0 items-center justify-center rounded-full border border-[#d8bf82]/60 text-sm font-bold text-[#d8bf82]">
-                    {i + 1}
-                  </span>
-                  <span>
-                    <span className="block font-semibold">{t}</span>
-                    <span className="text-sm text-[#a8a29a]">{d}</span>
-                  </span>
-                </li>
-              ))}
-            </ol>
+      {content.showValuation && (
+        <section
+          id="tasar"
+          className="scroll-mt-20 border-y border-[var(--site-border)] bg-[var(--site-bg2)]"
+        >
+          <div className="mx-auto grid max-w-7xl gap-10 px-4 py-16 sm:px-6 sm:py-20 lg:grid-cols-[1fr_1.1fr] lg:items-center">
+            <div>
+              <p className="text-xs font-semibold tracking-[0.3em] text-[var(--site-accent)] uppercase">
+                Tasación gratuita
+              </p>
+              <h2 className="mt-2 text-3xl font-extrabold tracking-tight sm:text-5xl">
+                {content.valuationTitle}
+              </h2>
+              <p className="mt-4 max-w-lg text-[var(--site-muted)]">{content.valuationText}</p>
+              <ol className="mt-8 grid gap-4 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+                {[
+                  ["1 minuto", "Completás el formulario"],
+                  ["Análisis", "Comparamos con el mercado"],
+                  ["Contacto", "Te llamamos con el valor"],
+                ].map(([t, d], i) => (
+                  <li key={t} className="flex items-start gap-3">
+                    <span className="flex size-9 shrink-0 items-center justify-center rounded-full border border-[var(--site-accent)]/60 text-sm font-bold text-[var(--site-accent)]">
+                      {i + 1}
+                    </span>
+                    <span>
+                      <span className="block font-semibold">{t}</span>
+                      <span className="text-sm text-[var(--site-muted)]">{d}</span>
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+            <ValuationForm types={types} />
           </div>
-          <ValuationForm types={types} />
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* ── Diferenciales ──────────────────────────────────────── */}
       <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20">
@@ -212,9 +237,9 @@ export default async function Home() {
         <div className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
           {FEATURES.map((f) => (
             <div key={f.title}>
-              <f.icon className="size-7 text-[#d8bf82]" strokeWidth={1.5} />
+              <f.icon className="size-7 text-[var(--site-accent)]" strokeWidth={1.5} />
               <h3 className="mt-4 text-lg font-bold">{f.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-[#a8a29a]">{f.text}</p>
+              <p className="mt-2 text-sm leading-relaxed text-[var(--site-muted)]">{f.text}</p>
             </div>
           ))}
         </div>
@@ -222,16 +247,16 @@ export default async function Home() {
 
       {/* ── Contacto ───────────────────────────────────────────── */}
       <section className="mx-auto max-w-7xl px-4 pb-20 sm:px-6">
-        <div className="relative overflow-hidden rounded-3xl border border-[#d8bf82]/25 bg-gradient-to-br from-[#1a1712] to-[#0e0e0e] p-8 sm:p-14">
-          <div className="absolute -right-24 -bottom-24 size-80 rounded-full bg-[radial-gradient(closest-side,rgba(216,191,130,0.18),transparent)]" />
-          <h2 className="relative text-3xl font-extrabold tracking-tight sm:text-5xl">
-            ¿Hablamos de tu próxima propiedad?
-          </h2>
-          <p className="relative mt-3 text-[#a8a29a]">Escribinos y un asesor de {site.name} te responde.</p>
+        <div className="relative overflow-hidden rounded-3xl border border-[var(--site-accent)]/25 bg-gradient-to-br from-[var(--site-surface)] to-[var(--site-bg2)] p-8 sm:p-14">
+          <div className="absolute -right-24 -bottom-24 size-80 rounded-full bg-[radial-gradient(closest-side,color-mix(in_oklab,var(--site-accent)_18%,transparent),transparent)]" />
+          <h2 className="relative text-3xl font-extrabold tracking-tight sm:text-5xl">{content.ctaTitle}</h2>
+          <p className="relative mt-3 text-[var(--site-muted)]">
+            Escribinos y un asesor de {site.name} te responde.
+          </p>
           <div className="relative mt-8 flex flex-wrap gap-3">
             <Link
               href="/propiedades"
-              className="rounded-xl bg-gradient-to-r from-[#e3cd96] to-[#b99a5b] px-6 py-3 font-semibold text-black transition hover:brightness-110"
+              className="rounded-xl bg-gradient-to-r from-[var(--site-accent-from)] to-[var(--site-accent-to)] px-6 py-3 font-semibold text-[var(--site-on-accent)] transition hover:brightness-110"
             >
               Ver propiedades
             </Link>
@@ -240,7 +265,7 @@ export default async function Home() {
                 href={wa}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 rounded-xl border border-white/20 px-6 py-3 font-semibold transition hover:border-[#d8bf82] hover:text-[#d8bf82]"
+                className="flex items-center gap-2 rounded-xl border border-[var(--site-border-strong)] px-6 py-3 font-semibold transition hover:border-[var(--site-accent)] hover:text-[var(--site-accent)]"
               >
                 <MessageCircle className="size-4" /> WhatsApp
               </a>

@@ -9,7 +9,7 @@ import { getSite } from "@/lib/site";
 export const metadata: Metadata = { title: "Propiedades" };
 
 const fieldBase =
-  "h-11 rounded-lg border border-white/10 bg-[#141414] px-3 text-sm text-[#f2efe9] outline-none focus:border-[#d8bf82]";
+  "h-11 rounded-lg border border-[var(--site-border)] bg-[var(--site-surface)] px-3 text-sm text-[var(--site-text)] outline-none focus:border-[var(--site-accent)]";
 const selectCls = `${fieldBase} w-full`;
 
 export default async function CatalogPage({
@@ -34,19 +34,21 @@ export default async function CatalogPage({
 
   return (
     <>
-      <section className="border-b border-white/10 bg-gradient-to-b from-[#111] to-[#0a0a0a]">
+      <section className="border-b border-[var(--site-border)] bg-gradient-to-b from-[var(--site-bg2)] to-[var(--site-bg)]">
         <div className="mx-auto max-w-7xl px-4 pt-14 pb-10 sm:px-6 sm:pt-20">
-          <p className="text-xs font-medium tracking-[0.3em] text-[#8c867c] uppercase">{site.name}</p>
+          <p className="text-xs font-medium tracking-[0.3em] text-[var(--site-muted2)] uppercase">
+            {site.name}
+          </p>
           <h1 className="mt-3 max-w-3xl font-bold tracking-tight text-4xl leading-tight font-semibold sm:text-6xl">
-            Encontrá el lugar <span className="text-[#d8bf82]">donde querés vivir</span>
+            Encontrá el lugar <span className="text-[var(--site-accent)]">donde querés vivir</span>
           </h1>
-          <p className="mt-4 max-w-xl text-[#a8a29a]">
+          <p className="mt-4 max-w-xl text-[var(--site-muted)]">
             Una selección cuidada de casas, apartamentos y terrenos en venta y alquiler.
           </p>
 
           <form
             method="get"
-            className="mt-10 grid gap-3 rounded-2xl border border-white/10 bg-[#141414] p-4 shadow-sm sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_1fr_1.5fr_auto]"
+            className="mt-10 grid gap-3 rounded-2xl border border-[var(--site-border)] bg-[var(--site-surface)] p-4 shadow-sm sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_1fr_1.5fr_auto]"
           >
             <select
               name="operacion"
@@ -109,7 +111,7 @@ export default async function CatalogPage({
             </div>
             <button
               type="submit"
-              className="h-11 rounded-lg bg-gradient-to-r from-[#e3cd96] to-[#b99a5b] px-5 text-sm font-medium tracking-wide text-black transition hover:brightness-110"
+              className="h-11 rounded-lg bg-gradient-to-r from-[var(--site-accent-from)] to-[var(--site-accent-to)] px-5 text-sm font-medium tracking-wide text-[var(--site-on-accent)] transition hover:brightness-110"
             >
               Buscar
             </button>
@@ -121,7 +123,7 @@ export default async function CatalogPage({
         <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
           <div>
             <h2 className="font-bold tracking-tight text-3xl font-semibold">{heading}</h2>
-            <p className="mt-1 text-sm text-[#a8a29a]">
+            <p className="mt-1 text-sm text-[var(--site-muted)]">
               {items.length} {items.length === 1 ? "propiedad" : "propiedades"}
               {filtered && total !== items.length ? ` de ${total}` : ""}
               {filtered && (
@@ -140,7 +142,7 @@ export default async function CatalogPage({
               .map(([k, v]) => (
                 <input key={k} type="hidden" name={k} value={String(v)} />
               ))}
-            <label htmlFor="orden" className="text-[#a8a29a]">
+            <label htmlFor="orden" className="text-[var(--site-muted)]">
               Ordenar
             </label>
             <select
@@ -155,7 +157,7 @@ export default async function CatalogPage({
             </select>
             <button
               type="submit"
-              className="h-9 rounded-lg border border-white/10 bg-[#141414] px-3 hover:border-[#d8bf82]"
+              className="h-9 rounded-lg border border-[var(--site-border)] bg-[var(--site-surface)] px-3 hover:border-[var(--site-accent)]"
             >
               Aplicar
             </button>
@@ -163,20 +165,20 @@ export default async function CatalogPage({
         </div>
 
         {items.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-white/10 bg-[#141414] px-6 py-16 text-center">
+          <div className="rounded-2xl border border-dashed border-[var(--site-border)] bg-[var(--site-surface)] px-6 py-16 text-center">
             <p className="font-bold tracking-tight text-2xl font-semibold">
               {total === 0
                 ? "Muy pronto vas a ver nuestras propiedades acá"
                 : "No encontramos propiedades con esos filtros"}
             </p>
-            <p className="mx-auto mt-2 max-w-md text-sm text-[#a8a29a]">
+            <p className="mx-auto mt-2 max-w-md text-sm text-[var(--site-muted)]">
               {total === 0
                 ? "Estamos preparando el catálogo. Mientras tanto, escribinos y te contamos qué tenemos disponible."
                 : "Probá con menos filtros o dejanos tu consulta y te avisamos cuando entre algo así."}
             </p>
             <a
               href="#contacto"
-              className="mt-6 inline-block rounded-full bg-[#d8bf82] px-5 py-2.5 text-sm text-black hover:brightness-110"
+              className="mt-6 inline-block rounded-full bg-[var(--site-accent)] px-5 py-2.5 text-sm text-[var(--site-on-accent)] hover:brightness-110"
             >
               Contactanos
             </a>

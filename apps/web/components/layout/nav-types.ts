@@ -9,6 +9,7 @@ export interface VisibleNavItem {
 
 export interface VisibleNavSection {
   key: string;
+  group?: string;
   label: string;
   icon: IconName;
   href?: string;

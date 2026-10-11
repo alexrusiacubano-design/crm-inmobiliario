@@ -38,8 +38,8 @@ export async function generateMetadata({
 function Fact({ label, value }: { label: string; value: string | number | null | undefined }) {
   if (value === null || value === undefined || value === "") return null;
   return (
-    <div className="border-b border-white/10 py-3">
-      <dt className="text-xs tracking-[0.15em] text-[#8c867c] uppercase">{label}</dt>
+    <div className="border-b border-[var(--site-border)] py-3">
+      <dt className="text-xs tracking-[0.15em] text-[var(--site-muted2)] uppercase">{label}</dt>
       <dd className="mt-0.5 text-[15px]">{value}</dd>
     </div>
   );
@@ -55,7 +55,7 @@ export default async function PropertyPage({ params }: { params: Promise<{ codig
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10">
-      <nav className="mb-6 text-sm text-[#a8a29a]">
+      <nav className="mb-6 text-sm text-[var(--site-muted)]">
         <Link href="/propiedades" className="hover:underline">
           Propiedades
         </Link>
@@ -71,7 +71,7 @@ export default async function PropertyPage({ params }: { params: Promise<{ codig
           />
 
           <div className="mt-8">
-            <p className="text-xs tracking-[0.2em] text-[#8c867c] uppercase">
+            <p className="text-xs tracking-[0.2em] text-[var(--site-muted2)] uppercase">
               {item.typeLabel}
               {item.zone ? ` · ${item.zone}` : ""} · {item.code}
             </p>
@@ -82,7 +82,7 @@ export default async function PropertyPage({ params }: { params: Promise<{ codig
               <p className="mt-3 text-2xl font-medium lg:hidden">
                 {item.prices[0].label}
                 {item.prices[0].operation === "rent" && (
-                  <span className="text-base text-[#a8a29a]"> /mes</span>
+                  <span className="text-base text-[var(--site-muted)]"> /mes</span>
                 )}
                 <a
                   href="#consulta"
@@ -92,7 +92,7 @@ export default async function PropertyPage({ params }: { params: Promise<{ codig
                 </a>
               </p>
             )}
-            <div className="mt-6 flex flex-wrap gap-x-8 gap-y-3 border-y border-white/10 py-5 text-sm">
+            <div className="mt-6 flex flex-wrap gap-x-8 gap-y-3 border-y border-[var(--site-border)] py-5 text-sm">
               {item.bedrooms !== null && (
                 <span>
                   <b className="text-lg font-medium">{item.bedrooms}</b> dormitorios
@@ -124,7 +124,9 @@ export default async function PropertyPage({ params }: { params: Promise<{ codig
           {item.description && (
             <section className="mt-8">
               <h2 className="font-bold tracking-tight text-2xl font-semibold">Descripción</h2>
-              <p className="mt-3 leading-relaxed whitespace-pre-line text-[#cfc9bf]">{item.description}</p>
+              <p className="mt-3 leading-relaxed whitespace-pre-line text-[var(--site-text2)]">
+                {item.description}
+              </p>
             </section>
           )}
 
@@ -150,7 +152,7 @@ export default async function PropertyPage({ params }: { params: Promise<{ codig
                 {item.features.map((x) => (
                   <li
                     key={x}
-                    className="rounded-full border border-white/10 bg-[#141414] px-3 py-1.5 text-sm"
+                    className="rounded-full border border-[var(--site-border)] bg-[var(--site-surface)] px-3 py-1.5 text-sm"
                   >
                     {x}
                   </li>
@@ -162,13 +164,13 @@ export default async function PropertyPage({ params }: { params: Promise<{ codig
           {loc && bbox && (
             <section className="mt-8">
               <h2 className="font-bold tracking-tight text-2xl font-semibold">Ubicación aproximada</h2>
-              <p className="mt-1 text-sm text-[#a8a29a]">
+              <p className="mt-1 text-sm text-[var(--site-muted)]">
                 La dirección exacta se informa al coordinar la visita.
               </p>
               <iframe
                 title="Mapa"
                 loading="lazy"
-                className="mt-3 h-72 w-full rounded-2xl border border-white/10"
+                className="mt-3 h-72 w-full rounded-2xl border border-[var(--site-border)]"
                 src={`https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${loc.lat},${loc.lng}`}
               />
             </section>
@@ -176,17 +178,17 @@ export default async function PropertyPage({ params }: { params: Promise<{ codig
         </div>
 
         <aside id="consulta" className="scroll-mt-24 lg:sticky lg:top-28 lg:self-start">
-          <div className="rounded-2xl border border-white/10 bg-[#141414] p-6 shadow-sm">
+          <div className="rounded-2xl border border-[var(--site-border)] bg-[var(--site-surface)] p-6 shadow-sm">
             {item.prices.length > 0 ? (
               item.prices.map((p) => (
                 <div key={p.operation} className="mb-2">
-                  <p className="text-xs tracking-[0.2em] text-[#8c867c] uppercase">
+                  <p className="text-xs tracking-[0.2em] text-[var(--site-muted2)] uppercase">
                     {p.operation === "sale" ? "Venta" : "Alquiler"}
                   </p>
                   <p className="font-bold tracking-tight text-4xl font-semibold">
                     {p.label}
                     {p.operation === "rent" && (
-                      <span className="font-sans text-base font-normal text-[#a8a29a]"> /mes</span>
+                      <span className="font-sans text-base font-normal text-[var(--site-muted)]"> /mes</span>
                     )}
                   </p>
                 </div>
@@ -194,7 +196,7 @@ export default async function PropertyPage({ params }: { params: Promise<{ codig
             ) : (
               <p className="font-bold tracking-tight text-3xl font-semibold">Consultar precio</p>
             )}
-            <hr className="my-5 border-white/10" />
+            <hr className="my-5 border-[var(--site-border)]" />
             <p className="mb-3 font-medium">¿Te interesa esta propiedad?</p>
             <InquiryForm
               propertyCode={item.code}
@@ -205,7 +207,7 @@ export default async function PropertyPage({ params }: { params: Promise<{ codig
                 href={wa}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-3 flex h-11 items-center justify-center rounded-lg border border-[#d8bf82] text-[#d8bf82] text-sm font-medium transition hover:bg-[#d8bf82] hover:text-black"
+                className="mt-3 flex h-11 items-center justify-center rounded-lg border border-[var(--site-accent)] text-[var(--site-accent)] text-sm font-medium transition hover:bg-[var(--site-accent)] hover:text-[var(--site-on-accent)]"
               >
                 Consultar por WhatsApp
               </a>

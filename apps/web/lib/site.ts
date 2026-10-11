@@ -18,3 +18,7 @@ export function whatsappLink(phone: string | null | undefined, text: string): st
 
 export const photoUrl = (id: string, size: "thumb" | "full" = "full") =>
   `/api/sitio/foto/${id}${size === "thumb" ? "?t=thumb" : ""}`;
+
+/** Portada subida desde «Mi sitio web» (pública; la clave se valida en el servidor). */
+export const heroImageUrl = (organizationId: string, key: string) =>
+  `/api/sitio/portada/${organizationId}?k=${encodeURIComponent(key)}`;

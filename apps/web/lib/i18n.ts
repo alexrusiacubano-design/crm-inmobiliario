@@ -63,6 +63,7 @@ const es = {
   "nav.performance.career": "Mi carrera",
   "nav.performance.ranking": "Competencia",
   "nav.performance.closingMap": "Mapa de cierre",
+  "nav.admin.website": "Mi sitio web",
   "nav.admin": "Administración",
   "nav.admin.users": "Usuarios",
   "nav.admin.teams": "Equipos",

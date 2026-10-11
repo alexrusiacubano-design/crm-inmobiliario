@@ -10,6 +10,7 @@
     "./rbac": "./src/rbac/index.ts",
     "./validation": "./src/validation/index.ts",
     "./crm": "./src/crm.ts",
+    "./site": "./src/site.ts",
     "./normalize": "./src/normalize.ts",
     "./validation/crm": "./src/validation/crm.ts",
     "./property": "./src/property.ts",

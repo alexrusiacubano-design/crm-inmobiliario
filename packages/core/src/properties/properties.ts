@@ -311,7 +311,10 @@ export async function setPropertyExclusivity(db: Db, ctx: RequestContext, rawInp
   return db.transaction(async (tx) => {
     const before = await loadForWrite(tx, ctx, input.propertyId);
     requirePermission(ctx, "property.update", propertyRef(before));
-    const values = { exclusive: input.exclusive, exclusiveUntil: input.exclusive ? input.exclusiveUntil : null };
+    const values = {
+      exclusive: input.exclusive,
+      exclusiveUntil: input.exclusive ? input.exclusiveUntil : null,
+    };
     await tx.update(property).set(values).where(eq(property.id, before.id));
     await writeAudit(tx, ctx, {
       action: "property.exclusivity",
@@ -646,10 +649,13 @@ export async function listProperties(db: DbOrTx, ctx: RequestContext, rawQuery: 
         operations: property.operations,
         bedrooms: property.bedrooms,
         bathrooms: property.bathrooms,
+        garages: property.garages,
         builtArea: property.builtArea,
         totalArea: property.totalArea,
         address: property.address,
         updatedAt: property.updatedAt,
+        isExclusive: property.exclusive,
+        assignedUserId: property.assignedUserId,
         localityName: locality.name,
         neighborhoodName: neighborhood.name,
         assignedName: user.name,

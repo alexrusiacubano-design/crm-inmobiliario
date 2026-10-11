@@ -29,7 +29,7 @@ export function Badge({
 }
 
 export function Card({ className, ...props }: React.ComponentProps<"div">) {
-  return <div className={cn("rounded-lg border bg-surface shadow-xs", className)} {...props} />;
+  return <div className={cn("rounded-xl border bg-surface shadow-xs", className)} {...props} />;
 }
 
 export function Skeleton({ className, ...props }: React.ComponentProps<"div">) {

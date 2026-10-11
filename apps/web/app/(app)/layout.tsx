@@ -1,6 +1,8 @@
 import { hasPermission, unreadNotificationsCount } from "@crm/core";
 import { getDb } from "@crm/db";
+import { getSystemRole } from "@crm/shared/rbac";
 import type { Metadata } from "next";
+import Link from "next/link";
 import type { VisibleNavSection } from "@/components/layout/nav-types";
 import { SidebarNav } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
@@ -15,10 +17,21 @@ export async function generateMetadata(): Promise<Metadata> {
   return logo ? { icons: { icon: logo, apple: logo } } : {};
 }
 
+const initials = (name: string) =>
+  name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase())
+    .join("") || "?";
+
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const { ctx, user } = await requireSession();
   const unread = await unreadNotificationsCount(getDb(), ctx);
   scheduleAutomations(ctx.organizationId);
+  const roleLabel =
+    ctx.roleKeys.map((k) => getSystemRole(k)?.name).find(Boolean) ??
+    (ctx.roleKeys[0] ? "Usuario" : "Sin rol");
 
   // El menú se filtra en el servidor: el cliente solo recibe lo que puede ver.
   const sections: VisibleNavSection[] = NAVIGATION.flatMap((section) => {
@@ -27,6 +40,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       return [
         {
           key: section.key,
+          group: section.group,
           label: t(section.label),
           icon: section.icon,
           href: section.href,
@@ -38,7 +52,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     const items = (section.items ?? [])
       .filter((i) => hasPermission(ctx, i.permission))
       .map((i) => ({ href: i.href, label: t(i.label), plannedPhase: i.plannedPhase }));
-    return items.length ? [{ key: section.key, label: t(section.label), icon: section.icon, items }] : [];
+    return items.length
+      ? [{ key: section.key, group: section.group, label: t(section.label), icon: section.icon, items }]
+      : [];
   });
 
   return (
@@ -63,6 +79,20 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <p className="truncate text-sm font-semibold leading-tight">{ctx.organization.name}</p>
             <p className="text-[11px] leading-tight text-muted-foreground">{t("app.name")}</p>
           </div>
+        </div>
+        <div className="px-3 pt-3">
+          <Link
+            href="/account/security"
+            className="flex items-center gap-3 rounded-xl border bg-surface px-3 py-2.5 transition-colors hover:border-border-strong"
+          >
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary-soft text-sm font-semibold text-primary">
+              {initials(user.name)}
+            </span>
+            <span className="min-w-0">
+              <span className="block truncate text-sm font-semibold">{user.name}</span>
+              <span className="block truncate text-[11px] text-muted-foreground">{roleLabel}</span>
+            </span>
+          </Link>
         </div>
         <div className="flex-1 overflow-y-auto">
           <SidebarNav sections={sections} />

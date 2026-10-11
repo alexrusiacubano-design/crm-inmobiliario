@@ -6,7 +6,9 @@ import {
   leadStats,
   listAcquisitions,
   listDeals,
+  listLeads,
   listProperties,
+  publicationHealth,
   propertyStats,
   upcomingContactDates,
   myNewMatches,
@@ -48,6 +50,7 @@ import {
 import type { Metadata } from "next";
 import Link from "next/link";
 import { EventListCard } from "@/components/agenda/event-list-card";
+import { QuickQuestions, type QuickAnswer } from "@/components/dashboard/quick-questions";
 import { toView } from "@/components/agenda/shared";
 import { daysUntil, formatDay, price } from "@/components/properties/format";
 import { ymdInTz } from "@/lib/tz";
@@ -146,6 +149,20 @@ export default async function DashboardPage() {
     openInquiriesCount(db, ctx),
     hasPermission(ctx, "communication.read") ? unreadChatCount(db, ctx) : Promise.resolve(0),
   ]);
+  const [unattendedLeads, staleAcq, health] = await Promise.all([
+    leads && leads.unattended > 0
+      ? listLeads(db, ctx, { status: "new", unattended: "1", page: 1, pageSize: 5 }).then((r) => r.items)
+      : Promise.resolve([]),
+    canAcq
+      ? listAcquisitions(db, ctx, { stage: "open", page: 1, pageSize: 50 }).then((r) =>
+          r.items
+            .filter((x) => Date.now() - new Date(x.updatedAt).getTime() > 14 * 86_400_000)
+            .sort((a, b) => new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime())
+            .slice(0, 5),
+        )
+      : Promise.resolve([]),
+    publicationHealth(db, ctx, { limit: 5 }),
+  ]);
   const guaranteeAlerts = hasPermission(ctx, "guarantee.read")
     ? (await listGuarantees(db, ctx, { status: "alerts" }, ymdInTz(new Date(), tzEarly))).items
     : [];
@@ -171,6 +188,96 @@ export default async function DashboardPage() {
     canProps && { value: activeProps, label: "propiedades activas" },
     leads && { value: leads.unattended, label: "leads sin atender" },
   ].filter(Boolean) as { value: number; label: string }[];
+
+  const todayScheduled = agenda ? agenda.today.filter((e) => e.status === "scheduled") : [];
+  const answers: QuickAnswer[] = [
+    {
+      question: "¿Qué tengo pendiente hoy?",
+      intro: "Esto es lo que tenés para hoy:",
+      empty: "No tenés pendientes para hoy. ¡Buen momento para captar!",
+      lines: [
+        ...(todayScheduled.length
+          ? [{ text: `${todayScheduled.length} evento(s) en la agenda de hoy`, href: "/agenda?view=day" }]
+          : []),
+        ...(agenda && agenda.pendingClose.length
+          ? [
+              {
+                text: `${agenda.pendingClose.length} visita(s) pasadas sin cerrar`,
+                href: "/agenda?view=list",
+                tone: "warning" as const,
+              },
+            ]
+          : []),
+        ...(offersDue && offersDue.pending
+          ? [
+              {
+                text: `${offersDue.pending} oferta(s) sin responder`,
+                href: "/commercial/offers",
+                tone: "warning" as const,
+              },
+            ]
+          : []),
+        ...(reservationsDue.length
+          ? [
+              {
+                text: `${reservationsDue.length} reserva(s) por vencer`,
+                href: "/commercial/reservations",
+                tone: "warning" as const,
+              },
+            ]
+          : []),
+        ...(inquiries && inquiries.open
+          ? [{ text: `${inquiries.open} consulta(s) sin tomar`, href: "/communications/inbox?status=open" }]
+          : []),
+        ...(overdueRent && overdueRent.items.length
+          ? [
+              {
+                text: `${overdueRent.items.length} cobro(s) de alquiler vencidos`,
+                href: "/rentals/charges",
+                tone: "danger" as const,
+              },
+            ]
+          : []),
+      ],
+    },
+    {
+      question: "¿Qué clientes tengo sin atender?",
+      intro: leads?.unattended
+        ? `Tenés ${leads.unattended} cliente(s) que nadie contactó todavía:`
+        : "Revisé tus clientes:",
+      empty: "Todos tus clientes fueron atendidos.",
+      lines: unattendedLeads.map((l) => ({
+        text: `${l.contactName} · ${l.code}`,
+        href: `/crm/leads/${l.id}`,
+      })),
+    },
+    {
+      question: "¿Qué captaciones están frenadas?",
+      intro: "Estas captaciones no tienen movimiento hace más de dos semanas:",
+      empty: "Ninguna captación está frenada.",
+      lines: staleAcq.map((x) => ({
+        text: `${x.ownerName ?? x.code} · ${ACQUISITION_STAGE_LABELS[x.stage as keyof typeof ACQUISITION_STAGE_LABELS] ?? x.stage}`,
+        href: `/properties/acquisitions/${x.id}`,
+        tone: "warning" as const,
+      })),
+    },
+    ...(health
+      ? [
+          {
+            question: "¿Qué avisos necesitan mejoras?",
+            intro: "Estos avisos publicados pueden rendir más:",
+            empty: "Tus avisos están completos.",
+            lines: health
+              .filter((h) => h.tip)
+              .map((h) => ({
+                text: `${h.code}: ${h.tip}`,
+                href: `/properties/${h.propertyId}`,
+                tone: h.severity === "danger" ? ("danger" as const) : undefined,
+              })),
+          },
+        ]
+      : []),
+  ];
 
   const kpis: {
     label: string;
@@ -290,6 +397,83 @@ export default async function DashboardPage() {
           </div>
         )}
       </section>
+
+      {/* Asistente y salud de las publicaciones */}
+      <div className={cn("grid gap-6", health && "lg:grid-cols-2")}>
+        <Card className="overflow-hidden rounded-xl">
+          <QuickQuestions firstName={firstName ?? ""} answers={answers} />
+        </Card>
+        {health && (
+          <Card className="flex flex-col overflow-hidden rounded-xl">
+            <div className="flex items-center justify-between gap-2 border-b px-4 py-3">
+              <div>
+                <p className="text-sm font-semibold">Salud de tus publicaciones</p>
+                <p className="text-xs text-muted-foreground">Avisos que pueden rendir más</p>
+              </div>
+              <Link href="/properties/publications" className="text-xs text-primary hover:underline">
+                Ver avisos
+              </Link>
+            </div>
+            {health.length === 0 ? (
+              <EmptyState
+                icon={Building2}
+                title="Sin avisos publicados"
+                description="Publicá una propiedad para ver su rendimiento."
+              />
+            ) : (
+              <ul className="divide-y">
+                {health.map((h) => (
+                  <li key={h.propertyId}>
+                    <Link
+                      href={`/properties/${h.propertyId}`}
+                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-surface-muted"
+                    >
+                      <div className="relative size-12 shrink-0 overflow-hidden rounded-lg bg-surface-muted">
+                        {h.coverMediaId ? (
+                          <PrivateImage mediaId={h.coverMediaId} alt={h.label} />
+                        ) : (
+                          <ImageOff className="m-auto mt-3.5 size-5 text-muted-foreground" aria-hidden />
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="flex items-center gap-2 text-sm">
+                          <span className="font-mono text-xs font-semibold">{h.code}</span>
+                          <span className="truncate text-muted-foreground">{h.portals.join(" · ")}</span>
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {h.daysPublished} días publicada · Calidad{" "}
+                          <span
+                            className={cn(
+                              "font-semibold",
+                              h.quality >= 80
+                                ? "text-success"
+                                : h.quality >= 60
+                                  ? "text-warning"
+                                  : "text-danger",
+                            )}
+                          >
+                            {h.quality} %
+                          </span>
+                        </p>
+                        {h.tip && (
+                          <p
+                            className={cn(
+                              "truncate text-xs",
+                              h.severity === "danger" ? "text-danger" : "text-warning",
+                            )}
+                          >
+                            {h.tip}
+                          </p>
+                        )}
+                      </div>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+        )}
+      </div>
 
       {/* Agenda de hoy y visitas sin cerrar */}
       {agenda && (

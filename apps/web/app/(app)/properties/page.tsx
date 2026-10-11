@@ -9,7 +9,18 @@ import {
   PROPERTY_TYPES,
   type PropertyStatus,
 } from "@crm/shared";
-import { Building2, ImageOff, Plus } from "lucide-react";
+import {
+  Bath,
+  BedDouble,
+  Building2,
+  Car,
+  ImageOff,
+  LayoutGrid,
+  List,
+  MapPin,
+  Plus,
+  Ruler,
+} from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Pagination, SearchBox } from "@/components/data/list-controls";
@@ -38,9 +49,21 @@ export default async function PropertiesPage({
   const { ctx } = await requirePagePermission("property.read");
   const params = await searchParams;
   const status = params.status ?? "active";
+  const view = params.view === "list" ? "list" : "grid";
   const db = getDb();
+  // «Mis propiedades» (asignadas a mí) o la «Bolsa» (todo el inventario de la inmobiliaria).
+  const mineCount = (
+    await listProperties(db, ctx, { status: "active", assignedUserId: ctx.userId, page: 1, pageSize: 5 })
+  ).total;
+  const scope =
+    params.scope === "mine" || params.scope === "bolsa" ? params.scope : mineCount ? "mine" : "bolsa";
   const [list, stats] = await Promise.all([
-    listProperties(db, ctx, { ...params, status: status === "all" ? undefined : status, pageSize: 24 }),
+    listProperties(db, ctx, {
+      ...params,
+      status: status === "all" ? undefined : status,
+      assignedUserId: scope === "mine" ? ctx.userId : params.assignedUserId,
+      pageSize: 24,
+    }),
     propertyStats(db, ctx),
   ]);
   const counts = stats ?? {};
@@ -60,8 +83,12 @@ export default async function PropertiesPage({
   return (
     <>
       <PageHeader
-        title="Propiedades"
-        description="Inventario de la inmobiliaria. Todos los agentes ven el inventario; cada uno edita las suyas."
+        title={scope === "mine" ? "Mis propiedades" : "Bolsa de propiedades"}
+        description={
+          scope === "mine"
+            ? `${mineCount} propiedad${mineCount === 1 ? "" : "es"} activa${mineCount === 1 ? "" : "s"} asignada${mineCount === 1 ? "" : "s"} a vos.`
+            : "Todo el inventario de la inmobiliaria. Las de otros agentes se ven en modo lectura: coordiná con su responsable."
+        }
         actions={
           hasPermission(ctx, "property.create") ? (
             <Button asChild>
@@ -72,6 +99,51 @@ export default async function PropertiesPage({
           ) : undefined
         }
       />
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <nav aria-label="Inventario" className="flex rounded-xl border bg-surface p-1 text-sm">
+          {(
+            [
+              ["mine", "Mis propiedades"],
+              ["bolsa", "Bolsa de propiedades"],
+            ] as const
+          ).map(([k, label]) => (
+            <Link
+              key={k}
+              href={href(params, { scope: k, assignedUserId: undefined })}
+              aria-current={scope === k ? "page" : undefined}
+              className={cn(
+                "rounded-lg px-3 py-1.5",
+                scope === k
+                  ? "bg-primary-soft font-medium text-primary"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {label}
+            </Link>
+          ))}
+        </nav>
+        <nav aria-label="Vista" className="flex rounded-xl border bg-surface p-1">
+          {(
+            [
+              ["grid", LayoutGrid, "Tarjetas"],
+              ["list", List, "Lista"],
+            ] as const
+          ).map(([k, Icon, label]) => (
+            <Link
+              key={k}
+              href={href(params, { view: k === "grid" ? undefined : k })}
+              aria-label={label}
+              title={label}
+              className={cn(
+                "flex size-8 items-center justify-center rounded-lg",
+                view === k ? "bg-primary-soft text-primary" : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <Icon className="size-4" />
+            </Link>
+          ))}
+        </nav>
+      </div>
       <Card>
         <nav aria-label="Estados" className="flex gap-1 overflow-x-auto border-b px-2">
           {tabs.map((t) => (
@@ -136,58 +208,162 @@ export default async function PropertiesPage({
               params.q ? "Probá con otra búsqueda." : "Creá una propiedad o captala desde una captación."
             }
           />
-        ) : (
-          <ul className="grid gap-3 p-3 sm:grid-cols-2 xl:grid-cols-3">
-            {list.items.map((p) => (
-              <li key={p.id}>
-                <Link
-                  href={`/properties/${p.id}`}
-                  className="group flex h-full flex-col overflow-hidden rounded-lg border bg-surface transition-colors hover:border-border-strong"
-                >
-                  <div className="relative aspect-[16/10] bg-surface-muted">
-                    {p.coverMediaId ? (
-                      <PrivateImage mediaId={p.coverMediaId} alt={p.displayTitle} />
-                    ) : (
-                      <div className="flex size-full items-center justify-center text-muted-foreground">
-                        <ImageOff className="size-6" aria-hidden />
-                      </div>
-                    )}
-                    <div className="absolute left-2 top-2">
-                      <PropertyStatusBadge status={p.status} />
-                    </div>
-                  </div>
-                  <div className="grid flex-1 content-start gap-1 p-3">
-                    <p className="text-xs text-muted-foreground">
-                      <span className="font-mono">{p.code}</span> · {PROPERTY_TYPE_LABELS[p.type]}
-                    </p>
-                    <p className="line-clamp-2 font-medium group-hover:underline">{p.displayTitle}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {[p.neighborhoodName, p.localityName].filter(Boolean).join(", ") || "Sin ubicación"}
-                      {p.bedrooms !== null ? ` · ${p.bedrooms} dorm.` : ""}
-                      {p.builtArea ? ` · ${p.builtArea.replace(/\.00$/, "")} m²` : ""}
-                    </p>
-                    <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-sm">
-                      {p.prices.length === 0 ? (
-                        <span className="text-muted-foreground">Sin precio</span>
+        ) : view === "grid" ? (
+          <ul className="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+            {list.items.map((p) => {
+              const mine = p.assignedUserId === ctx.userId;
+              return (
+                <li key={p.id}>
+                  <Link
+                    href={`/properties/${p.id}`}
+                    className="group flex h-full flex-col overflow-hidden rounded-xl border bg-surface transition hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-lg"
+                  >
+                    <div className="relative aspect-[4/3] overflow-hidden bg-surface-muted">
+                      {p.coverMediaId ? (
+                        <PrivateImage
+                          mediaId={p.coverMediaId}
+                          alt={p.displayTitle}
+                          className="transition duration-500 group-hover:scale-[1.04]"
+                        />
                       ) : (
-                        p.prices.map((pr) => (
-                          <span key={pr.operation} className="tabular">
-                            <span className="text-xs text-muted-foreground">
-                              {PROPERTY_OPERATION_LABELS[pr.operation]}{" "}
-                            </span>
-                            <strong className="font-semibold">{price(pr.listMinor, pr.currency)}</strong>
+                        <div className="flex size-full items-center justify-center text-muted-foreground">
+                          <ImageOff className="size-6" aria-hidden />
+                        </div>
+                      )}
+                      <div className="absolute top-2 left-2 flex flex-wrap gap-1">
+                        {p.prices.map((pr) => (
+                          <span
+                            key={pr.operation}
+                            className="rounded-md bg-black/70 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-white uppercase backdrop-blur"
+                          >
+                            {PROPERTY_OPERATION_LABELS[pr.operation]}
                           </span>
-                        ))
+                        ))}
+                      </div>
+                      {p.isExclusive && (
+                        <span className="absolute top-2 right-2 rounded-md bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-primary-foreground uppercase">
+                          Exclusiva
+                        </span>
                       )}
                     </div>
-                    <p className="mt-auto pt-1 text-xs text-muted-foreground">
-                      {p.assignedName ?? "Sin responsable"}
-                    </p>
-                  </div>
-                </Link>
-              </li>
-            ))}
+                    <div className="grid flex-1 content-start gap-1.5 p-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <PropertyStatusBadge status={p.status} />
+                        <span className="rounded-md border px-1.5 py-0.5 text-[11px] text-muted-foreground">
+                          {PROPERTY_TYPE_LABELS[p.type]}
+                        </span>
+                      </div>
+                      <p className="line-clamp-2 text-sm font-semibold group-hover:underline">
+                        {p.displayTitle}
+                      </p>
+                      <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <MapPin className="size-3.5 shrink-0" />
+                        <span className="truncate">
+                          {[p.neighborhoodName, p.localityName].filter(Boolean).join(", ") || "Sin ubicación"}
+                        </span>
+                      </p>
+                      <div className="flex flex-wrap gap-x-3 text-sm">
+                        {p.prices.length === 0 ? (
+                          <span className="text-muted-foreground">Sin precio</span>
+                        ) : (
+                          p.prices.map((pr) => (
+                            <strong key={pr.operation} className="font-semibold text-primary tabular">
+                              {price(pr.listMinor, pr.currency)}
+                              {pr.operation !== "sale" && <span className="text-xs font-normal">/mes</span>}
+                            </strong>
+                          ))
+                        )}
+                      </div>
+                      <p className="flex flex-wrap items-center gap-x-3 text-xs text-muted-foreground">
+                        {p.bedrooms !== null && (
+                          <span className="flex items-center gap-1">
+                            <BedDouble className="size-3.5" /> {p.bedrooms}
+                          </span>
+                        )}
+                        {p.bathrooms !== null && (
+                          <span className="flex items-center gap-1">
+                            <Bath className="size-3.5" /> {p.bathrooms}
+                          </span>
+                        )}
+                        {p.garages ? (
+                          <span className="flex items-center gap-1">
+                            <Car className="size-3.5" /> {p.garages}
+                          </span>
+                        ) : null}
+                        {(p.builtArea || p.totalArea) && (
+                          <span className="flex items-center gap-1">
+                            <Ruler className="size-3.5" />{" "}
+                            {(p.builtArea ?? p.totalArea ?? "").replace(/\.00$/, "")} m²
+                          </span>
+                        )}
+                      </p>
+                      <p className="mt-auto flex items-center justify-between gap-2 border-t pt-2 text-[11px] text-muted-foreground">
+                        <span className="font-mono">{p.code}</span>
+                        <span className="truncate">
+                          {mine ? "Tuya" : (p.assignedName ?? "Sin responsable")}
+                        </span>
+                      </p>
+                    </div>
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-left text-xs text-muted-foreground">
+                  <th className="px-3 py-2 font-medium">Propiedad</th>
+                  <th className="px-3 py-2 font-medium">Estado</th>
+                  <th className="px-3 py-2 font-medium">Ubicación</th>
+                  <th className="px-3 py-2 text-right font-medium">Precio</th>
+                  <th className="px-3 py-2 font-medium">Responsable</th>
+                </tr>
+              </thead>
+              <tbody>
+                {list.items.map((p) => (
+                  <tr key={p.id} className="border-b last:border-0 hover:bg-surface-muted">
+                    <td className="px-3 py-2">
+                      <Link href={`/properties/${p.id}`} className="flex items-center gap-3">
+                        <span className="relative size-11 shrink-0 overflow-hidden rounded-lg bg-surface-muted">
+                          {p.coverMediaId ? (
+                            <PrivateImage mediaId={p.coverMediaId} alt={p.displayTitle} />
+                          ) : (
+                            <ImageOff className="m-auto mt-3 size-4 text-muted-foreground" />
+                          )}
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block truncate font-medium hover:underline">{p.displayTitle}</span>
+                          <span className="text-xs text-muted-foreground">
+                            <span className="font-mono">{p.code}</span> · {PROPERTY_TYPE_LABELS[p.type]}
+                          </span>
+                        </span>
+                      </Link>
+                    </td>
+                    <td className="px-3 py-2">
+                      <PropertyStatusBadge status={p.status} />
+                    </td>
+                    <td className="px-3 py-2 text-muted-foreground">
+                      {[p.neighborhoodName, p.localityName].filter(Boolean).join(", ") || "—"}
+                    </td>
+                    <td className="px-3 py-2 text-right whitespace-nowrap tabular">
+                      {p.prices.length
+                        ? p.prices.map((pr) => (
+                            <span key={pr.operation} className="block">
+                              {price(pr.listMinor, pr.currency)}
+                            </span>
+                          ))
+                        : "—"}
+                    </td>
+                    <td className="px-3 py-2 text-muted-foreground">
+                      {p.assignedUserId === ctx.userId ? "Vos" : (p.assignedName ?? "—")}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
         <Pagination page={list.page} pageSize={list.pageSize} total={list.total} />
       </Card>

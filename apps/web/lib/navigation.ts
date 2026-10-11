@@ -31,6 +31,8 @@ export interface NavItem {
 
 export interface NavSection {
   key: string;
+  /** Grupo bajo el que se muestra en la barra lateral ("Gestión", "Comercial"…). */
+  group?: string;
   label: MessageKey;
   icon: IconName;
   href?: string;
@@ -42,6 +44,7 @@ export interface NavSection {
 export const NAVIGATION: NavSection[] = [
   {
     key: "dashboard",
+    group: "Gestión",
     label: "nav.dashboard",
     icon: "dashboard",
     href: "/dashboard",
@@ -50,6 +53,7 @@ export const NAVIGATION: NavSection[] = [
   },
   {
     key: "crm",
+    group: "Gestión",
     label: "nav.crm",
     icon: "users",
     items: [
@@ -85,6 +89,7 @@ export const NAVIGATION: NavSection[] = [
   },
   {
     key: "properties",
+    group: "Gestión",
     label: "nav.properties",
     icon: "building",
     items: [
@@ -113,6 +118,7 @@ export const NAVIGATION: NavSection[] = [
   },
   {
     key: "appraisals",
+    group: "Gestión",
     label: "nav.appraisals",
     icon: "calculator",
     items: [
@@ -141,6 +147,7 @@ export const NAVIGATION: NavSection[] = [
   },
   {
     key: "commercial",
+    group: "Comercial",
     label: "nav.commercial",
     icon: "briefcase",
     items: [
@@ -183,6 +190,7 @@ export const NAVIGATION: NavSection[] = [
   },
   {
     key: "rentals",
+    group: "Comercial",
     label: "nav.rentals",
     icon: "key",
     items: [
@@ -225,6 +233,7 @@ export const NAVIGATION: NavSection[] = [
   },
   {
     key: "communications",
+    group: "Comunicación",
     label: "nav.communications",
     icon: "message",
     items: [
@@ -275,6 +284,7 @@ export const NAVIGATION: NavSection[] = [
   },
   {
     key: "agenda",
+    group: "Mi espacio",
     label: "nav.agenda",
     icon: "calendar",
     href: "/agenda",
@@ -283,6 +293,7 @@ export const NAVIGATION: NavSection[] = [
   },
   {
     key: "documents",
+    group: "Mi espacio",
     label: "nav.documents",
     icon: "file",
     href: "/documents",
@@ -291,6 +302,7 @@ export const NAVIGATION: NavSection[] = [
   },
   {
     key: "finance",
+    group: "Mi espacio",
     label: "nav.finance",
     icon: "wallet",
     items: [
@@ -319,6 +331,7 @@ export const NAVIGATION: NavSection[] = [
   },
   {
     key: "performance",
+    group: "Reporte",
     label: "nav.performance",
     icon: "chart",
     items: [
@@ -355,6 +368,7 @@ export const NAVIGATION: NavSection[] = [
   },
   {
     key: "admin",
+    group: "Administración",
     label: "nav.admin",
     icon: "settings",
     items: [
@@ -375,6 +389,13 @@ export const NAVIGATION: NavSection[] = [
         permission: "automation.manage",
         plannedPhase: null,
         description: "Reglas trigger → condiciones → acciones con historial.",
+      },
+      {
+        href: "/admin/website",
+        label: "nav.admin.website",
+        permission: "settings.manage",
+        plannedPhase: null,
+        description: "Diseño, textos e imagen de la página pública.",
       },
       { href: "/admin/audit", label: "nav.admin.audit", permission: "audit.read", plannedPhase: null },
       {

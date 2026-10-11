@@ -19,7 +19,7 @@ export function SiteNav({
           <Link
             key={n.href}
             href={n.href}
-            className="rounded-full px-3 py-2 text-[#cfc9bf] transition hover:text-[#d8bf82]"
+            className="rounded-full px-3 py-2 text-[var(--site-text2)] transition hover:text-[var(--site-accent)]"
           >
             {n.label}
           </Link>
@@ -29,7 +29,7 @@ export function SiteNav({
             href={whatsapp}
             target="_blank"
             rel="noopener noreferrer"
-            className="ml-2 rounded-full bg-gradient-to-r from-[#e3cd96] to-[#b99a5b] px-4 py-2 font-semibold text-black transition hover:brightness-110"
+            className="ml-2 rounded-full bg-gradient-to-r from-[var(--site-accent-from)] to-[var(--site-accent-to)] px-4 py-2 font-semibold text-[var(--site-on-accent)] transition hover:brightness-110"
           >
             WhatsApp
           </a>
@@ -40,18 +40,18 @@ export function SiteNav({
         aria-label={open ? "Cerrar menú" : "Abrir menú"}
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
-        className="flex size-11 items-center justify-center rounded-full bg-white/5 text-[#d8bf82] md:hidden"
+        className="flex size-11 items-center justify-center rounded-full bg-[var(--site-hover)] text-[var(--site-accent)] md:hidden"
       >
         {open ? <X className="size-5" /> : <Menu className="size-5" />}
       </button>
       {open && (
-        <div className="absolute inset-x-0 top-full border-b border-white/10 bg-[#0a0a0a] px-4 pb-5 md:hidden">
+        <div className="absolute inset-x-0 top-full border-b border-[var(--site-border)] bg-[var(--site-bg)] px-4 pb-5 md:hidden">
           {items.map((n) => (
             <Link
               key={n.href}
               href={n.href}
               onClick={() => setOpen(false)}
-              className="block border-b border-white/5 py-3.5 text-base text-[#f2efe9]"
+              className="block border-b border-[var(--site-border)] py-3.5 text-base text-[var(--site-text)]"
             >
               {n.label}
             </Link>
@@ -61,7 +61,7 @@ export function SiteNav({
               href={whatsapp}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-4 block rounded-xl bg-gradient-to-r from-[#e3cd96] to-[#b99a5b] py-3 text-center font-semibold text-black"
+              className="mt-4 block rounded-xl bg-gradient-to-r from-[var(--site-accent-from)] to-[var(--site-accent-to)] py-3 text-center font-semibold text-[var(--site-on-accent)]"
             >
               Escribinos por WhatsApp
             </a>
