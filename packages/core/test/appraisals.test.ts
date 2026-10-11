@@ -33,27 +33,45 @@ afterAll(async () => {
   await h.pool.end();
 });
 
-describe("cálculo de tasación", () => {
-  it("homogeneiza por construcción, ubicación y oferta", () => {
+describe("cálculo de tasación (método metrológico)", () => {
+  const comps = [
+    { reference: "A1", m2: 500, construction: 2, location: 2, kind: "real" as const, price: 400000 },
+    { reference: "A2", m2: 520, construction: 3, location: 1, kind: "real" as const, price: 395000 },
+    { reference: "A3", m2: 480, construction: 1, location: 1, kind: "real" as const, price: 375000 },
+    { reference: "A4", m2: 560, construction: 2, location: 3, kind: "real" as const, price: 450000 },
+  ];
+  it("matriz K, coeficientes de ajuste, valor probable y rango", () => {
     const r = computeAppraisal({
-      area: 100,
-      currency: "USD",
-      offerDiscountBp: 1000,
+      subject: { m2: 564, construction: 2, location: 1 },
+      offerDiscountBp: 0,
       comparables: [
-        { reference: "A", m2: 100, price: 200000, construction: 0, location: 0, kind: "real" },
-        // oferta: −10 % → 2.000/m²
-        { reference: "B", m2: 50, price: 111111.11, construction: 0, location: 0, kind: "offer" },
-        // mejor construcción (×0,93) y peor ubicación (×1,07)
-        { reference: "C", m2: 80, price: 160000, construction: 1, location: -1, kind: "real" },
-        { reference: "vacío", m2: null, price: null, construction: 0, location: 0, kind: "real" },
+        ...comps,
+        { reference: "vacío", m2: null, construction: null, location: null, kind: "real", price: null },
       ],
     });
-    expect(r.count).toBe(3);
-    expect(r.rows[3]?.valid).toBe(false);
-    expect(r.rows[2]?.unitAdjusted).toBeCloseTo(2000 * 0.93 * 1.07, 5);
-    expect(r.value).toBe(Math.round(((2000 + 2000 + 2000 * 0.93 * 1.07) / 3) * 100 / 100) * 100);
-    expect(r.min).toBeLessThan(r.value ?? 0);
-    expect(r.max).toBeGreaterThan(r.value ?? 0);
+    expect(r.count).toBe(4);
+    expect(r.rows[4]?.valid).toBe(false);
+    expect(r.k?.constant).toBeCloseTo(81666.67, 1);
+    expect(r.k?.m2).toBeCloseTo(583.333, 2);
+    expect(r.k?.construction).toBeCloseTo(-1666.67, 1);
+    expect(r.k?.location).toBeCloseTo(15000, 1);
+    expect(r.rows[0]?.coefficient).toBeCloseTo(1.0523, 3);
+    expect(r.rows[3]?.adjusted).toBeCloseTo(422178, -1);
+    expect(r.probable).toBeCloseTo(421917, -1);
+    expect(r.uncertainty).toBeCloseTo(0.042, 3);
+    expect(r.min).toBeLessThan(r.probable ?? 0);
+    expect(r.max).toBeGreaterThan(r.probable ?? 0);
+    // K negativo en construcción: causa probable A2 (más construcción, menos valor por m²)
+    expect(r.warnings).toEqual([{ variable: "construction", cause: 1 }]);
+  });
+  it("con pocos antecedentes reduce el modelo sin romperse", () => {
+    const r = computeAppraisal({
+      subject: { m2: 100, construction: 3, location: 3 },
+      offerDiscountBp: 1000,
+      comparables: [{ reference: "", m2: 50, construction: 3, location: 3, kind: "offer", price: 100000 }],
+    });
+    expect(r.k).toBeNull();
+    expect(r.probable).toBeCloseTo(180000, 0); // 100.000 − 10 % de oferta, ×2 por m²
   });
   it("interpreta números con formato uruguayo", () => {
     expect(parseLocaleNumber("120.000")).toBe(120000);
@@ -80,7 +98,7 @@ describe("tasaciones independientes", () => {
     expect(row.propertyId).toBeNull();
     const view = await getAppraisal(h.db, a, row.id);
     expect(view.result.count).toBe(2);
-    expect(view.finalValue).toBe(view.result.value);
+    expect(view.finalValue).toBe(view.result.probable);
 
     const updated = await saveAppraisal(h.db, a, {
       ...view,
@@ -115,13 +133,18 @@ describe("tasaciones independientes", () => {
         title: `Apto ${area}`,
         builtArea: String(area),
       });
-      await setPrices(h.db, admin, { propertyId: p.id, prices: [{ operation: "sale", currency: "USD", list: price }] });
+      await setPrices(h.db, admin, {
+        propertyId: p.id,
+        prices: [{ operation: "sale", currency: "USD", list: price }],
+      });
       await changePropertyStatus(h.db, admin, { propertyId: p.id, status: "available" });
     }
     const m = await marketComparator(h.db, admin, { operation: "sale", propertyType: "apartment" });
     expect(m.rows).toHaveLength(2);
     expect(m.stats.offer?.average).toBe((2000 + 2400) / 2);
-    const comps = await comparablesFromProperties(h.db, admin, [m.rows[0]?.code ?? ""], { operation: "sale" });
+    const comps = await comparablesFromProperties(h.db, admin, [m.rows[0]?.code ?? ""], {
+      operation: "sale",
+    });
     expect(comps[0]?.kind).toBe("offer");
     expect(comps[0]?.m2).toBeGreaterThan(0);
   });

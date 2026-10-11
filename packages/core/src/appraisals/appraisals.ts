@@ -15,6 +15,7 @@ import {
 import {
   appraisalArea,
   computeAppraisal,
+  normalizeComparable,
   type AppraisalComparable,
   type AppraisalResult,
 } from "@crm/shared/appraisal";
@@ -81,12 +82,16 @@ export async function saveAppraisal(db: Db, ctx: RequestContext, rawInput: unkno
       price: c.price,
       url: c.url,
       sourceCode: c.sourceCode,
+      v: 2,
     }));
   const result = computeAppraisal({
-    area: appraisalArea(input.builtArea, input.totalArea),
+    subject: {
+      m2: appraisalArea(input.builtArea, input.totalArea),
+      construction: input.subjectConstruction,
+      location: input.subjectLocation,
+    },
     comparables,
     offerDiscountBp: input.offerDiscountBp,
-    currency: input.currency,
   });
   const values = {
     status: input.status,
@@ -108,9 +113,11 @@ export async function saveAppraisal(db: Db, ctx: RequestContext, rawInput: unkno
     clientContactId: input.clientContactId ?? null,
     currency: input.currency,
     offerDiscountBp: input.offerDiscountBp,
+    subjectConstruction: input.subjectConstruction?.toString() ?? null,
+    subjectLocation: input.subjectLocation?.toString() ?? null,
     comparables,
     unitValueMinor: toMinor(result.unitAverage),
-    estimatedMinor: toMinor(result.value),
+    estimatedMinor: toMinor(result.probable),
     minMinor: toMinor(result.min),
     maxMinor: toMinor(result.max),
     adoptedMinor: toMinor(input.adoptedValue),
@@ -162,9 +169,14 @@ export async function saveAppraisal(db: Db, ctx: RequestContext, rawInput: unkno
   });
 }
 
-export interface AppraisalView extends Omit<AppraisalRow, "builtArea" | "totalArea"> {
+export interface AppraisalView extends Omit<
+  AppraisalRow,
+  "builtArea" | "totalArea" | "subjectConstruction" | "subjectLocation"
+> {
   builtArea: number | null;
   totalArea: number | null;
+  subjectConstruction: number | null;
+  subjectLocation: number | null;
   zone: string;
   departmentName: string | null;
   localityName: string | null;
@@ -188,16 +200,25 @@ export async function getAppraisal(db: DbOrTx, ctx: RequestContext, id: string):
     .where(eq(appraisal.id, a.id));
   const builtArea = a.builtArea ? Number(a.builtArea) : null;
   const totalArea = a.totalArea ? Number(a.totalArea) : null;
+  const subjectConstruction = a.subjectConstruction !== null ? Number(a.subjectConstruction) : null;
+  const subjectLocation = a.subjectLocation !== null ? Number(a.subjectLocation) : null;
+  const comparables = a.comparables.map(normalizeComparable);
   const result = computeAppraisal({
-    area: appraisalArea(builtArea, totalArea),
-    comparables: a.comparables,
+    subject: {
+      m2: appraisalArea(builtArea, totalArea),
+      construction: subjectConstruction,
+      location: subjectLocation,
+    },
+    comparables,
     offerDiscountBp: a.offerDiscountBp,
-    currency: a.currency,
   });
   return {
     ...a,
+    comparables,
     builtArea,
     totalArea,
+    subjectConstruction,
+    subjectLocation,
     departmentName: names?.d ?? null,
     localityName: names?.l ?? null,
     neighborhoodName: names?.n ?? null,
@@ -205,7 +226,7 @@ export async function getAppraisal(db: DbOrTx, ctx: RequestContext, id: string):
     valuedByName: names?.by ?? null,
     typeLabel: PROPERTY_TYPE_LABELS[a.propertyType as PropertyType],
     result,
-    finalValue: fromMinor(a.adoptedMinor) ?? result.value,
+    finalValue: fromMinor(a.adoptedMinor) ?? result.probable,
   };
 }
 
@@ -464,11 +485,12 @@ export async function comparablesFromProperties(
     .map((r) => ({
       reference: `${r.code} · ${r.title}${r.zone ? ` (${r.zone})` : ""}`.slice(0, 200),
       m2: r.area,
-      construction: 0,
-      location: 0,
+      construction: null,
+      location: null,
       kind: r.kind,
       price: Math.round(r.price),
       url: null,
       sourceCode: r.code,
+      v: 2,
     }));
 }

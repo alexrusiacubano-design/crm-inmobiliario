@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { COMPARABLE_KINDS, COMPARISON_LEVELS } from "../appraisal";
+import { COMPARABLE_KINDS } from "../appraisal";
 import { PROPERTY_TYPES } from "../crm";
 import { CURRENCIES } from "../money";
 import { PROPERTY_CONDITIONS, PROPERTY_OPERATIONS } from "../property";
@@ -41,18 +41,14 @@ const num = (max = 1e12) =>
 const intOpt = (max: number) =>
   num(max).transform((v) => (v === null ? null : Math.round(v)));
 
-const level = z.coerce
-  .number()
-  .int()
-  .refine((v) => (COMPARISON_LEVELS as readonly number[]).includes(v), "Valor inválido")
-  .transform((v) => v as (typeof COMPARISON_LEVELS)[number]);
+const score = num(10).transform((v) => (v === null ? null : Math.round(v * 10) / 10));
 
 export const appraisalComparableSchema = z.object({
   reference: z.string().trim().max(200).default(""),
   m2: num(1e7),
-  construction: level.default(0),
-  location: level.default(0),
-  kind: z.enum(COMPARABLE_KINDS).default("offer"),
+  construction: score,
+  location: score,
+  kind: z.enum(COMPARABLE_KINDS).default("real"),
   price: num(1e12),
   url: text(500),
   sourceCode: text(30),
@@ -77,7 +73,9 @@ export const appraisalInputSchema = z.object({
   clientName: text(160),
   clientContactId: uuidSchema.optional().nullable().catch(null),
   currency: z.enum(CURRENCIES).default("USD"),
-  offerDiscountBp: z.coerce.number().int().min(0).max(5000).default(700),
+  offerDiscountBp: z.coerce.number().int().min(0).max(5000).default(0),
+  subjectConstruction: score,
+  subjectLocation: score,
   comparables: z.array(appraisalComparableSchema).max(30).default([]),
   adoptedValue: num(1e12),
   notes: text(4000),

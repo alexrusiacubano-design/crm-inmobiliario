@@ -70,6 +70,8 @@ export default async function AppraisalPage({ params }: { params: Promise<{ id: 
           clientName: a.clientName ?? "",
           currency: a.currency,
           offerDiscount: str(a.offerDiscountBp / 100),
+          subjectConstruction: str(a.subjectConstruction),
+          subjectLocation: str(a.subjectLocation),
           comparables: a.comparables,
           adoptedValue: a.adoptedMinor !== null ? str(Number(a.adoptedMinor) / 100) : "",
           notes: a.notes ?? "",

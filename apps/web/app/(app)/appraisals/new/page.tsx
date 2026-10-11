@@ -34,7 +34,7 @@ export default async function NewAppraisalPage({
     <>
       <PageHeader
         title="Nueva tasación"
-        description="Ingresá el inmueble y los antecedentes del mercado para obtener un valor fundamentado (método de comparables homogeneizados)."
+        description="Ingresá el inmueble y los antecedentes del mercado para obtener un valor fundamentado (método metrológico)."
       />
       <AppraisalEditor initial={initial} geo={geo} />
     </>

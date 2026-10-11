@@ -25,6 +25,9 @@ export interface AppraisalEditorInitial {
   clientName: string;
   currency: Currency;
   offerDiscount: string;
+  /** Puntajes del bien problema (misma escala que los antecedentes). */
+  subjectConstruction: string;
+  subjectLocation: string;
   comparables: AppraisalComparable[];
   adoptedValue: string;
   notes: string;
@@ -48,7 +51,9 @@ export function emptyAppraisal(): AppraisalEditorInitial {
     condition: "",
     clientName: "",
     currency: "USD",
-    offerDiscount: "7",
+    offerDiscount: "0",
+    subjectConstruction: "",
+    subjectLocation: "",
     comparables: [],
     adoptedValue: "",
     notes: "",

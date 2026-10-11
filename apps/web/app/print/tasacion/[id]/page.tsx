@@ -1,6 +1,6 @@
 import { ForbiddenError, getAppraisal, getOrganization, NotFoundError } from "@crm/core";
 import { getDb } from "@crm/db";
-import { COMPARABLE_KIND_LABELS, COMPARISON_LABELS } from "@crm/shared/appraisal";
+import { COMPARABLE_KIND_LABELS } from "@crm/shared/appraisal";
 import { formatMoney } from "@crm/shared/money";
 import {
   PROPERTY_CONDITION_LABELS,
@@ -10,15 +10,34 @@ import {
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { formatDay } from "@/components/properties/format";
+import {
+  AdjustedBars,
+  CoefficientCards,
+  fmtNum,
+  fmtPct,
+  MatrixKTable,
+  SummaryCards,
+  WarningsBox,
+} from "@/components/appraisals/analysis";
 import { PrintSheet } from "@/components/print/sheet";
 import { requireSession } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Informe de tasación" };
 
-/** Informe de tasación para entregar al cliente o al propietario. */
-export default async function PrintAppraisal({ params }: { params: Promise<{ id: string }> }) {
+/**
+ * Informe de tasación. Por defecto, el informe para el cliente; con ?interno=1, el informe
+ * interno con todo el proceso del método metrológico (Matriz K, coeficientes, valores ajustados).
+ */
+export default async function PrintAppraisal({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | undefined>>;
+}) {
   const { ctx } = await requireSession();
   const { id } = await params;
+  const internal = (await searchParams).interno === "1";
   const db = getDb();
   const [org, a] = await Promise.all([
     getOrganization(db, ctx),
@@ -53,11 +72,15 @@ export default async function PrintAppraisal({ params }: { params: Promise<{ id:
   return (
     <PrintSheet
       org={org}
-      title="Informe de tasación"
+      title={internal ? "Informe interno de tasación" : "Informe de tasación"}
       number={a.code}
       date={formatDay(a.valuedAt)}
       back={{ href: `/appraisals/${a.id}`, label: "Tasación" }}
-      footer="Estimación de valor de mercado basada en antecedentes comparables a la fecha del informe. No constituye una tasación oficial a efectos bancarios o judiciales."
+      footer={
+        internal
+          ? "Documento de uso interno: detalle del cálculo por el método metrológico. No entregar al cliente."
+          : "Estimación de valor de mercado basada en antecedentes comparables a la fecha del informe. No constituye una tasación oficial a efectos bancarios o judiciales."
+      }
     >
       <h1 className="text-xl font-semibold">{a.title || `${a.typeLabel}${a.zone ? ` en ${a.zone}` : ""}`}</h1>
       {a.status !== "final" && (
@@ -84,7 +107,7 @@ export default async function PrintAppraisal({ params }: { params: Promise<{ id:
             </p>
           )}
           <p className="mt-2 text-[11px] text-neutral-600">
-            {fmt(r.unitAverage)} por m² (promedio homogeneizado)
+            Confianza {fmtPct(r.confidence, 0)} · incertidumbre ± {fmtPct(r.uncertainty)}
           </p>
         </div>
       </section>
@@ -97,37 +120,75 @@ export default async function PrintAppraisal({ params }: { params: Promise<{ id:
               <th className="py-1 pr-2">#</th>
               <th className="py-1 pr-2">Referencia</th>
               <th className="py-1 pr-2 text-right">M²</th>
-              <th className="py-1 pr-2">Construcción</th>
-              <th className="py-1 pr-2">Ubicación</th>
+              <th className="py-1 pr-2 text-center">Constr.</th>
+              <th className="py-1 pr-2 text-center">Ubic.</th>
               <th className="py-1 pr-2">Tipo</th>
               <th className="py-1 pr-2 text-right">Valor</th>
               <th className="py-1 pr-2 text-right">{unitLabel}</th>
-              <th className="py-1 text-right">Homog.</th>
+              <th className="py-1 text-right">Ajustado</th>
             </tr>
           </thead>
           <tbody>
-            {validComps.map(({ c, row }, i) => (
-              <tr key={i} className="border-b border-neutral-200">
-                <td className="py-1 pr-2">A{i + 1}</td>
+            {validComps.map(({ c, row }) => (
+              <tr key={row?.index} className="border-b border-neutral-200">
+                <td className="py-1 pr-2">A{(row?.index ?? 0) + 1}</td>
                 <td className="py-1 pr-2">{c.reference || "—"}</td>
                 <td className="py-1 pr-2 text-right">{c.m2}</td>
-                <td className="py-1 pr-2">{COMPARISON_LABELS[c.construction]}</td>
-                <td className="py-1 pr-2">{COMPARISON_LABELS[c.location]}</td>
+                <td className="py-1 pr-2 text-center">{c.construction ?? "—"}</td>
+                <td className="py-1 pr-2 text-center">{c.location ?? "—"}</td>
                 <td className="py-1 pr-2">{COMPARABLE_KIND_LABELS[c.kind]}</td>
                 <td className="py-1 pr-2 text-right whitespace-nowrap">{fmt(c.price)}</td>
-                <td className="py-1 pr-2 text-right whitespace-nowrap">{fmt(row?.unitRaw)}</td>
-                <td className="py-1 text-right font-medium whitespace-nowrap">{fmt(row?.unitAdjusted)}</td>
+                <td className="py-1 pr-2 text-right whitespace-nowrap">{fmtNum(row?.unit, 0)}</td>
+                <td className="py-1 text-right font-medium whitespace-nowrap">{fmt(row?.adjusted)}</td>
               </tr>
             ))}
           </tbody>
         </table>
         <p className="mt-2 text-[10.5px] leading-relaxed text-neutral-600">
-          Método de comparables homogeneizados: el valor por m² de cada antecedente se ajusta por su calidad
-          de construcción y ubicación respecto del inmueble tasado (±7 % y ±15 %), y las ofertas publicadas se
-          descuentan un {(a.offerDiscountBp / 100).toLocaleString("es-UY")} % por negociación. Mediana{" "}
-          {fmt(r.unitMedian)}/m² · mínimo {fmt(r.unitMin)} · máximo {fmt(r.unitMax)} · {r.count} antecedentes.
+          Método metrológico: a partir de los antecedentes se ajusta por mínimos cuadrados la relación entre
+          el valor y la superficie, la calidad de construcción y la ubicación (Matriz K). Cada antecedente se
+          lleva a las características del inmueble tasado con un coeficiente de ajuste, y el valor probable es
+          el promedio de los valores ajustados. Rango con {fmtPct(r.confidence, 0)} de confianza
+          {a.offerDiscountBp > 0
+            ? `; las ofertas publicadas se descuentan un ${(a.offerDiscountBp / 100).toLocaleString("es-UY")} % por negociación`
+            : ""}
+          . {r.count} antecedentes · promedio {fmtNum(r.unitAverage, 0)} {unitLabel}.
         </p>
       </section>
+
+      {internal && (
+        <section className="mt-6 grid gap-5 break-inside-avoid">
+          <div>
+            <h2 className="mb-1 text-sm font-semibold">Bien problema</h2>
+            <p className="text-[12px]">
+              M² {a.builtArea ?? a.totalArea ?? "—"} · Construcción {a.subjectConstruction ?? "—"} · Ubicación{" "}
+              {a.subjectLocation ?? "—"}
+            </p>
+          </div>
+          <div>
+            <h2 className="mb-2 text-sm font-semibold">Resumen</h2>
+            <SummaryCards result={r} currency={cur} />
+          </div>
+          <div className="grid gap-2">
+            <h2 className="text-sm font-semibold">Matriz K</h2>
+            <MatrixKTable result={r} />
+            <WarningsBox result={r} />
+          </div>
+          <div className="grid gap-2 break-inside-avoid">
+            <h2 className="text-sm font-semibold">Coeficientes de ajuste</h2>
+            <CoefficientCards result={r} currency={cur} />
+          </div>
+          <div className="grid gap-2 break-inside-avoid">
+            <h2 className="text-sm font-semibold">Valores ajustados</h2>
+            <AdjustedBars result={r} currency={cur} />
+          </div>
+          {a.adoptedMinor !== null && (
+            <p className="text-[12px]">
+              Valor probable calculado {fmt(r.probable)} · valor adoptado por el tasador {fmt(a.finalValue)}.
+            </p>
+          )}
+        </section>
+      )}
 
       {a.notes && (
         <section className="mt-5">

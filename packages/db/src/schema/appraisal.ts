@@ -45,7 +45,10 @@ export const appraisal = pgTable(
     clientName: text("client_name"),
     clientContactId: uuid("client_contact_id").references(() => contact.id),
     currency: currencyEnum("currency").notNull().default("USD"),
-    offerDiscountBp: integer("offer_discount_bp").notNull().default(700),
+    offerDiscountBp: integer("offer_discount_bp").notNull().default(0),
+    /** Puntajes del bien problema (misma escala que los antecedentes). */
+    subjectConstruction: numeric("subject_construction", { precision: 4, scale: 1 }),
+    subjectLocation: numeric("subject_location", { precision: 4, scale: 1 }),
     comparables: jsonb("comparables").$type<AppraisalComparable[]>().notNull().default([]),
     /** Resultado calculado (promedio homogeneizado por m² y valor). */
     unitValueMinor: bigint("unit_value_minor", { mode: "bigint" }),
