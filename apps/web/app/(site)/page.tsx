@@ -164,7 +164,7 @@ export default async function Home({
       <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20">
         <div className="mb-8 flex items-end justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold tracking-[0.3em] text-[var(--site-accent)] uppercase">
+            <p className="text-xs font-semibold tracking-[0.3em] text-[var(--site-detail)] uppercase">
               Selección
             </p>
             <h2 className="mt-2 text-3xl font-extrabold tracking-tight sm:text-4xl">
@@ -199,7 +199,7 @@ export default async function Home({
         >
           <div className="mx-auto grid max-w-7xl gap-10 px-4 py-16 sm:px-6 sm:py-20 lg:grid-cols-[1fr_1.1fr] lg:items-center">
             <div>
-              <p className="text-xs font-semibold tracking-[0.3em] text-[var(--site-accent)] uppercase">
+              <p className="text-xs font-semibold tracking-[0.3em] text-[var(--site-detail)] uppercase">
                 Tasación gratuita
               </p>
               <h2 className="mt-2 text-3xl font-extrabold tracking-tight sm:text-5xl">
@@ -237,7 +237,7 @@ export default async function Home({
         <div className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
           {FEATURES.map((f) => (
             <div key={f.title}>
-              <f.icon className="size-7 text-[var(--site-accent)]" strokeWidth={1.5} />
+              <f.icon className="size-7 text-[var(--site-detail)]" strokeWidth={1.5} />
               <h3 className="mt-4 text-lg font-bold">{f.title}</h3>
               <p className="mt-2 text-sm leading-relaxed text-[var(--site-muted)]">{f.text}</p>
             </div>

@@ -95,7 +95,7 @@ export function WelcomeModal({ logoUrl, name }: { logoUrl: string | null; name: 
             <span className="text-3xl font-bold text-[var(--site-accent)]">{name.slice(0, 1)}</span>
           )}
         </div>
-        <p className="mt-6 text-xs font-semibold tracking-[0.4em] text-[var(--site-accent)] uppercase">
+        <p className="mt-6 text-xs font-semibold tracking-[0.4em] text-[var(--site-detail)] uppercase">
           Empecemos
         </p>
         <h2

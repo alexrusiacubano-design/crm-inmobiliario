@@ -5,11 +5,12 @@ import { z } from "zod";
  * publicada; el sitio muestra la publicada.
  */
 
-export const SITE_THEMES = ["gold", "light", "navy"] as const;
+export const SITE_THEMES = ["sage", "gold", "light", "navy"] as const;
 export type SiteTheme = (typeof SITE_THEMES)[number];
 export const SITE_THEME_LABELS: Record<SiteTheme, { name: string; hint: string }> = {
+  sage: { name: "Arena y oliva", hint: "Crema cálido, oliva y terracota" },
   gold: { name: "Oscuro dorado", hint: "Negro con acentos dorados" },
-  light: { name: "Claro", hint: "Limpio y luminoso" },
+  light: { name: "Claro clásico", hint: "Marfil con acentos tostados" },
   navy: { name: "Azul noche", hint: "Oscuro con acento celeste" },
 };
 
@@ -30,9 +31,30 @@ export interface SiteThemeTokens {
   border: string;
   borderStrong: string;
   hover: string;
+  /** Color de detalle (etiquetas, íconos): terracota en «Arena y oliva». */
+  detail: string;
 }
 
 export const SITE_THEME_TOKENS: Record<SiteTheme, SiteThemeTokens> = {
+  sage: {
+    scheme: "light",
+    bg: "#f7f4ee",
+    bg2: "#efeae0",
+    surface: "#ffffff",
+    surface2: "#ece7dc",
+    text: "#23271f",
+    text2: "#3f4539",
+    muted: "#6a7062",
+    muted2: "#8c9184",
+    accent: "#5b7a4f",
+    accentFrom: "#6e8f60",
+    accentTo: "#4f6b44",
+    onAccent: "#ffffff",
+    border: "#e3ddd1",
+    borderStrong: "#d2cabb",
+    hover: "rgba(35,39,31,0.05)",
+    detail: "#c9764a",
+  },
   gold: {
     scheme: "dark",
     bg: "#0a0a0a",
@@ -50,6 +72,7 @@ export const SITE_THEME_TOKENS: Record<SiteTheme, SiteThemeTokens> = {
     border: "rgba(255,255,255,0.1)",
     borderStrong: "rgba(255,255,255,0.2)",
     hover: "rgba(255,255,255,0.05)",
+    detail: "#d8bf82",
   },
   light: {
     scheme: "light",
@@ -68,6 +91,7 @@ export const SITE_THEME_TOKENS: Record<SiteTheme, SiteThemeTokens> = {
     border: "#e7e2da",
     borderStrong: "#d6cfc4",
     hover: "rgba(0,0,0,0.04)",
+    detail: "#8a6d3b",
   },
   navy: {
     scheme: "dark",
@@ -86,6 +110,7 @@ export const SITE_THEME_TOKENS: Record<SiteTheme, SiteThemeTokens> = {
     border: "rgba(255,255,255,0.1)",
     borderStrong: "rgba(255,255,255,0.2)",
     hover: "rgba(255,255,255,0.05)",
+    detail: "#8ab4f8",
   },
 };
 
@@ -108,6 +133,7 @@ export function siteThemeCss(theme: SiteTheme): string {
     ["border", t.border],
     ["border-strong", t.borderStrong],
     ["hover", t.hover],
+    ["detail", t.detail],
   ];
   return `${vars.map(([k, v]) => `--site-${k}:${v}`).join(";")};color-scheme:${t.scheme}`;
 }
@@ -115,7 +141,7 @@ export function siteThemeCss(theme: SiteTheme): string {
 const text = (max: number) => z.string().trim().max(max);
 
 export const siteContentSchema = z.object({
-  theme: z.enum(SITE_THEMES).default("gold"),
+  theme: z.enum(SITE_THEMES).default("sage"),
   heroTitle: text(80).default("Encontrá la propiedad"),
   heroHighlight: text(80).default("que estás buscando"),
   heroSubtitle: text(300).default(

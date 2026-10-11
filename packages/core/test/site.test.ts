@@ -37,7 +37,7 @@ afterAll(async () => {
 describe("Mi sitio web", () => {
   it("sin configurar usa los valores por defecto", async () => {
     const c = await siteContent(h.db, org.organizationId);
-    expect(c.theme).toBe("gold");
+    expect(c.theme).toBe("sage");
     expect(c.heroTitle).toBe("Encontrá la propiedad");
   });
 
@@ -55,7 +55,7 @@ describe("Mi sitio web", () => {
       ctaTitle: "Hablemos",
       footerText: "",
     });
-    expect((await siteContent(h.db, org.organizationId)).theme).toBe("gold");
+    expect((await siteContent(h.db, org.organizationId)).theme).toBe("sage");
     const draft = await siteContent(h.db, org.organizationId, "draft");
     expect(draft).toMatchObject({
       theme: "navy",

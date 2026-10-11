@@ -97,7 +97,7 @@ function SectionTitle({
 }) {
   return (
     <div className="mb-3 flex items-center justify-between">
-      <h2 className="border-l-2 border-primary pl-2 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+      <h2 className="border-l-2 border-accent pl-2 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
         {children}
       </h2>
       {href && (
@@ -367,8 +367,8 @@ export default async function DashboardPage() {
       {/* Saludo */}
       <section className="relative flex items-center justify-between gap-6 overflow-hidden rounded-2xl border bg-gradient-to-br from-primary-soft via-surface to-surface p-6 sm:p-8">
         <div className="min-w-0">
-          <span className="mb-4 block h-0.5 w-8 rounded bg-primary" aria-hidden />
-          <p className="text-xs font-semibold tracking-wider text-primary uppercase">{longDate(now, tz)}</p>
+          <span className="mb-4 block h-0.5 w-8 rounded bg-accent" aria-hidden />
+          <p className="text-xs font-semibold tracking-wider text-accent uppercase">{longDate(now, tz)}</p>
           <h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">
             {greeting(now, tz)},
             <br />

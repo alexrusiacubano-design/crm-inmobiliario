@@ -77,7 +77,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
               {content.footerText}
             </p>
             <div className="mt-6 space-y-1.5 text-sm">
-              <p className="mb-3 text-xs font-semibold tracking-[0.2em] text-[var(--site-accent)] uppercase">
+              <p className="mb-3 text-xs font-semibold tracking-[0.2em] text-[var(--site-detail)] uppercase">
                 Explorar
               </p>
               {NAV.slice(1, 4).map((n) => (
@@ -91,7 +91,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
           </div>
 
           <div className="space-y-3 text-sm">
-            <p className="mb-3 text-xs font-semibold tracking-[0.2em] text-[var(--site-accent)] uppercase">
+            <p className="mb-3 text-xs font-semibold tracking-[0.2em] text-[var(--site-detail)] uppercase">
               Contacto
             </p>
             {site?.email && (
@@ -126,7 +126,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
 
           {highlights.offices.length > 0 && (
             <div className="text-sm">
-              <p className="mb-3 text-xs font-semibold tracking-[0.2em] text-[var(--site-accent)] uppercase">
+              <p className="mb-3 text-xs font-semibold tracking-[0.2em] text-[var(--site-detail)] uppercase">
                 Oficinas
               </p>
               <div className="grid gap-4 sm:grid-cols-2">

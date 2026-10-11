@@ -52,7 +52,7 @@ export function PropertyCard({ item, operation }: { item: CatalogItem; operation
         <h3 className="line-clamp-2 text-base leading-snug font-semibold uppercase">{item.title}</h3>
         {item.zone && (
           <p className="flex items-center gap-1.5 text-sm text-[var(--site-muted)]">
-            <MapPin className="size-3.5 text-[var(--site-accent)]" /> {item.zone}
+            <MapPin className="size-3.5 text-[var(--site-detail)]" /> {item.zone}
           </p>
         )}
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-[var(--site-border)] pt-3 text-sm text-[var(--site-text2)]">
