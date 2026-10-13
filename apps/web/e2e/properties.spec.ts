@@ -36,7 +36,7 @@ test("un agente crea una propiedad, completa la ficha, la publica y carga un doc
   await page.getByRole("button", { name: "Crear propiedad" }).click();
 
   await expect(page).toHaveURL(/\/properties\/[0-9a-f-]{36}$/);
-  await expect(page.getByRole("heading", { name: new RegExp(title) })).toBeVisible();
+  await expect(page.getByRole("heading", { name: new RegExp(title), level: 1 })).toBeVisible();
   await expect(page.getByText("Borrador", { exact: true }).first()).toBeVisible();
   await expect(page.getByText("Al menos 3 fotos")).toBeVisible();
   const url = page.url();
@@ -107,13 +107,13 @@ test("un agente crea una propiedad, completa la ficha, la publica y carga un doc
 
 test("otro agente ve la propiedad pero no puede editarla ni ver el mínimo", async ({ page }) => {
   await login(page, "agente2");
-  await page.goto("/properties?q=Pocitos");
+  await page.goto("/properties?q=Pocitos&scope=bolsa&status=all");
   await page.getByRole("link", { name: /Apartamento 2 dormitorios con garaje en Pocitos/ }).click();
-  await expect(page.getByRole("heading", { name: /Pocitos/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Pocitos/, level: 1 })).toBeVisible();
   await expect(page.getByRole("link", { name: "Editar" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Editar propietarios" })).toHaveCount(0);
   await tabs(page).getByRole("link", { name: "Precios", exact: true }).click();
-  await expect(page.getByText("Restringido")).toBeVisible();
+  await expect(page.getByRole("cell", { name: "Restringido" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Editar precios" })).toHaveCount(0);
 });
 

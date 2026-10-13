@@ -22,7 +22,7 @@ test("un agente carga un lead con contacto nuevo, registra una llamada y el lead
   await dialog.getByLabel("Nombre").fill("Prueba E2E");
   await dialog.getByLabel("Apellido").fill(`Lead ${suffix}`);
   await dialog.getByLabel("Teléfono 1").fill(`094 ${suffix.slice(0, 3)} ${suffix.slice(3)}`);
-  await dialog.getByLabel("Busca").selectOption("rent");
+  await dialog.getByLabel("Qué quiere hacer").selectOption({ label: "Alquilar" });
   await dialog.getByLabel("Origen").selectOption("whatsapp");
   await dialog.getByRole("button", { name: "Crear lead" }).click();
 

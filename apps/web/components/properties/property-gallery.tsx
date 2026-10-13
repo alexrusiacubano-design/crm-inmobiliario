@@ -4,7 +4,8 @@ import { ChevronLeft, ChevronRight, ImageOff, X } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
-const src = (id: string, size: "thumb" | "full") => `/api/media/${id}${size === "thumb" ? "?size=thumb" : ""}`;
+const src = (id: string, size: "thumb" | "full") =>
+  `/api/media/${id}${size === "thumb" ? "?size=thumb" : ""}`;
 
 /** Galería de la ficha: portada grande, miniaturas y vista a pantalla completa. */
 export function PropertyGallery({
@@ -47,9 +48,18 @@ export function PropertyGallery({
   return (
     <div className="grid gap-2">
       <div className="relative overflow-hidden rounded-xl bg-surface-muted">
-        <button type="button" className="block w-full" onClick={() => setOpen(true)} aria-label="Ver a pantalla completa">
+        <button
+          type="button"
+          className="block w-full"
+          onClick={() => setOpen(true)}
+          aria-label="Ver a pantalla completa"
+        >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={src(current?.id ?? "", "full")} alt={`${title} — foto ${i + 1}`} className="aspect-[16/9] w-full object-cover" />
+          <img
+            src={src(current?.id ?? "", "full")}
+            alt={`${title} — foto ${i + 1}`}
+            className="aspect-[16/9] w-full object-cover"
+          />
         </button>
         {i === 0 && (
           <span className="absolute top-3 left-3 rounded-md bg-black/70 px-2 py-0.5 text-xs font-medium text-white">
@@ -91,7 +101,12 @@ export function PropertyGallery({
               className={`overflow-hidden rounded-lg border-2 transition ${idx === i ? "border-primary" : "border-transparent opacity-80 hover:opacity-100"}`}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={src(p.id, "thumb")} alt="" loading="lazy" className="aspect-[4/3] w-full object-cover" />
+              <img
+                src={src(p.id, "thumb")}
+                alt=""
+                loading="lazy"
+                className="aspect-[4/3] w-full object-cover"
+              />
             </button>
           ))}
         </div>

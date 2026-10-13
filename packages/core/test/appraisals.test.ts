@@ -58,11 +58,31 @@ describe("cálculo de tasación (método metrológico)", () => {
     expect(r.rows[0]?.coefficient).toBeCloseTo(1.0523, 3);
     expect(r.rows[3]?.adjusted).toBeCloseTo(422178, -1);
     expect(r.probable).toBeCloseTo(421917, -1);
-    expect(r.uncertainty).toBeCloseTo(0.042, 3);
+    expect(r.uncertainty).toBeCloseTo(0.0117, 4);
     expect(r.min).toBeLessThan(r.probable ?? 0);
     expect(r.max).toBeGreaterThan(r.probable ?? 0);
     // K negativo en construcción: causa probable A2 (más construcción, menos valor por m²)
     expect(r.warnings).toEqual([{ variable: "construction", cause: 1 }]);
+  });
+  it("reproduce la tasación de referencia (Dalmiro Costa 4618)", () => {
+    const r = computeAppraisal({
+      subject: { m2: 495, construction: 2, location: 1 },
+      offerDiscountBp: 0,
+      comparables: [
+        { reference: "A1", m2: 475, construction: 2, location: 3, kind: "real", price: 460000 },
+        { reference: "A2", m2: 405, construction: 1, location: 3, kind: "real", price: 418500 },
+        { reference: "A3", m2: 445, construction: 2, location: 1, kind: "real", price: 391500 },
+        { reference: "A4", m2: 400, construction: 3, location: 2, kind: "real", price: 391500 },
+      ],
+    });
+    expect(r.k?.constant).toBeCloseTo(105269.23, 1);
+    expect(r.k?.location).toBeCloseTo(25509.62, 1);
+    expect(r.rows[0]?.coefficient).toBeCloseTo(0.9116, 4);
+    expect(r.probable).toBeCloseTo(417797, -1);
+    expect(r.stdDev).toBeCloseTo(2817, -1);
+    expect(r.uncertainty).toBeCloseTo(0.0479, 4);
+    expect(r.min).toBeCloseTo(397792, -2);
+    expect(r.max).toBeCloseTo(437802, -2);
   });
   it("con pocos antecedentes reduce el modelo sin romperse", () => {
     const r = computeAppraisal({

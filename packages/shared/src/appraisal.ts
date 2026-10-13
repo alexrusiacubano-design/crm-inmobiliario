@@ -10,7 +10,9 @@
  *    característica:  fⱼ = 1 + Kⱼ·(xⱼ bien − xⱼ antecedente) / valor del antecedente,
  *    y C = f(m²)·f(construcción)·f(ubicación).  Valor ajustado = valor × C.
  * 3. Valor probable = promedio de los valores ajustados. Incertidumbre (90 % de confianza) a
- *    partir de la dispersión del valor por m² de la muestra; rango = probable ± incertidumbre.
+ *    partir de la dispersión de los valores ajustados (intervalo de predicción):
+ *    t₉₀ · s · √(1 + 1/n) / promedio de los valores de venta, con t de Student bilateral y
+ *    n − (variables + 1) grados de libertad (mínimo 1). Rango = probable ± incertidumbre.
  * 4. Un K negativo en construcción o ubicación (mejor calidad → menor precio) indica una muestra
  *    incongruente: se señala el antecedente que más probablemente la causa.
  */
@@ -107,26 +109,26 @@ export interface AppraisalResult {
   warnings: AppraisalWarning[];
 }
 
-/** t de Student unilateral al 90 % según grados de libertad. */
+/** t de Student bilateral al 90 % según grados de libertad. */
 function t90(df: number): number {
   const table: [number, number][] = [
-    [1, 3.078],
-    [2, 1.886],
-    [3, 1.638],
-    [4, 1.533],
-    [5, 1.476],
-    [6, 1.44],
-    [7, 1.415],
-    [8, 1.397],
-    [9, 1.383],
-    [10, 1.372],
-    [12, 1.356],
-    [15, 1.341],
-    [20, 1.325],
-    [30, 1.31],
+    [1, 6.314],
+    [2, 2.92],
+    [3, 2.353],
+    [4, 2.132],
+    [5, 2.015],
+    [6, 1.943],
+    [7, 1.895],
+    [8, 1.86],
+    [9, 1.833],
+    [10, 1.812],
+    [12, 1.782],
+    [15, 1.753],
+    [20, 1.725],
+    [30, 1.697],
   ];
   for (const [d, t] of table) if (df <= d) return t;
-  return 1.282;
+  return 1.645;
 }
 
 /** Resuelve A·x = b por eliminación gaussiana con pivoteo; null si es singular. */
@@ -290,8 +292,12 @@ export function computeAppraisal(input: {
     adjusted.length > 1 && probable !== null
       ? Math.sqrt(adjusted.reduce((s, x) => s + (x - probable) ** 2, 0) / (adjusted.length - 1))
       : 0;
-  const popSdUnit = Math.sqrt(units.reduce((s, u) => s + (u - unitAverage) ** 2, 0) / n);
-  const uncertainty = n > 1 ? Math.max((t90(Math.max(n - 2, 1)) * popSdUnit) / unitAverage, 0.01) : 0.1;
+  const valueAverage = mean(sample.map((r) => r.value as number));
+  const df = Math.max(adjusted.length - (vars.length + 1), 1);
+  const uncertainty =
+    adjusted.length > 1
+      ? Math.max((t90(df) * stdDev * Math.sqrt(1 + 1 / adjusted.length)) / valueAverage, 0.01)
+      : 0.1;
 
   // K negativo en una característica de calidad: buscar el antecedente que más lo explica
   // (calidad por encima del promedio con valor por m² por debajo del promedio, o viceversa).
