@@ -28,10 +28,9 @@ test("un administrador crea un usuario y queda auditado", async ({ page }) => {
   const email = `e2e.${Date.now()}@demo.example.com`;
   await login(page, "admin");
 
-  await page
-    .getByRole("navigation", { name: "Navegación principal" })
-    .getByRole("link", { name: "Usuarios", exact: true })
-    .click();
+  const nav = page.getByRole("navigation", { name: "Navegación principal" });
+  await nav.getByRole("button", { name: "Administración" }).click();
+  await nav.getByRole("link", { name: "Usuarios", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Usuarios" })).toBeVisible();
   await page.getByRole("button", { name: "Nuevo usuario" }).click();
 
@@ -72,8 +71,10 @@ test("un agente no ve administración y recibe acceso denegado si entra por URL"
   await expect(page.getByText("No tenés acceso a esta sección")).toBeVisible();
 });
 
-test("los módulos futuros dicen en qué fase llegan, sin datos falsos", async ({ page }) => {
+test("una ruta que no es un módulo muestra «Página no encontrada», sin datos falsos", async ({ page }) => {
   await login(page, "director");
   await page.goto("/commercial/matching");
-  await expect(page.getByText("Este módulo se construye en la Fase 4")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Matching", level: 1 })).toBeVisible();
+  await page.goto("/commercial/no-existe");
+  await expect(page.getByText("Página no encontrada")).toBeVisible();
 });
