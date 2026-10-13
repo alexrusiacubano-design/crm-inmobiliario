@@ -36,7 +36,12 @@ afterAll(async () => {
   await h.pool.end();
 });
 
-async function publish(input: { type: "apartment" | "house"; op: "sale" | "rent"; price: string; beds: number }) {
+async function publish(input: {
+  type: "apartment" | "house";
+  op: "sale" | "rent";
+  price: string;
+  beds: number;
+}) {
   const a = await ctxFor(h.db, org, "admin");
   await listPortalAccounts(h.db, a); // crea las cuentas (sitio web activo por defecto)
   const p = await createProperty(h.db, a, {
@@ -57,7 +62,10 @@ async function publish(input: { type: "apartment" | "house"; op: "sale" | "rent"
     prices: [{ operation: input.op, currency: input.op === "sale" ? "USD" : "UYU", list: input.price }],
   });
   const owner = (await createContact(h.db, a, { firstName: "Due", lastName: "Ño" })).contact;
-  await setPropertyOwners(h.db, a, { propertyId: p.id, owners: [{ contactId: owner.id, sharePercent: "100" }] });
+  await setPropertyOwners(h.db, a, {
+    propertyId: p.id,
+    owners: [{ contactId: owner.id, sharePercent: "100" }],
+  });
   for (let i = 0; i < 3; i++)
     await h.db.insert(propertyMedia).values({
       organizationId: org.organizationId,
@@ -92,7 +100,9 @@ describe("catálogo público", () => {
       (await listCatalog(h.db, org.organizationId, { operacion: "venta", precioMax: "200000" })).items,
     ).toHaveLength(1);
     // filtros inválidos se ignoran en vez de romper la página
-    expect((await listCatalog(h.db, org.organizationId, { operacion: "x", dormitorios: "abc" })).items).toHaveLength(3);
+    expect(
+      (await listCatalog(h.db, org.organizationId, { operacion: "x", dormitorios: "abc" })).items,
+    ).toHaveLength(3);
 
     const detail = await getCatalogProperty(h.db, org.organizationId, sale.code);
     expect(detail?.item.photoIds).toHaveLength(3);

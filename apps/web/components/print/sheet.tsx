@@ -62,13 +62,13 @@ export function PrintSheet({
               />
             ) : null}
             <div>
-            <p className="text-lg font-semibold">{org.name}</p>
-            <p className="text-[11px] text-neutral-600">
-              {[org.legalName, org.taxId ? `RUT ${org.taxId}` : null].filter(Boolean).join(" · ")}
-            </p>
-            <p className="text-[11px] text-neutral-600">
-              {[org.address, org.phone, org.email, org.website].filter(Boolean).join(" · ")}
-            </p>
+              <p className="text-lg font-semibold">{org.name}</p>
+              <p className="text-[11px] text-neutral-600">
+                {[org.legalName, org.taxId ? `RUT ${org.taxId}` : null].filter(Boolean).join(" · ")}
+              </p>
+              <p className="text-[11px] text-neutral-600">
+                {[org.address, org.phone, org.email, org.website].filter(Boolean).join(" · ")}
+              </p>
             </div>
           </div>
           <div className="text-right">

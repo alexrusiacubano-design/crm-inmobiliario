@@ -11,6 +11,7 @@ import {
   listAuditLogs,
   listMembers,
   NotFoundError,
+  deleteMember,
   resetMemberPassword,
   setMemberStatus,
   updateBranch,
@@ -227,6 +228,32 @@ describe("usuarios y roles", () => {
     expect(open).toEqual([]);
     const [m] = await h.db.select().from(membership).where(eq(membership.id, target.membershipId));
     expect(m?.status).toBe("suspended");
+  });
+
+  it("eliminar un usuario borra su membresía, cierra sesiones y libera el email", async () => {
+    const admin = await ctxFor(h.db, a, "admin");
+    const target = await createMember(h.db, admin, newUserInput(a, "baja@test.example.com"));
+    await h.db
+      .insert(session)
+      .values({ userId: target.userId, token: "tok-baja", expiresAt: new Date(Date.now() + 3_600_000) });
+    await deleteMember(h.db, admin, { membershipId: target.membershipId });
+    expect(await h.db.select().from(membership).where(eq(membership.id, target.membershipId))).toEqual([]);
+    expect(await h.db.select().from(session).where(eq(session.userId, target.userId))).toEqual([]);
+    const [u] = await h.db.select().from(user).where(eq(user.id, target.userId));
+    expect(u?.email).not.toBe("baja@test.example.com");
+    const again = await createMember(h.db, admin, newUserInput(a, "baja@test.example.com"));
+    expect(again.email).toBe("baja@test.example.com");
+  });
+
+  it("no se puede eliminar a uno mismo, ni un Administrador puede eliminar a un Super Admin", async () => {
+    const admin = await ctxFor(h.db, a, "admin");
+    const sa = await ctxFor(h.db, a, "superadmin");
+    await expect(deleteMember(h.db, admin, { membershipId: admin.membershipId })).rejects.toBeInstanceOf(
+      ForbiddenError,
+    );
+    await expect(deleteMember(h.db, admin, { membershipId: sa.membershipId })).rejects.toBeInstanceOf(
+      ForbiddenError,
+    );
   });
 
   it("cambiar la contraseña reemplaza el hash y cierra sesiones", async () => {

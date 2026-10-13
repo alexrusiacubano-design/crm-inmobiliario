@@ -75,6 +75,10 @@ export const setMembershipStatusSchema = z.object({
   status: membershipStatusSchema,
 });
 
+export const deleteMembershipSchema = z.object({
+  membershipId: uuidSchema,
+});
+
 export const resetPasswordSchema = z.object({
   membershipId: uuidSchema,
   password: passwordSchema,

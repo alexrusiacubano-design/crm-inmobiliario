@@ -48,7 +48,10 @@ export async function setupOrganization(
 
   let slug = slugify(input.orgName);
   if (slug === "demo") slug = "inmobiliaria";
-  const [taken] = await db.select({ id: organization.id }).from(organization).where(eq(organization.slug, slug));
+  const [taken] = await db
+    .select({ id: organization.id })
+    .from(organization)
+    .where(eq(organization.slug, slug));
   if (taken) slug = `${slug}-${Date.now().toString(36)}`;
 
   const [org] = await db
@@ -77,7 +80,9 @@ export async function setupOrganization(
   if (!m) throw new Error("No se pudo crear la membresía");
   const roleId = roleIds.get("super_admin");
   if (!roleId) throw new Error("Rol super_admin inexistente");
-  await db.insert(membershipRole).values({ organizationId: org.id, membershipId: m.id, roleId, branchId: null });
+  await db
+    .insert(membershipRole)
+    .values({ organizationId: org.id, membershipId: m.id, roleId, branchId: null });
 
   return { created: true, organizationId: org.id };
 }

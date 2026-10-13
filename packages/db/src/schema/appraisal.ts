@@ -1,5 +1,17 @@
 import { sql } from "drizzle-orm";
-import { bigint, check, date, index, integer, jsonb, numeric, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import {
+  bigint,
+  check,
+  date,
+  index,
+  integer,
+  jsonb,
+  numeric,
+  pgTable,
+  text,
+  uniqueIndex,
+  uuid,
+} from "drizzle-orm/pg-core";
 import type { AppraisalComparable } from "@crm/shared/appraisal";
 import { createdAt, deletedAt, id, updatedAt } from "./_helpers";
 import { user } from "./auth";
