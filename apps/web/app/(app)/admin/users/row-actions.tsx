@@ -1,13 +1,13 @@
 "use client";
 
 import * as Menu from "@radix-ui/react-dropdown-menu";
-import { KeyRound, MoreHorizontal, UserCheck, UserX } from "lucide-react";
+import { KeyRound, MoreHorizontal, Trash2, UserCheck, UserX } from "lucide-react";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog, Dialog, DialogContent, DialogFooter } from "@/components/ui/dialog";
 import { Field, Input } from "@/components/ui/form";
-import { resetPasswordAction, setUserStatusAction } from "./actions";
+import { deleteUserAction, resetPasswordAction, setUserStatusAction } from "./actions";
 
 export function UserRowActions({
   membershipId,
@@ -21,6 +21,7 @@ export function UserRowActions({
   isSelf: boolean;
 }) {
   const [confirm, setConfirm] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | undefined>();
@@ -32,6 +33,14 @@ export function UserRowActions({
       if (!result.ok) return void toast.error(result.error);
       toast.success(suspend ? `${name} fue suspendido` : `${name} fue reactivado`);
       setConfirm(false);
+    });
+
+  const deleteUser = () =>
+    startTransition(async () => {
+      const result = await deleteUserAction({ membershipId });
+      if (!result.ok) return void toast.error(result.error);
+      toast.success(`${name} fue eliminado`);
+      setConfirmDelete(false);
     });
 
   const resetPassword = (event: React.FormEvent<HTMLFormElement>) => {
@@ -76,6 +85,14 @@ export function UserRowActions({
                 {suspend ? "Suspender acceso" : "Reactivar acceso"}
               </Menu.Item>
             )}
+            {!isSelf && (
+              <Menu.Item
+                onSelect={() => setConfirmDelete(true)}
+                className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm text-danger outline-none data-[highlighted]:bg-danger-soft"
+              >
+                <Trash2 className="size-4" /> Eliminar usuario
+              </Menu.Item>
+            )}
           </Menu.Content>
         </Menu.Portal>
       </Menu.Root>
@@ -92,6 +109,17 @@ export function UserRowActions({
         confirmLabel={suspend ? "Suspender" : "Reactivar"}
         tone={suspend ? "danger" : "primary"}
         onConfirm={changeStatus}
+        loading={pending}
+      />
+
+      <ConfirmDialog
+        open={confirmDelete}
+        onOpenChange={setConfirmDelete}
+        title={`¿Eliminar a ${name}?`}
+        description="Dejará de aparecer en Usuarios, no podrá volver a ingresar y se cerrarán sus sesiones. Los registros que cargó o tiene asignados se conservan con su nombre. Esta acción no se puede deshacer."
+        confirmLabel="Eliminar"
+        tone="danger"
+        onConfirm={deleteUser}
         loading={pending}
       />
 

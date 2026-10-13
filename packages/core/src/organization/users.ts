@@ -1,5 +1,6 @@
 import { and, asc, count, eq, ilike, inArray, or, type SQL } from "drizzle-orm";
 import {
+  account,
   branch,
   membership,
   membershipRole,
@@ -7,6 +8,7 @@ import {
   session,
   team,
   teamMember,
+  twoFactor,
   user,
   type Db,
   type DbOrTx,
@@ -14,6 +16,7 @@ import {
 import { insertCredentialUser, setCredentialPassword } from "@crm/db/credentials";
 import {
   createUserSchema,
+  deleteMembershipSchema,
   listQuerySchema,
   resetPasswordSchema,
   setMembershipStatusSchema,
@@ -362,6 +365,63 @@ export async function resetMemberPassword(db: Db, ctx: RequestContext, rawInput:
       action: "user.password_reset",
       entityType: "user",
       entityId: input.membershipId,
+    });
+  });
+}
+
+/**
+ * Quita al usuario de la organización: borra su membresía (con roles y equipos) y cierra sus
+ * sesiones. La fila de `user` se conserva para que el historial (creado por, asignado a,
+ * auditoría) siga mostrando su nombre. Si no pertenece a ninguna otra organización se le
+ * quitan las credenciales y se libera el email, así no puede volver a ingresar y el email
+ * se puede usar para un alta nueva.
+ */
+export async function deleteMember(db: Db, ctx: RequestContext, rawInput: unknown): Promise<void> {
+  requirePermission(ctx, "users.manage");
+  const input = parseInput(deleteMembershipSchema, rawInput);
+  if (input.membershipId === ctx.membershipId)
+    throw new ForbiddenError("No podés eliminar tu propio usuario");
+
+  await db.transaction(async (tx) => {
+    const before = await getSnapshot(tx, ctx.organizationId, input.membershipId);
+    assertCanTouchLockedRoles(
+      ctx,
+      before.roles.some((r) => r.roleKey === "super_admin"),
+    );
+
+    await tx
+      .update(team)
+      .set({ leadMembershipId: null })
+      .where(and(eq(team.organizationId, ctx.organizationId), eq(team.leadMembershipId, input.membershipId)));
+    await tx
+      .delete(membership)
+      .where(and(eq(membership.id, input.membershipId), eq(membership.organizationId, ctx.organizationId)));
+    await assertSuperAdminRemains(tx, ctx.organizationId);
+
+    await tx.delete(session).where(eq(session.userId, before.userId));
+    const [others] = await tx
+      .select({ n: count() })
+      .from(membership)
+      .where(eq(membership.userId, before.userId));
+    if (!others?.n) {
+      await tx.delete(account).where(eq(account.userId, before.userId));
+      await tx.delete(twoFactor).where(eq(twoFactor.userId, before.userId));
+      await tx
+        .update(user)
+        .set({ email: `eliminado+${before.userId}@usuarios.invalid`, twoFactorEnabled: false })
+        .where(eq(user.id, before.userId));
+    }
+
+    await writeAudit(tx, ctx, {
+      action: "user.delete",
+      entityType: "user",
+      entityId: input.membershipId,
+      before,
+    });
+    await emitEvent(tx, ctx, {
+      type: "user.deleted",
+      aggregateType: "user",
+      aggregateId: input.membershipId,
     });
   });
 }

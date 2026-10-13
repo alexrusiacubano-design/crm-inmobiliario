@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import {
   createMember,
+  deleteMember,
   getMember,
   resetMemberPassword,
   setMemberStatus,
@@ -49,4 +50,13 @@ export async function resetPasswordAction(input: unknown): Promise<ActionResult<
     await resetMemberPassword(db, ctx, input);
     return undefined;
   });
+}
+
+export async function deleteUserAction(input: unknown): Promise<ActionResult<undefined>> {
+  const result = await runAction(async (db, ctx) => {
+    await deleteMember(db, ctx, input);
+    return undefined;
+  });
+  if (result.ok) revalidatePath("/admin/users");
+  return result;
 }

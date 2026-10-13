@@ -4,6 +4,7 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   "user.suspend": "Suspensión de usuario",
   "user.reactivate": "Reactivación de usuario",
   "user.password_reset": "Cambio de contraseña",
+  "user.delete": "Eliminación de usuario",
   "permission.assignment_change": "Cambio de roles asignados",
   "permission.role_change": "Cambio de permisos de rol",
   "role.create": "Alta de rol",
