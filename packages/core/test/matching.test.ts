@@ -213,7 +213,6 @@ describe("comparables", () => {
   });
 });
 
-
 describe("clientes que ofrecen un inmueble", () => {
   it("un lead que vende queda fuera del matching", async () => {
     const a = await ctxFor(h.db, org, "agenteA");

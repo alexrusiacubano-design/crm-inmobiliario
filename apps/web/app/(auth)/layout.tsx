@@ -12,7 +12,11 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
           {brand?.logoUrl ? (
             <div className="mb-8 flex items-center gap-3">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={brand.logoUrl} alt="" className="size-14 rounded-xl bg-neutral-950 object-contain p-1" />
+              <img
+                src={brand.logoUrl}
+                alt=""
+                className="size-14 rounded-xl bg-neutral-950 object-contain p-1"
+              />
               <p className="text-lg font-semibold">{brand.name}</p>
             </div>
           ) : null}
