@@ -38,8 +38,7 @@ const num = (max = 1e12) =>
       return n;
     });
 
-const intOpt = (max: number) =>
-  num(max).transform((v) => (v === null ? null : Math.round(v)));
+const intOpt = (max: number) => num(max).transform((v) => (v === null ? null : Math.round(v)));
 
 const score = num(10).transform((v) => (v === null ? null : Math.round(v * 10) / 10));
 
