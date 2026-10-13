@@ -48,7 +48,11 @@ export interface RequestContext {
 }
 
 /** Ruta pública del logo, versionada para que el navegador no muestre uno viejo. */
-export function orgLogoUrl(organizationId: string, logoKey: string | null, updatedAt: Date | null): string | null {
+export function orgLogoUrl(
+  organizationId: string,
+  logoKey: string | null,
+  updatedAt: Date | null,
+): string | null {
   if (!logoKey) return null;
   return `/api/logo/${organizationId}?v=${updatedAt ? updatedAt.getTime().toString(36) : "1"}`;
 }

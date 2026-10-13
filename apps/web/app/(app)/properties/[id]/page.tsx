@@ -124,7 +124,6 @@ export default async function PropertyPage({
     .filter(Boolean)
     .join(", ");
 
-
   const priceRows = p.operations.map((op) => {
     const pr = data.prices.find((x) => x.operation === op);
     return {
@@ -502,18 +501,18 @@ export default async function PropertyPage({
                   )}
                 </Card>
                 {p.features.length > 0 && (
-              <Card>
-                <h2 className="border-b px-4 py-3 text-sm font-semibold">Comodidades</h2>
-                <ul className="flex flex-wrap gap-1.5 px-4 py-3">
-                  {p.features.map((f) => (
-                    <li key={f} className="rounded-full border px-2.5 py-0.5 text-xs">
-                      {PROPERTY_FEATURE_LABELS[f as PropertyFeature] ?? f}
-                    </li>
-                  ))}
-                </ul>
-              </Card>
-            )}
-            {data.expenses.length > 0 && (
+                  <Card>
+                    <h2 className="border-b px-4 py-3 text-sm font-semibold">Comodidades</h2>
+                    <ul className="flex flex-wrap gap-1.5 px-4 py-3">
+                      {p.features.map((f) => (
+                        <li key={f} className="rounded-full border px-2.5 py-0.5 text-xs">
+                          {PROPERTY_FEATURE_LABELS[f as PropertyFeature] ?? f}
+                        </li>
+                      ))}
+                    </ul>
+                  </Card>
+                )}
+                {data.expenses.length > 0 && (
                   <Card>
                     <h2 className="border-b px-4 py-3 text-sm font-semibold">Gastos</h2>
                     <ul className="divide-y text-sm">
