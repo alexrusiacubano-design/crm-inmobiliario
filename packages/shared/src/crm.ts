@@ -43,7 +43,11 @@ export const LEAD_OPERATION_LABELS: Record<LeadOperation, string> = {
   temporary_rent_out: "Dar en alquiler temporal",
 };
 /** El cliente busca un inmueble (comprador o inquilino): participa del matching. */
-export const DEMAND_LEAD_OPERATIONS = ["buy", "rent", "temporary_rent"] as const satisfies readonly LeadOperation[];
+export const DEMAND_LEAD_OPERATIONS = [
+  "buy",
+  "rent",
+  "temporary_rent",
+] as const satisfies readonly LeadOperation[];
 /** El cliente ofrece un inmueble (vende o lo da en alquiler): es una posible captación. */
 export const SUPPLY_LEAD_OPERATIONS = [
   "sell",
