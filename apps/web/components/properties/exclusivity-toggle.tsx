@@ -39,7 +39,13 @@ export function ExclusivityToggle({
     >
       <div className="flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2">
-          <Star className={cn("size-4 shrink-0", exclusive ? "fill-primary text-primary" : "text-muted-foreground")} aria-hidden />
+          <Star
+            className={cn(
+              "size-4 shrink-0",
+              exclusive ? "fill-primary text-primary" : "text-muted-foreground",
+            )}
+            aria-hidden
+          />
           <div className="min-w-0">
             <p className="text-sm font-medium">Exclusividad</p>
             <p className="text-xs text-muted-foreground">
@@ -47,7 +53,11 @@ export function ExclusivityToggle({
             </p>
           </div>
         </div>
-        <div className="flex overflow-hidden rounded-md border text-xs" role="group" aria-label="Exclusividad">
+        <div
+          className="flex overflow-hidden rounded-md border text-xs"
+          role="group"
+          aria-label="Exclusividad"
+        >
           {[true, false].map((v) => (
             <button
               key={String(v)}
@@ -57,7 +67,9 @@ export function ExclusivityToggle({
               onClick={() => exclusive !== v && save(v)}
               className={cn(
                 "px-3 py-1.5 disabled:cursor-not-allowed",
-                exclusive === v ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-surface-muted",
+                exclusive === v
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-surface-muted",
               )}
             >
               {v ? "Sí" : "No"}
